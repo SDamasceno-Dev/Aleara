@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DialogProvider } from "@/components/dialog";
+import { Footer } from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,11 +26,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <DialogProvider>
-          <div className="min-h-screen bg-background text-foreground">{children}</div>
+          <div className="min-h-dvh bg-background text-foreground flex flex-col relative overflow-hidden">
+            {/* Global background layers */}
+            <div aria-hidden className="login-bg" />
+            <div aria-hidden className="login-aurora" />
+            <div aria-hidden className="prism-lines" />
+            <main className="flex-1 min-h-0 overflow-y-auto">{children}</main>
+            <Footer />
+          </div>
         </DialogProvider>
       </body>
     </html>

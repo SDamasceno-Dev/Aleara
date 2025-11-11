@@ -10,11 +10,7 @@ export default function Home() {
 	const dialog = useDialog();
 
 	return (
-		<div className="relative flex min-h-dvh items-center justify-center overflow-hidden">
-			{/* Background layers */}
-			<div aria-hidden className="login-bg" />
-			<div aria-hidden className="login-aurora" />
-			<div aria-hidden className="prism-lines" />
+		<div className="relative flex min-h-full items-center justify-center overflow-hidden">
 
 			{/* Content */}
 			<div className="relative z-10 mx-auto w-full max-w-md px-4 py-10">
@@ -83,6 +79,11 @@ export default function Home() {
 						<Image src={googleIconUrl} alt="Google" width={16} height={16} />
 						<span>Continuar com Google</span>
 					</button>
+					<div className="flex items-center justify-center gap-4 pt-4 text-xs text-zinc-400/90">
+						<a href="/sobre" className="hover:text-zinc-200">Sobre</a>
+						<span className="opacity-40">•</span>
+						<a href="/planos" className="hover:text-zinc-200">Planos</a>
+					</div>
 				</div>
 			</div>
 		</div>
