@@ -20,6 +20,40 @@ const nextConfig: NextConfig = {
 	},
 	// Dev UX
 	reactStrictMode: true,
+	webpack(config) {
+		// 1) Importing SVG as file-url: `import logoUrl from './logo.svg?url'`
+		config.module.rules.push({
+			test: /\.svg$/i,
+			resourceQuery: /url/, // *.svg?url
+			type: "asset/resource",
+		});
+		// 2) Importing SVG as React component via SVGR
+		config.module.rules.push({
+			test: /\.svg$/i,
+			issuer: /\.[jt]sx?$/,
+			resourceQuery: { not: [/url/] },
+			use: [
+				{
+					loader: "@svgr/webpack",
+					options: {
+						titleProp: true,
+						dimensions: false, // size controlled via props/CSS
+						svgo: true,
+						svgoConfig: {
+							plugins: [
+								{ name: "removeViewBox", active: false }, // keep viewBox for proper scaling
+							],
+						},
+						svgProps: {
+							preserveAspectRatio: "xMidYMid meet",
+							className: "block",
+						},
+					},
+				},
+			],
+		});
+		return config;
+  },
 };
 
 export default nextConfig;

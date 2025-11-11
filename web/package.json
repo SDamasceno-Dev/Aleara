@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -16,6 +16,7 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@chromatic-com/storybook": "^4.1.2",
     "@storybook/addon-a11y": "^10.0.6",
     "@storybook/addon-docs": "^10.0.6",

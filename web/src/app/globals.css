@@ -2,8 +2,8 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  --brand: #7c3aed; /* primary */
+  --foreground: #0D0D0D;
+  --brand: #C9A14B; /* primary */
   --brand-foreground: #ffffff;
   --muted: #f4f4f5;
   --muted-foreground: #3f3f46;
@@ -11,22 +11,19 @@
   --card-foreground: #0a0a0a;
   --border: #e4e4e7;
   --ring: #a78bfa;
-  /* login palette */
-  --wine: #2b0a0e;
+  /* app palette */
+  --alertError: #F97168;
+  --alertInfo: #679DF1;
+  --alertSuccess: #94C749;
+  --alertWarning: #FBC828;
   --black: #000000;
   --gold-1: #c99339;
   --gold-2: #e6c168;
   --gold-3: #ad7832;
-  --alertSuccess: #008000;
-  --alertWarning: #FFA500;
-  --alertError: #FF0000;
-  --alertInfo: #0000FF;
-  --alertPrimary: #0000FF;
-  --alertSecondary: #0000FF;
-  --alertTertiary: #0000FF;
-  --alertQuaternary: #0000FF;
+  --whitePearl: #F2EDE4;
+  --wine: #2B0A0E;
 }
-
+  
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -63,6 +60,34 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Global pointer for clickable elements */
+button,
+[role="button"] {
+  cursor: pointer;
+}
+/* Hover polish for clickable elements */
+button {
+  transition: filter 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  /* leve clareada por padrão para que, ao sair do hover, pareça clarear */
+  filter: brightness(1.02);
+}
+button:hover {
+  /* escurece levemente no hover */
+  filter: brightness(0.96);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+}
+button:active {
+  /* um pouco mais escuro ao pressionar */
+  filter: brightness(0.92);
+}
+/* Disabled states should not show pointer */
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
 }
 
 /* ---------- Login Background (Aurora + Prism lines) ---------- */

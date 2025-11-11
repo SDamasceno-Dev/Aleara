@@ -1,4 +1,4 @@
-export type DialogIntent = "alert" | "warning" | "message";
+export type DialogIntent = "alertError" | "alertWarning" | "alertSuccess" | "alertInfo" | "message";
 
 export type DialogState = {
 	open: boolean;

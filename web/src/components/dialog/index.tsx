@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DialogContextValue, DialogIntent, DialogOpenInput, DialogState } from "./types";
-import { dialogContainer, dialogHeader, dialogOverlay, intentStyles } from "./styles";
+import { dialogContainer, dialogHeaderBar, dialogOverlay, intentStyles } from "./styles";
 
 const DialogContext = createContext<DialogContextValue | null>(null);
 
@@ -59,15 +59,10 @@ function DialogRoot({ state, close }: { state: DialogState; close: () => void })
 			<button aria-label="Fechar" onClick={close} className={dialogOverlay} />
 			{/* content */}
 			<div role="dialog" aria-modal="true" aria-labelledby="dialog-title" className={`${dialogContainer} ${styles.border}`}>
-				<div className={dialogHeader}>
-					<div className="flex items-center gap-2">
-						<span className={styles.badge}>{styles.label}</span>
-						<h2 id="dialog-title" className="text-sm font-semibold text-zinc-900">
-							{state.title}
-						</h2>
-					</div>
-					<button onClick={close} className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800" aria-label="Fechar diálogo">
-						<svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+				<div className={`${dialogHeaderBar} ${styles.headerBg}`}>
+					<h2 id="dialog-title" className="text-xs font-semibold tracking-widest">AVISO</h2>
+					<button onClick={close} className="absolute right-2 top-1.5 rounded-md p-1 text-white/90 hover:bg-white/15" aria-label="Fechar diálogo">
+						<svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
 							<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
 						</svg>
 					</button>

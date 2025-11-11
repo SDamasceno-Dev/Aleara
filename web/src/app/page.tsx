@@ -1,7 +1,8 @@
 'use client';
 
 import Image from "next/image";
-import { GoogleIcon } from "@/components/icons";
+import prismUrl from "@assets/prism.svg?url";
+import googleIconUrl from "@assets/icons/google-icon-logo.svg?url";
 import { useDialog } from "@/components/dialog";
 import { ResetPasswordContent } from "@/components/dialog/reset-password-content";
 
@@ -18,33 +19,27 @@ export default function Home() {
 			{/* Content */}
 			<div className="relative z-10 mx-auto w-full max-w-md px-4 py-10">
 				<div className="mb-8 flex flex-col items-center justify-center gap-3 text-center">
-					<Image
-						src="/prism.svg"
-						alt="Aleara"
-						width={256}
-						height={256}
-						priority
-					/>
+					<Image src={prismUrl} alt="Aleara" width={256} height={256} priority />
 					<p className="text-sm text-zinc-300/80">Acesso exclusivo para membros</p>
 				</div>
 
 				<form className="space-y-4">
-					<div className="glass-dark input-frame input-gold rounded-md px-3 py-2">
+					<div className="input-frame input-gold rounded-md border bg-foreground px-3 py-2">
 						<input
 							type="email"
 							name="email"
 							placeholder="E-mail"
-							className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-400/70 focus:outline-none"
+							className="w-full bg-transparent text-sm text-zinc-800 placeholder:text-zinc-500 focus:outline-none"
 							autoComplete="email"
 							required
 						/>
 					</div>
-					<div className="glass-dark input-frame input-gold rounded-md px-3 py-2">
+					<div className="input-frame input-gold rounded-md border bg-foreground px-3 py-2">
 						<input
 							type="password"
 							name="password"
 							placeholder="Senha"
-							className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-400/70 focus:outline-none"
+							className="w-full bg-transparent text-sm text-zinc-800 placeholder:text-zinc-500 focus:outline-none"
 							autoComplete="current-password"
 							required
 						/>
@@ -55,7 +50,7 @@ export default function Home() {
 							type="button"
 							onClick={() =>
 								dialog.open({
-									intent: "message",
+									intent: "alertInfo",
 									title: "Redefinir senha",
 									description: <ResetPasswordContent />,
 								})
@@ -85,7 +80,7 @@ export default function Home() {
 						type="button"
 						className="glass-dark inline-flex h-11 w-full items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-zinc-100 transition-colors hover:bg-white/5"
 					>
-						<GoogleIcon className="h-4 w-4" />
+						<Image src={googleIconUrl} alt="Google" width={16} height={16} />
 						<span>Continuar com Google</span>
 					</button>
 				</div>

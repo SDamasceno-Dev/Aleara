@@ -7,6 +7,7 @@ export type TextInputProps = {
 	initialValue?: string;
 	validatable?: ValidationKind;
 	onValidChange?(valid: boolean): void;
+	forceValidate?: boolean;
 	className?: string;
 };
 
