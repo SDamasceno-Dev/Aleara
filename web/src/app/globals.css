@@ -17,6 +17,14 @@
   --gold-1: #c99339;
   --gold-2: #e6c168;
   --gold-3: #ad7832;
+  --alertSuccess: #008000;
+  --alertWarning: #FFA500;
+  --alertError: #FF0000;
+  --alertInfo: #0000FF;
+  --alertPrimary: #0000FF;
+  --alertSecondary: #0000FF;
+  --alertTertiary: #0000FF;
+  --alertQuaternary: #0000FF;
 }
 
 @theme inline {

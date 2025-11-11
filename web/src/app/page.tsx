@@ -1,8 +1,13 @@
-import Link from "next/link";
+'use client';
+
 import Image from "next/image";
 import { GoogleIcon } from "@/components/icons";
+import { useDialog } from "@/components/dialog";
+import { ResetPasswordContent } from "@/components/dialog/reset-password-content";
 
 export default function Home() {
+	const dialog = useDialog();
+
 	return (
 		<div className="relative flex min-h-dvh items-center justify-center overflow-hidden">
 			{/* Background layers */}
@@ -46,12 +51,19 @@ export default function Home() {
 					</div>
 
 					<div className="flex justify-center">
-						<Link
-							href="#"
+						<button
+							type="button"
+							onClick={() =>
+								dialog.open({
+									intent: "message",
+									title: "Redefinir senha",
+									description: <ResetPasswordContent />,
+								})
+							}
 							className="text-xs text-zinc-300/80 underline-offset-4 hover:underline"
 						>
 							Esqueceu sua senha?
-						</Link>
+						</button>
 					</div>
 
 					<button
