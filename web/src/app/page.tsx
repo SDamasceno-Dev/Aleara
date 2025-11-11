@@ -5,13 +5,14 @@ import prismUrl from "@assets/prism.svg?url";
 import googleIconUrl from "@assets/icons/google-icon-logo.svg?url";
 import { useDialog } from "@/components/dialog";
 import { ResetPasswordContent } from "@/components/dialog/reset-password-content";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
 	const dialog = useDialog();
+	const router = useRouter();
 
 	return (
 		<div className="relative flex min-h-full items-center justify-center overflow-hidden">
-
 			{/* Content */}
 			<div className="relative z-10 mx-auto w-full max-w-md px-4 py-10">
 				<div className="mb-8 flex flex-col items-center justify-center gap-3 text-center">
@@ -19,7 +20,7 @@ export default function Home() {
 					<p className="text-sm text-zinc-300/80">Acesso exclusivo para membros</p>
 				</div>
 
-				<form className="space-y-4">
+				<form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
 					<div className="input-frame input-gold rounded-md border bg-foreground px-3 py-2">
 						<input
 							type="email"
@@ -58,7 +59,16 @@ export default function Home() {
 					</div>
 
 					<button
-						type="submit"
+						type="button"
+						onClick={(e) => {
+							const form = (e.currentTarget as HTMLButtonElement).closest('form') as HTMLFormElement | null;
+							if (form && !form.checkValidity()) { form.reportValidity(); return; }
+							try {
+								localStorage.setItem('auth','1');
+								document.cookie = "auth=1; path=/; SameSite=Lax";
+							} catch {}
+							router.push('/app');
+						}}
 						className="btn-gold mt-1 inline-flex h-11 w-full items-center justify-center rounded-md text-sm font-medium"
 					>
 						Entrar
