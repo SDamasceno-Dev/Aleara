@@ -8,8 +8,9 @@ const itemBase =
 
 export function Sidebar() {
 	return (
-		<aside className="hidden w-56 shrink-0 self-stretch border-r border-white/10 bg-black/20 p-2 backdrop-blur md:flex md:flex-col">
-			<nav className="flex min-h-0 flex-1 flex-col">
+		// <aside className="hidden w-56 shrink-0 self-stretch h-full border-r border-white/10 bg-black/20 p-2 backdrop-blur md:flex md:flex-col">
+		<aside className="w-56 rounded-lg overflow-hidden">
+			<nav className="flex p-2 flex-col bg-black/20 h-[calc(100vh-13rem)]">
 				<div className="space-y-1">
 					<Link href="/app" className={itemBase}>
 						<Home className="h-4 w-4" /> Visão geral
