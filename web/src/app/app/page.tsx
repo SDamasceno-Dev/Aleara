@@ -24,7 +24,7 @@ function Card({
 export default function DashboardPage() {
   return (
     <div className='space-y-4'>
-      <h1 className='text-xl font-semibold'>Visão geral</h1>
+      <h1 className='text-xl font-semibold'>Dashboard</h1>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
         <Card title='Mega-Sena • últimos resultados' href='/app/mega-sena'>
           <div className='flex items-center gap-2'>

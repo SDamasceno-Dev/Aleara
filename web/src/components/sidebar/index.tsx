@@ -1,21 +1,61 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
   Home,
   TicketPercent,
   History,
   Settings,
   LogOut,
-  Gauge,
-  User,
+  Coins,
+  LayoutDashboard,
 } from 'lucide-react';
 import Image from 'next/image';
 import AlearaLogo from '@assets/prism.svg?url';
+import { usePathname, useRouter } from 'next/navigation';
 const itemBase =
   'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-zinc-300/90 hover:text-white hover:bg-white/10 transition-colors';
 
 export function Sidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const lotterySlugs = [
+    { slug: 'mega-sena', label: 'Mega-Sena' },
+    { slug: 'quina', label: 'Quina' },
+    { slug: 'dupla-sena', label: 'Dupla Sena' },
+    { slug: 'lotofacil', label: 'Lotofácil' },
+    { slug: 'lotomania', label: 'Lotomania' },
+    { slug: 'dia-de-sorte', label: 'Dia de Sorte' },
+    { slug: 'super-sete', label: 'Super Sete' },
+    { slug: 'timemania', label: 'Timemania' },
+    { slug: 'federal', label: 'Federal' },
+    { slug: 'mais-milionaria', label: '+Milionária' },
+  ];
+  const currentLottery = (() => {
+    const m = pathname?.match(/^\/app\/([^/]+)/);
+    return m ? m[1] : '';
+  })();
+  const [selectedLottery, setSelectedLottery] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      const isLotteryRoute = lotterySlugs.some(
+        (l) => l.slug === currentLottery,
+      );
+      const saved =
+        typeof window !== 'undefined'
+          ? (localStorage.getItem('lastLottery') ?? '')
+          : '';
+      const validSaved = lotterySlugs.some((l) => l.slug === saved)
+        ? saved
+        : '';
+      setSelectedLottery(isLotteryRoute ? currentLottery : validSaved);
+    } catch {
+      setSelectedLottery(currentLottery);
+    }
+  }, [currentLottery]);
+
   return (
     <div className='flex flex-col items-center gap-2'>
       <Image src={AlearaLogo} alt='Aleara' width={64} height={64} priority />
@@ -23,14 +63,42 @@ export function Sidebar() {
         <nav className='flex p-2 flex-col bg-black/20 h-[calc(100vh-13rem)]'>
           <div className='space-y-1'>
             <Link href='/app' className={itemBase}>
-              <Home className='h-4 w-4' /> Visão geral
+              <LayoutDashboard className='h-4 w-4' /> Dashboard
             </Link>
             <div className='mt-3 text-xs uppercase tracking-wide text-zinc-500'>
               Loterias
             </div>
-            <Link href='/app/mega-sena' className={itemBase}>
-              <Gauge className='h-4 w-4' /> Mega-Sena
-            </Link>
+            <div className='mb-2'>
+              <label htmlFor='lottery' className='sr-only'>
+                Selecionar loteria
+              </label>
+              <div className='glass-dark rounded-md border px-2 py-1.5'>
+                <select
+                  id='lottery'
+                  value={selectedLottery}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v) {
+                      setSelectedLottery(v);
+                      try {
+                        localStorage.setItem('lastLottery', v);
+                      } catch {}
+                      if (pathname !== `/app/${v}`) router.push(`/app/${v}`);
+                    }
+                  }}
+                  className='bg-transparent text-sm text-zinc-100 outline-none w-full'
+                >
+                  <option value='' disabled>
+                    Escolha a loteria
+                  </option>
+                  {lotterySlugs.map((l) => (
+                    <option key={l.slug} value={l.slug}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
           <div className='mt-6 space-y-1'>
             <Link href='/app/apostas' className={itemBase}>

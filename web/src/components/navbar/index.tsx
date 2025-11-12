@@ -23,7 +23,7 @@ export function Navbar({ className }: NavbarProps) {
           >
             Preços
           </Link>
-          <Link href='/entrar' className={navbarLink}>
+          <Link href='/' className={navbarLink}>
             Entrar
           </Link>
           <Link
