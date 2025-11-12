@@ -1,13 +1,18 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useEffect } from "react";
-import type { TextInputProps, ValidationKind } from "./types";
-import { inputErrorBorder, inputErrorText, inputField, inputRoot } from "./styles";
+import { useMemo, useState, useEffect } from 'react';
+import type { TextInputProps, ValidationKind } from './types';
+import {
+  inputErrorBorder,
+  inputErrorText,
+  inputField,
+  inputRoot,
+} from './styles';
 
 function validate(value: string, kind: ValidationKind): string | null {
-  if (kind === "email") {
+  if (kind === 'email') {
     const re = /^[\w.!#$%&’*+/=?`{|}~^-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    return re.test(value) ? null : "Formato de e-mail inválido";
+    return re.test(value) ? null : 'Formato de e-mail inválido';
   }
   return null;
 }
@@ -15,9 +20,9 @@ function validate(value: string, kind: ValidationKind): string | null {
 export function TextInput({
   id,
   placeholder,
-  type = "text",
-  initialValue = "",
-  validatable = "none",
+  type = 'text',
+  initialValue = '',
+  validatable = 'none',
   onValidChange,
   forceValidate,
   className,
@@ -28,20 +33,23 @@ export function TextInput({
   useEffect(() => {
     if (forceValidate) {
       setTouched(true);
-      if (onValidChange) onValidChange(validate(value.trim(), validatable) == null);
+      if (onValidChange)
+        onValidChange(validate(value.trim(), validatable) == null);
     }
   }, [forceValidate]);
 
   const error = useMemo(() => {
     if (!touched) return null;
-    return validatable === "none" ? null : validate(value.trim(), validatable);
+    return validatable === 'none' ? null : validate(value.trim(), validatable);
   }, [touched, value, validatable]);
 
   const valid = !error;
 
   return (
     <div className={className}>
-      <div className={`${inputRoot} ${error ? inputErrorBorder : "input-gold"}`.trim()}>
+      <div
+        className={`${inputRoot} ${error ? inputErrorBorder : 'input-gold'}`.trim()}
+      >
         <input
           id={id}
           placeholder={placeholder}
@@ -49,11 +57,15 @@ export function TextInput({
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            if (onValidChange) onValidChange(validate(e.target.value, validatable) == null);
+            if (onValidChange)
+              onValidChange(validate(e.target.value, validatable) == null);
           }}
           onBlur={() => {
             setTouched(true);
-            const err = validatable === "none" ? null : validate(value.trim(), validatable);
+            const err =
+              validatable === 'none'
+                ? null
+                : validate(value.trim(), validatable);
             if (onValidChange) onValidChange(err == null);
           }}
           className={inputField}
@@ -63,5 +75,3 @@ export function TextInput({
     </div>
   );
 }
-
-

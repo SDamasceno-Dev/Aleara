@@ -1,3 +1,1 @@
-export const iconBase = "inline-block align-middle";
-
-
+export const iconBase = 'inline-block align-middle';

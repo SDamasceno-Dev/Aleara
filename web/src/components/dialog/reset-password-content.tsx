@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { TextInput } from "@/components/text-input";
-import { useDialog } from "@/components/dialog";
-import { Button } from "@/components/button";
+import { useState } from 'react';
+import { TextInput } from '@/components/text-input';
+import { useDialog } from '@/components/dialog';
+import { Button } from '@/components/button';
 
 export function ResetPasswordContent() {
   const dialog = useDialog();
@@ -11,14 +11,19 @@ export function ResetPasswordContent() {
   const [forceValidate, setForceValidate] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div className='space-y-3'>
       <p>Informe seu e-mail e enviaremos um link para redefinição.</p>
-      <TextInput validatable="email" placeholder="seu@email.com" onValidChange={setEmailValid} forceValidate={forceValidate} />
-      <div className="flex justify-end">
+      <TextInput
+        validatable='email'
+        placeholder='seu@email.com'
+        onValidChange={setEmailValid}
+        forceValidate={forceValidate}
+      />
+      <div className='flex justify-end'>
         <Button
-          type="button"
-          intent="gold"
-          size="sm"
+          type='button'
+          intent='gold'
+          size='sm'
           onClick={() => {
             if (!emailValid) {
               setForceValidate(true);
@@ -33,5 +38,3 @@ export function ResetPasswordContent() {
     </div>
   );
 }
-
-

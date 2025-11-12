@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname.startsWith("/app")) {
-    const auth = request.cookies.get("auth")?.value;
-    if (auth !== "1") {
+  if (pathname.startsWith('/app')) {
+    const auth = request.cookies.get('auth')?.value;
+    if (auth !== '1') {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = '/';
       return NextResponse.redirect(url);
     }
   }
@@ -15,7 +15,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app", "/app/:path*"],
+  matcher: ['/app', '/app/:path*'],
 };
-
-

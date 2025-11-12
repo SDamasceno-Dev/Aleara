@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-	redirect("/app/configuracoes");
+  redirect('/app/configuracoes');
 }
-
-
