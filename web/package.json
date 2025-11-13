@@ -16,7 +16,9 @@
     "lucide-react": "^0.447.0",
     "next": "16.0.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "@supabase/supabase-js": "^2.46.1",
+    "@supabase/ssr": "^0.5.1"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.2",

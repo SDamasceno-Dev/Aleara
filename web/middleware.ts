@@ -4,8 +4,11 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith('/app')) {
-    const auth = request.cookies.get('auth')?.value;
-    if (auth !== '1') {
+    // Supabase sets auth cookies named like: sb-<project-ref>-auth-token / refresh-token
+    const hasSupabaseSession = request.cookies
+      .getAll()
+      .some((c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token') && !!c.value);
+    if (!hasSupabaseSession) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);

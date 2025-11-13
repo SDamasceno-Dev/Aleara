@@ -20,6 +20,7 @@ const itemBase =
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const lotterySlugs = [
     { slug: 'mega-sena', label: 'Mega-Sena' },
     { slug: 'quina', label: 'Quina' },
@@ -56,7 +57,23 @@ export function Sidebar() {
     }
   }, [currentLottery]);
 
-  return (
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        const data = await res.json();
+        if (!cancelled) setIsAdmin(data?.role === 'ADMIN');
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+	return (
     <div className='flex flex-col items-center gap-2'>
       <Image src={AlearaLogo} alt='Aleara' width={64} height={64} priority />
       <aside className='w-56 rounded-lg overflow-hidden'>
@@ -64,7 +81,7 @@ export function Sidebar() {
           <div className='space-y-1'>
             <Link href='/app' className={itemBase}>
               <LayoutDashboard className='h-4 w-4' /> Dashboard
-            </Link>
+					</Link>
             <div className='mt-3 text-xs uppercase tracking-wide text-zinc-500'>
               Loterias
             </div>
@@ -101,35 +118,39 @@ export function Sidebar() {
             </div>
           </div>
           <div className='mt-6 space-y-1'>
+            {isAdmin ? (
+              <>
+                <div className='mt-3 text-xs uppercase tracking-wide text-zinc-500'>
+                  Administração
+                </div>
+                <Link href='/app/admin' className={itemBase}>
+                  <Home className='h-4 w-4' /> Área Privada
+					</Link>
+              </>
+            ) : null}
             <Link href='/app/apostas' className={itemBase}>
               <TicketPercent className='h-4 w-4' /> Apostas
-            </Link>
+					</Link>
             <Link href='/app/historico' className={itemBase}>
               <History className='h-4 w-4' /> Histórico
-            </Link>
+					</Link>
             <Link href='/app/configuracoes' className={itemBase}>
               <Settings className='h-4 w-4' /> Configurações
-            </Link>
-          </div>
+					</Link>
+				</div>
           <div className='mt-auto pt-2'>
-            <button
+					<button
               type='button'
-              onClick={() => {
-                try {
-                  if (typeof window !== 'undefined') {
-                    localStorage.removeItem('auth');
-                    document.cookie = 'auth=; Max-Age=0; path=/; SameSite=Lax';
-                  }
-                } catch {}
-                window.location.href = '/';
-              }}
-              className={`${itemBase} w-full`}
-            >
+						onClick={() => {
+                window.location.href = '/auth/signout';
+						}}
+						className={`${itemBase} w-full`}
+					>
               <LogOut className='h-4 w-4' /> Sair do app
-            </button>
-          </div>
-        </nav>
-      </aside>
+					</button>
+				</div>
+			</nav>
+		</aside>
     </div>
-  );
+	);
 }
