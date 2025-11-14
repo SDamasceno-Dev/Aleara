@@ -7,7 +7,7 @@ import { useDialog } from '@/components/dialog';
 import { ResetPasswordContent } from '@/components/dialog/reset-password-content';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export default function Home() {
   const dialog = useDialog();
@@ -15,6 +15,7 @@ export default function Home() {
   const supabase = createSupabaseBrowserClient();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <div className='relative flex min-h-full items-center justify-center overflow-hidden'>
@@ -58,9 +59,13 @@ export default function Home() {
                 return;
               }
               router.push('/app');
-            } catch {
+            } catch (e) {
               setErrorMsg('Não foi possível autenticar. Tente novamente.');
               setLoading(false);
+            }
+            if (errorRef.current) {
+              // Move focus to error region for screen readers
+              errorRef.current.focus();
             }
           }}
         >
@@ -110,7 +115,15 @@ export default function Home() {
           </button>
 
           {errorMsg ? (
-            <div className='text-center text-sm text-red-400'>{errorMsg}</div>
+            <div
+              ref={errorRef}
+              role='alert'
+              aria-live='assertive'
+              tabIndex={-1}
+              className='text-center text-sm text-red-400'
+            >
+              {errorMsg}
+            </div>
           ) : null}
         </form>
 
