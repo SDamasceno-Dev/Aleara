@@ -3,22 +3,36 @@
 import { Sidebar } from '@/components/sidebar';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import prismUrl from '@assets/prism.svg?url';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [me, setMe] = useState<{
+    email: string | null;
+    role: 'ADMIN' | 'USER' | null;
+    displayName: string | null;
+    avatarUrl: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/me', { credentials: 'include' });
+        const res = await fetch('/api/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
         const data = await res.json();
         if (!cancelled) {
           if (!data?.authenticated) {
             window.location.replace('/');
             return;
           }
+          setMe({
+            email: data?.email ?? null,
+            role: data?.role ?? null,
+            displayName: data?.displayName ?? null,
+            avatarUrl: data?.avatarUrl ?? null,
+          });
           setReady(true);
         }
       } catch {
@@ -40,14 +54,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className='flex-1 min-h-0 flex flex-col'>
           <div className='flex flex-row justify-end pb-4'>
-            <div className='flex  items-center gap-3 '>
-              <div className='leading-tight'>
-                <div className='text-sm text-zinc-100'>Usuário</div>
-                <div className='text-[10px] text-zinc-400/80'>Plano Free</div>
+            <div className='flex items-center gap-3 '>
+              <div className='leading-tight text-right'>
+                <div className='text-sm text-zinc-100'>
+                  {me?.displayName || me?.email || 'Usuário'}
+                </div>
+                <div className='text-[10px] text-zinc-400/80'>
+                  {me?.role === 'ADMIN' ? 'Admin' : 'Plano standard'}
+                </div>
               </div>
-              <div className='h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/80'>
-                U
-              </div>
+              {me?.avatarUrl ? (
+                <Image
+                  src={me.avatarUrl}
+                  alt='Avatar'
+                  width={40}
+                  height={40}
+                  className='h-10 w-10 rounded-full object-cover'
+                />
+              ) : (
+                <div className='h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/80'>
+                  {(me?.displayName || me?.email || 'U')
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
           <div className='flex-1 min-h-0 overflow-y-auto'>{children}</div>

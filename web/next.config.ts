@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
   },
   // Dev UX
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+    ],
+  },
   webpack(config) {
     // 1) Importing SVG as file-url: `import logoUrl from './logo.svg?url'`
     config.module.rules.push({
