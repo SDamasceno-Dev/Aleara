@@ -9,30 +9,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const hasAuth = (() => {
+    let cancelled = false;
+    (async () => {
       try {
-        if (typeof document !== 'undefined') {
-          if (
-            document.cookie
-              .split(';')
-              .some((c) => c.trim().startsWith('auth=1'))
-          )
-            return true;
+        const res = await fetch('/api/me', { credentials: 'include' });
+        const data = await res.json();
+        if (!cancelled) {
+          if (!data?.authenticated) {
+            window.location.replace('/');
+            return;
+          }
+          setReady(true);
         }
-      } catch {}
-      try {
-        if (typeof localStorage !== 'undefined') {
-          if (localStorage.getItem('auth') === '1') return true;
+      } catch {
+        if (!cancelled) {
+          window.location.replace('/');
         }
-      } catch {}
-      return false;
+      }
     })();
-
-    if (!hasAuth) {
-      window.location.replace('/');
-      return;
-    }
-    setReady(true);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!ready) return null;

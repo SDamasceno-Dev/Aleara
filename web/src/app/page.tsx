@@ -7,11 +7,14 @@ import { useDialog } from '@/components/dialog';
 import { ResetPasswordContent } from '@/components/dialog/reset-password-content';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { useState } from 'react';
 
 export default function Home() {
 	const dialog = useDialog();
 	const router = useRouter();
   const supabase = createSupabaseBrowserClient();
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	return (
     <div className='relative flex min-h-full items-center justify-center overflow-hidden'>
@@ -30,7 +33,37 @@ export default function Home() {
           </p>
 				</div>
 
-        <form className='space-y-4' onSubmit={(e) => e.preventDefault()}>
+        <form
+          className='space-y-4'
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setErrorMsg(null);
+            const form = e.currentTarget as HTMLFormElement;
+            const formData = new FormData(form);
+            const email = String(formData.get('email') ?? '').trim();
+            const password = String(formData.get('password') ?? '');
+            if (!email || !password) {
+              setErrorMsg('Preencha e-mail e senha.');
+              return;
+            }
+            try {
+              setLoading(true);
+              const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+              });
+              if (error) {
+                setErrorMsg('E-mail ou senha inválidos.');
+                setLoading(false);
+                return;
+              }
+              router.push('/app');
+            } catch {
+              setErrorMsg('Não foi possível autenticar. Tente novamente.');
+              setLoading(false);
+            }
+          }}
+        >
           <div className='input-frame input-gold rounded-md border bg-foreground px-3 py-2'>
 						<input
               type='email'
@@ -69,25 +102,16 @@ export default function Home() {
 					</div>
 
 					<button
-            type='button'
-						onClick={(e) => {
-              const form = (e.currentTarget as HTMLButtonElement).closest(
-                'form',
-              ) as HTMLFormElement | null;
-              if (form && !form.checkValidity()) {
-                form.reportValidity();
-                return;
-              }
-							try {
-                localStorage.setItem('auth', '1');
-                document.cookie = 'auth=1; path=/; SameSite=Lax';
-							} catch {}
-							router.push('/app');
-						}}
+            type='submit'
             className='btn-gold mt-1 inline-flex h-11 w-full items-center justify-center rounded-md text-sm font-medium'
+            disabled={loading}
 					>
-						Entrar
+            {loading ? 'Entrando...' : 'Entrar'}
 					</button>
+
+          {errorMsg ? (
+            <div className='text-center text-sm text-red-400'>{errorMsg}</div>
+          ) : null}
 				</form>
 
         <div className='my-6 flex items-center gap-3 text-xs text-zinc-400/80'>

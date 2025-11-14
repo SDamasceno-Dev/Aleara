@@ -61,9 +61,9 @@ export function Sidebar() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/me', { credentials: 'include' });
+        const res = await fetch('/api/me', { credentials: 'include', cache: 'no-store' });
         const data = await res.json();
-        if (!cancelled) setIsAdmin(data?.role === 'ADMIN');
+        if (!cancelled) setIsAdmin(data?.authenticated && data?.role === 'ADMIN');
       } catch {
         if (!cancelled) setIsAdmin(false);
       }
