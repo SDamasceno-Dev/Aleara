@@ -116,15 +116,11 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             </Link>
           </div>
           <div className='mt-auto pt-2'>
-            <button
-              type='button'
-              onClick={() => {
-                window.location.href = '/auth/signout';
-              }}
-              className={`${itemBase} w-full`}
-            >
-              <LogOut className='h-4 w-4' /> Sair do app
-            </button>
+            <form method='post' action='/auth/signout'>
+              <button className={`${itemBase} w-full`} type='submit'>
+                <LogOut className='h-4 w-4' /> Sair do app
+              </button>
+            </form>
           </div>
         </nav>
       </aside>
