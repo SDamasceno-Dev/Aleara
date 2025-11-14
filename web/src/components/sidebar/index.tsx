@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import Image from 'next/image';
-import AlearaLogo from '@assets/prism.svg?url';
 import { usePathname, useRouter } from 'next/navigation';
 const itemBase =
   'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-zinc-300/90 hover:text-white hover:bg-white/10 transition-colors';
@@ -52,7 +51,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <div className='flex flex-col items-center gap-2'>
-      <Image src={AlearaLogo} alt='Aleara' width={64} height={64} priority />
+      <Image src='/assets/prism.svg' alt='Aleara' width={64} height={64} priority />
       <aside className='w-56 rounded-lg overflow-hidden'>
         <nav className='flex p-2 flex-col bg-black/20 h-[calc(100vh-13rem)]'>
           <div className='space-y-1'>

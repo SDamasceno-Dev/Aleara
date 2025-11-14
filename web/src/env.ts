@@ -1,18 +1,3 @@
-function requireEnv(name: string): string {
-  const value = (process.env as Record<string, string | undefined>)[name];
-  if (!value || !value.trim()) {
-    const msg = `Missing required environment variable: ${name}`;
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(msg);
-    } else {
-      // eslint-disable-next-line no-console
-      console.error(msg);
-    }
-    return '';
-  }
-  return value.trim();
-}
-
 function validateSupabaseUrl(raw: string): string {
   try {
     const u = new URL(raw);
@@ -33,8 +18,29 @@ function validateSupabaseUrl(raw: string): string {
 }
 
 export const env = {
-  NEXT_PUBLIC_SUPABASE_URL: validateSupabaseUrl(requireEnv('NEXT_PUBLIC_SUPABASE_URL')),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+  // Use direct property access so Next.js can inline on the client
+  NEXT_PUBLIC_SUPABASE_URL: (() => {
+    const raw = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
+    if (!raw) {
+      const msg = 'Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL';
+      if (process.env.NODE_ENV === 'production') throw new Error(msg);
+      // eslint-disable-next-line no-console
+      console.error(msg);
+      return '';
+    }
+    return validateSupabaseUrl(raw);
+  })(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: (() => {
+    const raw = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+    if (!raw) {
+      const msg = 'Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY';
+      if (process.env.NODE_ENV === 'production') throw new Error(msg);
+      // eslint-disable-next-line no-console
+      console.error(msg);
+      return '';
+    }
+    return raw;
+  })(),
 };
 
 
