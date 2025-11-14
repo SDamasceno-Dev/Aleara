@@ -1,5 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Tabs } from './_components/Tabs';
+import { UsersPanel } from './_components/UsersPanel';
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
@@ -24,8 +26,35 @@ export default async function AdminPage() {
       <p className='text-sm text-zinc-400'>
         Bem-vindo, {profile?.display_name || userData.user?.email} — papel: {profile?.role || 'ADMIN'}
       </p>
-      <div className='mt-4 rounded-md border border-white/10 p-4'>
-        <p className='text-sm text-zinc-300'>Aqui ficarão as ferramentas administrativas.</p>
+      <div className='mt-4'>
+        <Tabs
+          tabs={[
+            {
+              id: 'users',
+              label: 'Usuários',
+              content: <UsersPanel />,
+            },
+            {
+              id: 'reports',
+              label: 'Relatórios',
+              content: (
+                <div className='rounded-md border border-white/10 p-4 text-sm text-zinc-300'>
+                  Em breve: relatórios e visões administrativas.
+                </div>
+              ),
+            },
+            {
+              id: 'settings',
+              label: 'Configurações',
+              content: (
+                <div className='rounded-md border border-white/10 p-4 text-sm text-zinc-300'>
+                  Em breve: preferências e ajustes do painel.
+                </div>
+              ),
+            },
+          ]}
+          initialTabId='users'
+        />
       </div>
     </div>
   );

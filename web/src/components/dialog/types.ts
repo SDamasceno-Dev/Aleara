@@ -12,6 +12,7 @@ export type DialogState = {
   description?: string | React.ReactNode;
   actions?: React.ReactNode;
   onClose?: () => void;
+  size?: 'md' | 'xl';
 };
 
 export type DialogOpenInput = Omit<DialogState, 'open'>;
