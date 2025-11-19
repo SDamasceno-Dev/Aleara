@@ -165,8 +165,8 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
           <div className="mt-2 sm:mt-0 flex items-center gap-2">
             <Button
               type="button"
-              intent="secondary"
-              variant="outline"
+              intent="gold"
+              variant="solid"
               size="sm"
               onClick={() => {
                 dialog.open({
@@ -253,6 +253,7 @@ function RemovalModalContent({
     () => results.filter((u) => selected[u]).length,
     [results, selected],
   );
+  const [hardDelete, setHardDelete] = useState(false);
 
   async function runSearch(reset = true) {
     if (!canSearch) return;
@@ -365,6 +366,15 @@ function RemovalModalContent({
         <div className="mt-4 border-t border-white/10 pt-3">
           <div className="flex items-center justify-between gap-3 flex-nowrap">
             <div className="flex items-center gap-3 flex-nowrap">
+              <label className="inline-flex items-center gap-2 text-xs text-zinc-600">
+                <input
+                  type="checkbox"
+                  checked={hardDelete}
+                  onChange={(e) => setHardDelete(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-600 bg-transparent"
+                />
+                Excluir conta no Supabase (permanente)
+              </label>
               {nextCursor ? (
                 <Button
                   type="button"
@@ -409,21 +419,28 @@ function RemovalModalContent({
                     onClick={async () => {
                       const emails = results.filter((u) => selected[u]);
                       try {
-                        const res = await fetch('/api/admin/allowlist', {
-                          method: 'DELETE',
+                        const res = await fetch('/api/admin/users/delete', {
+                          method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ emails }),
                           credentials: 'include',
+                          body: JSON.stringify({ emails, hardDelete }),
                         });
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok) {
                           onConfirmRemove(emails, 0, data?.error ?? 'Falha ao remover.');
                         } else {
-                          const removed = Number(data?.removed ?? 0);
-                          setResults((prev) => prev.filter((e) => !emails.includes(e)));
+                          const removedAllowed = Number(data?.removedAllowed ?? 0);
+                          const deletedUsers = Number(data?.deletedUsers ?? 0);
+                          // remove da lista os removidos ou deletados
+                          const removedSet = new Set(
+                            (data?.results ?? [])
+                              .filter((r: any) => r.removedAllowed || r.deletedUser)
+                              .map((r: any) => r.email as string),
+                          );
+                          setResults((prev) => prev.filter((e) => !removedSet.has(e)));
                           setSelected({});
                           setConfirming(false);
-                          onConfirmRemove(emails, removed);
+                          onConfirmRemove(emails, deletedUsers || removedAllowed);
                         }
                       } catch {
                         onConfirmRemove(emails, 0, 'Falha de rede ao remover.');
