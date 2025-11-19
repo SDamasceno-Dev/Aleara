@@ -41,6 +41,20 @@ export const env = {
     }
     return raw;
   })(),
+  // Server-only: never import this in client components
+  SUPABASE_SERVICE_ROLE_KEY: (() => {
+    const raw = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+    if (!raw) {
+      const msg = 'Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY';
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(msg);
+      }
+      // eslint-disable-next-line no-console
+      console.warn(msg);
+      return '';
+    }
+    return raw;
+  })(),
 };
 
 

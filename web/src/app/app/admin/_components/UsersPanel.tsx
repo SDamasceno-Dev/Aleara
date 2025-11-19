@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { TextInput } from '@/components/text-input';
 import { Button } from '@/components/button';
 import { useDialog } from '@/components/dialog';
+import { ImportCsvModal } from './ImportCsvModal';
 
 type UsersPanelProps = {
   initialUsers?: string[];
@@ -87,14 +88,13 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
               intent="primary"
               variant="solid"
               className="w-full sm:w-auto"
-              onClick={() => {
+              onClick={async () => {
                 setForceValidate(true);
                 if (!emailValid) {
                   setStatus('Informe um e-mail válido.');
                   liveRef.current?.focus();
                   return;
                 }
-                // Layout-first: simulando adição local
                 const input = document.getElementById(
                   'admin-users-add-email',
                 ) as HTMLInputElement | null;
@@ -104,14 +104,34 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
                   liveRef.current?.focus();
                   return;
                 }
-                if (users.includes(newEmail)) {
-                  setStatus('Este e-mail já está na lista.');
-                  liveRef.current?.focus();
-                  return;
+                try {
+                  // Reutiliza o endpoint de convite em lote para um único e-mail
+                  const res = await fetch('/api/admin/users/invite-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emails: [newEmail], role: 'USER' }),
+                    credentials: 'include',
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    setStatus(data?.error ?? 'Falha ao enviar convite.');
+                  } else {
+                    const invited = Number(data?.invited ?? 0);
+                    const exists = Number(data?.exists ?? 0);
+                    const errors = Number(data?.errors ?? 0);
+                    if (invited > 0) {
+                      setStatus('Convite enviado com sucesso.');
+                    } else if (exists > 0) {
+                      setStatus('Usuário já existe. Convite não enviado.');
+                    } else if (errors > 0) {
+                      setStatus('Falha ao enviar convite.');
+                    } else {
+                      setStatus('Operação concluída.');
+                    }
+                  }
+                } catch {
+                  setStatus('Falha de rede ao enviar convite.');
                 }
-                setUsers((prev) => [newEmail, ...prev]);
-                setSelected((prev) => ({ ...prev, [newEmail]: false }));
-                setStatus('E-mail adicionado (somente layout — não persistido).');
                 liveRef.current?.focus();
                 if (input) input.value = '';
                 setEmailValid(false);
@@ -145,6 +165,32 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
           <div className="mt-2 sm:mt-0 flex items-center gap-2">
             <Button
               type="button"
+              intent="secondary"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                dialog.open({
+                  intent: 'message',
+                  size: 'xl',
+                  title: 'Importar CSV de usuários',
+                  description: (
+                    <ImportCsvModal
+                      onDone={(s) => {
+                        setStatus(
+                          `Importação: convidados ${s.invited}, já existentes ${s.exists}, erros ${s.errors}.`,
+                        );
+                        requestAnimationFrame(() => liveRef.current?.focus());
+                        dialog.close();
+                      }}
+                    />
+                  ),
+                });
+              }}
+            >
+              Importar CSV
+            </Button>
+            <Button
+              type="button"
               intent="danger"
               variant="outline"
               size="sm"
@@ -155,14 +201,13 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
                   title: 'Remover usuários',
                   description: (
                     <RemovalModalContent
-                      users={users}
-                      onConfirmRemove={(emails) => {
-                        const toRemove = new Set(emails);
-                        setUsers((prev) => prev.filter((u) => !toRemove.has(u)));
+                      onConfirmRemove={(emails, removedCount, errorMsg) => {
                         setSelected({});
-                        setStatus(
-                          `${emails.length} e-mail(s) removido(s) (somente layout — não persistido).`,
-                        );
+                        if (errorMsg) {
+                          setStatus(errorMsg);
+                        } else {
+                          setStatus(`${removedCount} e-mail(s) removido(s).`);
+                        }
                         requestAnimationFrame(() => {
                           liveRef.current?.focus();
                         });
@@ -186,24 +231,20 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
 }
 
 function RemovalModalContent({
-  users,
   onConfirmRemove,
 }: {
-  users: string[];
-  onConfirmRemove: (emails: string[]) => void;
+  onConfirmRemove: (emails: string[], removedCount: number, errorMsg?: string) => void;
 }) {
   const [term, setTerm] = useState('');
-  // searchTerm is the committed term used for the last executed search.
   const [searchTerm, setSearchTerm] = useState<string | null>(null);
+  const [results, setResults] = useState<string[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [confirming, setConfirming] = useState(false);
   const canSearch = term.trim().length >= 3;
   const hasSearched = searchTerm != null;
-  const results = useMemo(() => {
-    const t = (searchTerm ?? '').trim().toLowerCase();
-    if (!hasSearched || t.length < 3) return [];
-    return users.filter((u) => u.toLowerCase().includes(t));
-  }, [searchTerm, hasSearched, users]);
   const allSelected = useMemo(
     () => results.length > 0 && results.every((u) => selected[u]),
     [results, selected],
@@ -212,6 +253,37 @@ function RemovalModalContent({
     () => results.filter((u) => selected[u]).length,
     [results, selected],
   );
+
+  async function runSearch(reset = true) {
+    if (!canSearch) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('q', term.trim());
+      params.set('limit', '50');
+      if (!reset && nextCursor) params.set('cursor', nextCursor);
+      const res = await fetch(`/api/admin/allowlist?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? 'Falha ao buscar.');
+      } else {
+        const emails = (data?.items ?? []).map((i: any) => i.email as string);
+        setResults((prev) => (reset ? emails : [...prev, ...emails]));
+        setNextCursor(data?.nextCursor ?? null);
+        setSearchTerm(term);
+        setSelected({});
+        setConfirming(false);
+      }
+    } catch {
+      setError('Falha de rede ao buscar.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="relative flex flex-col h-full">
@@ -229,16 +301,10 @@ function RemovalModalContent({
           <Button
             type="button"
             intent="primary"
-            disabled={!canSearch}
-            onClick={() => {
-              if (!canSearch) return;
-              // Commit the current term; keep previous results until a new search is committed.
-              setSearchTerm(term);
-              setConfirming(false);
-              setSelected({});
-            }}
+            disabled={!canSearch || loading}
+            onClick={() => runSearch(true)}
           >
-            Pesquisar
+            {loading ? 'Buscando...' : 'Pesquisar'}
           </Button>
         </div>
         {!canSearch ? (
@@ -246,6 +312,7 @@ function RemovalModalContent({
             Digite pelo menos 3 caracteres para pesquisar.
           </div>
         ) : null}
+        {error ? <div className="mt-1 text-[11px] text-red-600">{error}</div> : null}
       </div>
 
       {/* Results list */}
@@ -298,6 +365,17 @@ function RemovalModalContent({
         <div className="mt-4 border-t border-white/10 pt-3">
           <div className="flex items-center justify-between gap-3 flex-nowrap">
             <div className="flex items-center gap-3 flex-nowrap">
+              {nextCursor ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => runSearch(false)}
+                  disabled={loading}
+                >
+                  {loading ? 'Carregando…' : 'Carregar mais'}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
@@ -328,9 +406,28 @@ function RemovalModalContent({
                     type="button"
                     intent="danger"
                     size="sm"
-                    onClick={() => {
+                    onClick={async () => {
                       const emails = results.filter((u) => selected[u]);
-                      onConfirmRemove(emails);
+                      try {
+                        const res = await fetch('/api/admin/allowlist', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ emails }),
+                          credentials: 'include',
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          onConfirmRemove(emails, 0, data?.error ?? 'Falha ao remover.');
+                        } else {
+                          const removed = Number(data?.removed ?? 0);
+                          setResults((prev) => prev.filter((e) => !emails.includes(e)));
+                          setSelected({});
+                          setConfirming(false);
+                          onConfirmRemove(emails, removed);
+                        }
+                      } catch {
+                        onConfirmRemove(emails, 0, 'Falha de rede ao remover.');
+                      }
                     }}
                   >
                     Remover selecionados

@@ -32,6 +32,7 @@ if (envFile) {
 }
 
 const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+const requiredInProd = ['SUPABASE_SERVICE_ROLE_KEY'];
 let ok = true;
 
 for (const key of required) {
@@ -39,6 +40,23 @@ for (const key of required) {
   if (!val || !String(val).trim()) {
     console.error(`[env] Missing required env var: ${key}`);
     ok = false;
+  }
+}
+
+if (process.env.NODE_ENV === 'production') {
+  for (const key of requiredInProd) {
+    const val = process.env[key];
+    if (!val || !String(val).trim()) {
+      console.error(`[env] Missing required env var: ${key} (required in production)`);
+      ok = false;
+    }
+  }
+} else {
+  for (const key of requiredInProd) {
+    const val = process.env[key];
+    if (!val || !String(val).trim()) {
+      console.warn(`[env] Optional (dev) env var missing: ${key}`);
+    }
   }
 }
 
