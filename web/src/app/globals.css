@@ -293,3 +293,22 @@ button:disabled,
     0 0 0 3px color-mix(in oklab, #c9a14b 24%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
+
+/* ---------- Custom vertical scrollbar (transparent track, wine border, black thumb) ---------- */
+.scroll-y {
+  scrollbar-color: var(--black) transparent; /* Firefox: thumb, track */
+  scrollbar-width: thin; /* Firefox */
+}
+.scroll-y::-webkit-scrollbar {
+  width: 10px;
+}
+.scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+  /* visible inner border using black-100 (fallback to black) */
+  box-shadow: inset 1px 0 0 var(--black-100, var(--black));
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--black);
+  border-radius: 8px;
+  border: 2px solid var(--wine);
+}

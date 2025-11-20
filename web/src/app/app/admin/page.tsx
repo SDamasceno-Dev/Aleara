@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Tabs } from './_components/Tabs';
+import { Tabs } from '@/components/tabs';
 import { UsersPanel } from './_components/UsersPanel';
 
 export default async function AdminPage() {

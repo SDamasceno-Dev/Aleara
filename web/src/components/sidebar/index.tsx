@@ -40,10 +40,8 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   useEffect(() => {
     try {
       const isLotteryRoute = lotterySlugs.some((l) => l.slug === currentLottery);
-      const saved =
-        typeof window !== 'undefined' ? (localStorage.getItem('lastLottery') ?? '') : '';
-      const validSaved = lotterySlugs.some((l) => l.slug === saved) ? saved : '';
-      setSelectedLottery(isLotteryRoute ? currentLottery : validSaved);
+      // When outside lottery routes, reset selection to placeholder
+      setSelectedLottery(isLotteryRoute ? currentLottery : '');
     } catch {
       setSelectedLottery(currentLottery);
     }
