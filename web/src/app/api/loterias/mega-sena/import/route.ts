@@ -306,34 +306,150 @@ export async function POST(request: Request) {
   const skippedCount =
     rows.length - rowsToUpsert.length; // lines valid but not necessary to touch
 
-  // Recompute frequency stats (server-side, admin via RLS)
+  // Recompute frequency stats (server-side, admin via RLS) + other studies
   let statsUpdated = false;
+  let studiesUpdated = false;
   try {
-    // Count total draws
-    const countRes = await supabase
-      .from('megasena_draws')
-      .select('*', { count: 'exact', head: true });
+    // Count total draws (also get max concurso)
+    const countRes = await supabase.from('megasena_draws').select('concurso', { count: 'exact' }).order('concurso', { ascending: false }).limit(1);
     const totalDraws = countRes.count ?? 0;
-    // Build counts for 1..60
-    const freq = Array.from({ length: 61 }, () => 0);
+    const lastConcursoGlobal = countRes.data?.[0]?.concurso as number | undefined;
+    // Build aggregates scanning all draws
+    const freq = Array.from({ length: 61 }, () => 0); // index 1..60
+    const lastSeen = Array.from({ length: 61 }, () => 0);
+    const pairCounts: Record<string, number> = {};
+    const consecutiveCounts: Record<string, number> = {};
+    const sumRangeCounts: Record<string, number> = {};
+    const parityCounts: Record<string, number> = {};
+    const repeatersCounts: Record<string, number> = {};
+    const decadeCounts: Record<string, number> = {};
+    const lastDigitCounts: Record<string, number> = {};
+    const windowK = 200;
+    const windowFreq = Array.from({ length: 61 }, () => 0);
     const pageSize = 1000;
     let fetched = 0;
+    let prevSet: Set<number> | null = null;
     while (true) {
       const { data, error } = await supabase
         .from('megasena_draws')
-        .select('bola1, bola2, bola3, bola4, bola5, bola6')
+        .select('concurso, bola1, bola2, bola3, bola4, bola5, bola6, acumulado_6')
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
       const rowsPage = data ?? [];
       if (rowsPage.length === 0) break;
       for (const r of rowsPage as any[]) {
-        const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6];
+        const concursoNum = r.concurso as number;
+        const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6].map((n: any) => Number(n)).sort((a: number, b: number) => a - b);
         for (const n of arr) {
           if (typeof n === 'number' && n >= 1 && n <= 60) {
             freq[n] += 1;
+            lastSeen[n] = concursoNum;
           }
         }
+        // window (last K)
+        if (lastConcursoGlobal && concursoNum > lastConcursoGlobal - windowK) {
+          for (const n of arr) {
+            if (n >= 1 && n <= 60) windowFreq[n] += 1;
+          }
+        }
+        // decades and last digit
+        for (const n of arr) {
+          const decadeStart = Math.floor((n - 1) / 10) * 10 + 1;
+          const decadeKey = `${String(decadeStart).padStart(2, '0')}-${String(decadeStart + 9).padStart(2, '0')}`;
+          decadeCounts[decadeKey] = (decadeCounts[decadeKey] ?? 0) + 1;
+          const ldKey = `final:${n % 10}`;
+          lastDigitCounts[ldKey] = (lastDigitCounts[ldKey] ?? 0) + 1;
+        }
+        // pairs and consecutive pairs
+        for (let i = 0; i < arr.length; i += 1) {
+          for (let j = i + 1; j < arr.length; j += 1) {
+            const a = arr[i];
+            const b = arr[j];
+            const key = `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}`;
+            pairCounts[key] = (pairCounts[key] ?? 0) + 1;
+            if (b === a + 1) {
+              consecutiveCounts[key] = (consecutiveCounts[key] ?? 0) + 1;
+            }
+          }
+        }
+        // triples and quads (top-K later)
+        // collect locally to avoid declaring big maps if not used
+        (globalThis as any)._tripleCounts ||= {};
+        (globalThis as any)._quadCounts ||= {};
+        const tripleCounts = (globalThis as any)._tripleCounts as Record<string, number>;
+        const quadCounts = (globalThis as any)._quadCounts as Record<string, number>;
+        // triples
+        for (let i = 0; i < arr.length; i += 1) {
+          for (let j = i + 1; j < arr.length; j += 1) {
+            for (let k = j + 1; k < arr.length; k += 1) {
+              const key = `${String(arr[i]).padStart(2, '0')}-${String(arr[j]).padStart(2, '0')}-${String(arr[k]).padStart(2, '0')}`;
+              tripleCounts[key] = (tripleCounts[key] ?? 0) + 1;
+            }
+          }
+        }
+        // quads
+        for (let i = 0; i < arr.length; i += 1) {
+          for (let j = i + 1; j < arr.length; j += 1) {
+            for (let k = j + 1; k < arr.length; k += 1) {
+              for (let m = k + 1; m < arr.length; m += 1) {
+                const key = `${String(arr[i]).padStart(2, '0')}-${String(arr[j]).padStart(2, '0')}-${String(arr[k]).padStart(2, '0')}-${String(arr[m]).padStart(2, '0')}`;
+                quadCounts[key] = (quadCounts[key] ?? 0) + 1;
+              }
+            }
+          }
+        }
+        // sum ranges (bins of 20)
+        const sum = arr.reduce((s: number, n: number) => s + n, 0);
+        const start = Math.floor(sum / 20) * 20;
+        const sumKey = `${start}-${start + 19}`;
+        sumRangeCounts[sumKey] = (sumRangeCounts[sumKey] ?? 0) + 1;
+        // exact sum (top K later)
+        (globalThis as any)._sumExact ||= {};
+        const sumExact = (globalThis as any)._sumExact as Record<string, number>;
+        sumExact[String(sum)] = (sumExact[String(sum)] ?? 0) + 1;
+        // parity composition
+        const evens = arr.filter((n: number) => n % 2 === 0).length;
+        const parKey = `${evens}p-${6 - evens}i`;
+        parityCounts[parKey] = (parityCounts[parKey] ?? 0) + 1;
+        // high/low composition (<=30 vs >30)
+        const lows = arr.filter((n: number) => n <= 30).length;
+        const hlKey = `${lows}b-${6 - lows}a`;
+        (globalThis as any)._highLow ||= {};
+        const highLowCounts = (globalThis as any)._highLow as Record<string, number>;
+        highLowCounts[hlKey] = (highLowCounts[hlKey] ?? 0) + 1;
+        // average gap and AC
+        const gaps: number[] = [];
+        for (let i = 1; i < arr.length; i += 1) gaps.push(arr[i] - arr[i - 1]);
+        const meanGap = gaps.reduce((s, n) => s + n, 0) / gaps.length;
+        const gapKey = meanGap.toFixed(1);
+        (globalThis as any)._gapAvg ||= {};
+        const gapAvg = (globalThis as any)._gapAvg as Record<string, number>;
+        gapAvg[gapKey] = (gapAvg[gapKey] ?? 0) + 1;
+        const diffSet = new Set<number>();
+        for (let i = 0; i < arr.length; i += 1)
+          for (let j = i + 1; j < arr.length; j += 1) diffSet.add(arr[j] - arr[i]);
+        const acVal = diffSet.size;
+        (globalThis as any)._acCounts ||= {};
+        const acCounts = (globalThis as any)._acCounts as Record<string, number>;
+        acCounts[String(acVal)] = (acCounts[String(acVal)] ?? 0) + 1;
+        // repeaters vs previous draw
+        const currSet = new Set(arr);
+        if (prevSet) {
+          let rep = 0;
+          for (const n of currSet) if (prevSet.has(n)) rep += 1;
+          const repKey = String(rep);
+          repeatersCounts[repKey] = (repeatersCounts[repKey] ?? 0) + 1;
+        }
+        // repeaters under accumulation (faixa de prêmio)
+        if ((r.acumulado_6 ?? 0) > 0 && prevSet) {
+          (globalThis as any)._repeatersAccum ||= {};
+          const repAcc = (globalThis as any)._repeatersAccum as Record<string, number>;
+          let rep = 0;
+          for (const n of currSet) if (prevSet.has(n)) rep += 1;
+          repAcc[String(rep)] = (repAcc[String(rep)] ?? 0) + 1;
+        }
+        prevSet = currSet;
       }
       fetched += rowsPage.length;
       if (rowsPage.length < pageSize) break;
@@ -363,8 +479,150 @@ export async function POST(request: Request) {
       }
     }
     statsUpdated = true;
+
+    // Helper to upsert studies
+    async function upsertStudy(
+      key: string,
+      title: string,
+      items: Array<{ item_key: string; value: number; extra?: any }>,
+    ) {
+      const sorted = items.sort((a, b) => b.value - a.value);
+      const payload = sorted.map((it, idx) => ({
+        study_key: key,
+        item_key: it.item_key,
+        rank: idx + 1,
+        value: it.value,
+        extra: it.extra ?? {},
+      }));
+      await supabase
+        .from('megasena_stats_catalog')
+        .upsert({ study_key: key, title, params: {} }, { onConflict: 'study_key' });
+      await supabase.from('megasena_stats_items').delete().eq('study_key', key);
+      for (const batch of chunk(payload, 1000)) {
+        await supabase.from('megasena_stats_items').upsert(batch, { onConflict: 'study_key,item_key' });
+      }
+    }
+
+    // Build studies datasets
+    const overdueItems: Array<{ item_key: string; value: number }> = [];
+    const lastC = lastConcursoGlobal ?? Math.max(0, ...lastSeen);
+    for (let n = 1; n <= 60; n += 1) {
+      const last = lastSeen[n] || 0;
+      const overdue = last ? lastC - last : lastC;
+      overdueItems.push({ item_key: `dezena:${String(n).padStart(2, '0')}`, value: overdue });
+    }
+    await upsertStudy('overdue_dezena', 'Atraso por dezena', overdueItems);
+    // Frequency (all time) and hot/cold
+    const freqItems = Array.from({ length: 60 }, (_, i) => {
+      const n = i + 1;
+      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: freq[n] ?? 0 };
+    });
+    await upsertStudy('freq_all', 'Frequência por dezena (histórico)', freqItems);
+    const hotTop = [...freqItems].sort((a, b) => b.value - a.value).slice(0, 20);
+    const coldTop = [...freqItems].sort((a, b) => a.value - b.value).slice(0, 20);
+    await upsertStudy('hot_top', 'Quentes (top frequentes)', hotTop);
+    await upsertStudy('cold_top', 'Frias (menos frequentes)', coldTop);
+
+    const pairItems = Object.entries(pairCounts).map(([k, v]) => ({ item_key: `par:${k}`, value: v }));
+    await upsertStudy('pair_freq', 'Pares mais frequentes', pairItems);
+
+    const consecItems = Object.entries(consecutiveCounts).map(([k, v]) => ({ item_key: `consec:${k}`, value: v }));
+    await upsertStudy('consecutive_pair', 'Pares consecutivos mais frequentes', consecItems);
+
+    const sumItems = Object.entries(sumRangeCounts).map(([k, v]) => ({ item_key: `faixa_soma:${k}`, value: v }));
+    await upsertStudy('sum_range_20', 'Faixas de soma (largura 20)', sumItems);
+
+    const parityItems = Object.entries(parityCounts).map(([k, v]) => ({ item_key: `paridade:${k}`, value: v }));
+    await upsertStudy('parity_comp', 'Composições Par/Ímpar', parityItems);
+
+    const repItems = Object.entries(repeatersCounts).map(([k, v]) => ({ item_key: `repetidores:${k}`, value: v }));
+    await upsertStudy('repeaters_prev', 'Repetições vs. sorteio anterior', repItems);
+
+    const windowHotItems = Array.from({ length: 60 }, (_, i) => {
+      const n = i + 1;
+      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: windowFreq[n] ?? 0 };
+    });
+    await upsertStudy('window200_hot', 'Frequência (últimos 200 concursos)', windowHotItems);
+
+    const decadeItems = Object.entries(decadeCounts).map(([k, v]) => ({ item_key: `decada:${k}`, value: v }));
+    await upsertStudy('decade_dist', 'Distribuição por décadas', decadeItems);
+
+    const lastDigitItems = Object.entries(lastDigitCounts).map(([k, v]) => ({ item_key: k, value: v }));
+    await upsertStudy('last_digit', 'Distribuição por finais (0–9)', lastDigitItems);
+
+    // high/low composition
+    const highLowCounts = (globalThis as any)._highLow as Record<string, number> | undefined;
+    if (highLowCounts) {
+      const hlItems = Object.entries(highLowCounts).map(([k, v]) => ({ item_key: `baixas_altas:${k}`, value: v }));
+      await upsertStudy('high_low_comp', 'Composições Baixas/Altas', hlItems);
+    }
+    // sum exact (top)
+    const sumExact = (globalThis as any)._sumExact as Record<string, number> | undefined;
+    if (sumExact) {
+      const items = Object.entries(sumExact).map(([k, v]) => ({ item_key: `soma:${k}`, value: v }));
+      await upsertStudy('sum_exact', 'Soma das dezenas (exata)', items);
+    }
+    // mean gap distribution
+    const gapAvg = (globalThis as any)._gapAvg as Record<string, number> | undefined;
+    if (gapAvg) {
+      const items = Object.entries(gapAvg).map(([k, v]) => ({ item_key: `gap_medio:${k}`, value: v }));
+      await upsertStudy('mean_gap', 'Distância média entre dezenas', items);
+    }
+    // AC distribution
+    const acCounts = (globalThis as any)._acCounts as Record<string, number> | undefined;
+    if (acCounts) {
+      const items = Object.entries(acCounts).map(([k, v]) => ({ item_key: `ac:${k}`, value: v }));
+      await upsertStudy('ac_value', 'Valor AC (dispersão)', items);
+    }
+    // triples / quads top-k
+    const tripleCounts = (globalThis as any)._tripleCounts as Record<string, number> | undefined;
+    if (tripleCounts) {
+      const items = Object.entries(tripleCounts).map(([k, v]) => ({ item_key: `trinca:${k}`, value: v }));
+      await upsertStudy('triple_freq', 'Trincas mais frequentes', items);
+    }
+    const quadCounts = (globalThis as any)._quadCounts as Record<string, number> | undefined;
+    if (quadCounts) {
+      const items = Object.entries(quadCounts).map(([k, v]) => ({ item_key: `quadra:${k}`, value: v }));
+      await upsertStudy('quad_freq', 'Quadras mais frequentes', items);
+    }
+    // repeaters under accumulation
+    const repAcc = (globalThis as any)._repeatersAccum as Record<string, number> | undefined;
+    if (repAcc) {
+      const items = Object.entries(repAcc).map(([k, v]) => ({ item_key: `repetidores_acum:${k}`, value: v }));
+      await upsertStudy('repeaters_accum', 'Repetidores em sorteios com acúmulo', items);
+    }
+    // Regression to mean for each dezena (lambda=5)
+    const regItems = Array.from({ length: 60 }, (_, i) => {
+      const n = i + 1;
+      const obs = freq[n] ?? 0;
+      const exp = totalDraws * 0.1;
+      const lambda = 5;
+      const reg = (obs + lambda * exp) / (1 + lambda);
+      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: Number(reg.toFixed(4)) };
+    });
+    await upsertStudy('regress_mean', 'Regressão à média (dezena)', regItems);
+    // Chi-square diagnostic
+    const expPer = totalDraws * 0.1;
+    let chi2 = 0;
+    for (let n = 1; n <= 60; n += 1) {
+      const obs = freq[n] ?? 0;
+      const diff = obs - expPer;
+      chi2 += (diff * diff) / (expPer || 1);
+    }
+    await upsertStudy('chi_square', 'Qui-quadrado (diagnóstico)', [
+      { item_key: 'chi2', value: Number(chi2.toFixed(4)) },
+      { item_key: 'df', value: 59 },
+      { item_key: 'expected_per_dezena', value: Number(expPer.toFixed(4)) },
+    ]);
+    // Tool placeholders (sem pré-cálculo histórico)
+    await upsertStudy('wheels_tool', 'Coberturas/Reduções (wheels)', []);
+    await upsertStudy('monte_carlo_tool', 'Simulação Monte Carlo', []);
+    await upsertStudy('ev_rollover_tool', 'EV simples por rollover', []);
+
+    studiesUpdated = true;
   } catch {
     statsUpdated = false;
+    studiesUpdated = false;
   }
 
   return NextResponse.json({
@@ -376,6 +634,7 @@ export async function POST(request: Request) {
     reconcileWindow,
     errors,
     statsUpdated,
+    studiesUpdated,
   });
 }
 

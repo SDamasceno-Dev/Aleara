@@ -2,14 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0d0d0d;
-  --brand: #c9a14b; /* primary */
-  --brand-foreground: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #3f3f46;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
   --border: #e4e4e7;
+  --brand-foreground: #ffffff;
+  --brand: #c9a14b; /* primary */
+  --card-foreground: #0a0a0a;
+  --card: #ffffff;
+  --foreground: #0d0d0d;
+  --muted-foreground: #3f3f46;
+  --muted: #f4f4f5;
   --ring: #a78bfa;
   /* app palette */
   --alertError: #f97168;
@@ -26,21 +26,6 @@
   --black-80: color-mix(in oklab, #000000 80%, transparent);
   --black-90: color-mix(in oklab, #000000 90%, transparent);
   --black: #000000;
-  --gold-1: #c99339;
-  --gold-2: #e6c168;
-  --gold-3: #ad7832;
-  --whitePearl: #f2ede4;
-  --wine: #2b0a0e;
-  --red-10: color-mix(in oklab, #ff0000 10%, transparent);
-  --red-20: color-mix(in oklab, #ff0000 20%, transparent);
-  --red-30: color-mix(in oklab, #ff0000 30%, transparent);
-  --red-40: color-mix(in oklab, #ff0000 40%, transparent);
-  --red-50: color-mix(in oklab, #ff0000 50%, transparent);
-  --red-60: color-mix(in oklab, #ff0000 60%, transparent);
-  --red-70: color-mix(in oklab, #ff0000 70%, transparent);
-  --red-80: color-mix(in oklab, #ff0000 80%, transparent);
-  --red-90: color-mix(in oklab, #ff0000 90%, transparent);
-  --red: #ff0000;
   --blue-10: color-mix(in oklab, #0000ff 10%, transparent);
   --blue-20: color-mix(in oklab, #0000ff 20%, transparent);
   --blue-30: color-mix(in oklab, #0000ff 30%, transparent);
@@ -51,6 +36,9 @@
   --blue-80: color-mix(in oklab, #0000ff 80%, transparent);
   --blue-90: color-mix(in oklab, #0000ff 90%, transparent);
   --blue: #0000ff;
+  --gold-1: #c99339;
+  --gold-2: #e6c168;
+  --gold-3: #ad7832;
   --green-10: color-mix(in oklab, #00ff00 10%, transparent);
   --green-20: color-mix(in oklab, #00ff00 20%, transparent);
   --green-30: color-mix(in oklab, #00ff00 30%, transparent);
@@ -61,35 +49,57 @@
   --green-80: color-mix(in oklab, #00ff00 80%, transparent);
   --green-90: color-mix(in oklab, #00ff00 90%, transparent);
   --green: #00ff00;
+  --red-10: color-mix(in oklab, #ff0000 10%, transparent);
+  --red-20: color-mix(in oklab, #ff0000 20%, transparent);
+  --red-30: color-mix(in oklab, #ff0000 30%, transparent);
+  --red-40: color-mix(in oklab, #ff0000 40%, transparent);
+  --red-50: color-mix(in oklab, #ff0000 50%, transparent);
+  --red-60: color-mix(in oklab, #ff0000 60%, transparent);
+  --red-70: color-mix(in oklab, #ff0000 70%, transparent);
+  --red-80: color-mix(in oklab, #ff0000 80%, transparent);
+  --red-90: color-mix(in oklab, #ff0000 90%, transparent);
+  --red: #ff0000;
+  --white-10: color-mix(in oklab, #ffffff 10%, transparent);
+  --white-20: color-mix(in oklab, #ffffff 20%, transparent);
+  --white-30: color-mix(in oklab, #ffffff 30%, transparent);
+  --white-40: color-mix(in oklab, #ffffff 40%, transparent);
+  --white-50: color-mix(in oklab, #ffffff 50%, transparent);
+  --white-60: color-mix(in oklab, #ffffff 60%, transparent);
+  --white-70: color-mix(in oklab, #ffffff 70%, transparent);
+  --white-80: color-mix(in oklab, #ffffff 80%, transparent);
+  --white-90: color-mix(in oklab, #ffffff 90%, transparent);
+  --white: #ffffff;
+  --whitePearl: #f2ede4;
+  --wine: #2b0a0e;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--brand);
-  --color-primary-foreground: var(--brand-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-primary-foreground: var(--brand-foreground);
+  --color-primary: var(--brand);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
+  --font-sans: var(--font-geist-sans);
   --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.375rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-    --card: #0a0a0a;
-    --card-foreground: #ededed;
     --border: #27272a;
+    --card-foreground: #ededed;
+    --card: #0a0a0a;
+    --foreground: #ededed;
+    --muted-foreground: #a1a1aa;
+    --muted: #18181b;
     --ring: #7c3aed;
   }
 }

@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { StudiesSidebar } from './StudiesSidebar';
 
 type DrawRow = {
   concurso: number;
@@ -34,7 +35,18 @@ function formatBRL(v: number | null): string {
 
 export async function DataPanel() {
   const supabase = await createSupabaseServerClient();
-  const [drawsRes, statsRes] = await Promise.all([
+  const previewKeys = [
+    'overdue_dezena',
+    'pair_freq',
+    'consecutive_pair',
+    'sum_range_20',
+    'parity_comp',
+    'repeaters_prev',
+    'window200_hot',
+    'decade_dist',
+    'last_digit',
+  ];
+  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] = await Promise.all([
     supabase
       .from('megasena_draws')
       .select(
@@ -47,18 +59,40 @@ export async function DataPanel() {
       .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
       .order('vezes_sorteada', { ascending: false })
       .order('dezena', { ascending: true }),
+    supabase.from('megasena_stats_catalog').select('study_key, title'),
+    supabase
+      .from('megasena_stats_items')
+      .select('study_key, item_key, rank, value, extra')
+      .in('study_key', previewKeys)
+      .order('study_key', { ascending: true })
+      .order('rank', { ascending: true }),
   ]);
 
-  if (drawsRes.error || statsRes.error) {
+  if (drawsRes.error || statsRes.error || studiesCatalogRes.error || studiesItemsRes.error) {
     return (
       <div className='rounded-lg border border-border/60 bg-card/90 p-4 text-sm text-red-300/90'>
-        Falha ao carregar dados: {drawsRes.error?.message || statsRes.error?.message}
+        Falha ao carregar dados: {drawsRes.error?.message || statsRes.error?.message || studiesCatalogRes.error?.message || studiesItemsRes.error?.message}
       </div>
     );
   }
 
   const rows = (drawsRes.data as DrawRow[]) ?? [];
   const stats = (statsRes.data as StatRow[]) ?? [];
+  const allStudies = ((studiesCatalogRes.data as any[]) ?? []).map((c) => ({
+    study_key: c.study_key as string,
+    title: c.title as string,
+  }));
+  const previewsMap = new Map<string, Array<{ item_key: string; rank: number; value: number; extra?: any }>>();
+  for (const it of (studiesItemsRes.data as any[]) ?? []) {
+    const arr = previewsMap.get(it.study_key) ?? [];
+    arr.push({ item_key: it.item_key, rank: it.rank, value: Number(it.value), extra: it.extra });
+    previewsMap.set(it.study_key, arr);
+  }
+  const previews = allStudies.map((s) => ({
+    study_key: s.study_key,
+    title: s.title,
+    items: (previewsMap.get(s.study_key) ?? []).slice(0, 5),
+  }));
 
   if (rows.length === 0) {
     return (
@@ -106,8 +140,8 @@ export async function DataPanel() {
         </div>
       </div>
 
-      {/* Linha abaixo: estudos à esquerda ocupando até metade no desktop */}
-      <div className='md:flex'>
+      {/* Linha abaixo: esquerda (frequência), direita (estudos) */}
+      <div className='md:flex gap-4'>
         <div className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
           <div className='mb-3 text-sm text-zinc-200'>
             Frequência de dezenas (mais sorteadas)
@@ -147,6 +181,7 @@ export async function DataPanel() {
             </div>
           )}
         </div>
+        <StudiesSidebar previews={previews} allStudies={allStudies} />
       </div>
     </section>
   );
