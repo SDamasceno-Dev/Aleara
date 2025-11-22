@@ -1,6 +1,10 @@
--- Title: Create Mega-Sena draws table with RLS (read for all authenticated, write admin-only)
--- Description: Stores historical Mega-Sena draw results and related payout/rollover metrics.
--- Dependencies: requires function public.is_admin() to exist (used in RLS policies).
+-- Title: Mega-Sena draws table with RLS
+-- Description: Stores historical Mega-Sena draws and payouts; authenticated can read, admins write.
+-- Affects: public.megasena_draws, policies, triggers
+-- Dependencies: public.is_admin()
+-- Idempotent: yes
+-- Rollback: drop table public.megasena_draws cascade;
+-- Author: system | CreatedAt: 2025-11-21 00:00:20Z
 
 create table if not exists public.megasena_draws (
   concurso integer primary key,
@@ -13,7 +17,7 @@ create table if not exists public.megasena_draws (
   bola6 smallint not null check (bola6 between 1 and 60),
 
   ganhadores_6 integer,
-  cidades_uf text, -- raw string as provided (may include multiple cities/UF)
+  cidades_uf text,
   rateio_6 numeric(14,2),
 
   ganhadores_5 integer,
@@ -32,10 +36,8 @@ create table if not exists public.megasena_draws (
   updated_at timestamptz not null default now()
 );
 
--- Simple helpful indexes
 create index if not exists megasena_draws_data_idx on public.megasena_draws (data_sorteio desc);
 
--- RLS: authenticated users can read; only admins can write
 alter table public.megasena_draws enable row level security;
 
 do $$
@@ -82,7 +84,6 @@ begin
   end if;
 end$$;
 
--- Trigger to keep updated_at current
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql

@@ -1,3 +1,11 @@
+-- Title: Allowed emails allowlist (schema + RLS)
+-- Description: Creates `public.allowed_emails` with citext PK and admin-only policies. Adds trigram index for search.
+-- Affects: public.allowed_emails, indexes, policies
+-- Dependencies: function public.is_admin()
+-- Idempotent: yes
+-- Rollback: drop table public.allowed_emails cascade;
+-- Author: system | CreatedAt: 2025-11-21 00:00:00Z
+
 -- Enable required extensions (idempotent)
 create extension if not exists citext;
 create extension if not exists pg_trgm;
@@ -44,3 +52,5 @@ create policy admin_delete
 -- - citext ensures case-insensitive uniqueness for primary key.
 -- - pg_trgm index accelerates substring search (lower(email) ilike '%term%').
 -- - Supabase anon key will be governed by these RLS policies automatically.
+
+

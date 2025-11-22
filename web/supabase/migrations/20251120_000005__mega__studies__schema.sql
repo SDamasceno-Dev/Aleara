@@ -1,6 +1,10 @@
 -- Title: Mega-Sena studies catalog and items with RLS
--- Description: Generic storage for multiple precomputed studies (top-k lists, distributions).
--- Dependencies: public.is_admin() must exist.
+-- Description: Storage for precomputed study catalogs and ranked items (top-k lists, distributions).
+-- Affects: public.megasena_stats_catalog, public.megasena_stats_items, indexes, policies
+-- Dependencies: public.is_admin()
+-- Idempotent: yes
+-- Rollback: drop table public.megasena_stats_items cascade; drop table public.megasena_stats_catalog cascade;
+-- Author: system | CreatedAt: 2025-11-21 00:00:40Z
 
 create table if not exists public.megasena_stats_catalog (
   study_key text primary key,
