@@ -9,6 +9,36 @@ type GeneratedItem = {
 };
 
 export default function GamesPanel() {
+  // Registrar apostas (manual)
+  const [regOtp, setRegOtp] = useState<string[]>(
+    Array.from({ length: 6 }, () => ''),
+  );
+  const [regInvalid, setRegInvalid] = useState<boolean[]>(
+    Array.from({ length: 6 }, () => false),
+  );
+  const regRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const regDuplicateFlags = useMemo(() => {
+    const norm = regOtp.map((v) =>
+      v && v.length === 2 ? String(Number(v)).padStart(2, '0') : '',
+    );
+    const counts = new Map<string, number>();
+    for (const s of norm) {
+      if (!s) continue;
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return norm.map((s) => (s && (counts.get(s) ?? 0) > 1 ? true : false));
+  }, [regOtp]);
+  const regParsed = useMemo(() => {
+    const nums = regOtp
+      .map((v) => v.trim())
+      .filter((v) => v.length === 2)
+      .map((v) => Number(v))
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 60);
+    if (nums.length !== 6) return [];
+    const unique = Array.from(new Set(nums)).sort((a, b) => a - b);
+    return unique.length === 6 ? unique : [];
+  }, [regOtp]);
+  const [appendOnGenerate, setAppendOnGenerate] = useState(false);
   const [numbersInput, setNumbersInput] = useState('');
   const [countInput, setCountInput] = useState('7');
   const [otpValues, setOtpValues] = useState<string[]>(
@@ -33,6 +63,7 @@ export default function GamesPanel() {
   const [checkLoading, setCheckLoading] = useState(false);
   const liveRef = useRef<HTMLDivElement | null>(null);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
+  const [manualPositions, setManualPositions] = useState<Set<number>>(new Set());
 
   // Keep OTP inputs length in sync with countInput (7..15)
   useEffect(() => {
@@ -107,25 +138,51 @@ export default function GamesPanel() {
   }, [drawOtp]);
 
   async function handleGenerate() {
+    if (items.length > 0 && !appendOnGenerate) {
+      const proceed = window.confirm(
+        'Gerar combinações irá sobrescrever os jogos exibidos. Deseja continuar? Para apenas adicionar, cancele e marque "Adicionar aos jogos existentes".',
+      );
+      if (!proceed) return;
+      setManualPositions(new Set());
+    }
     setLoading(true);
     try {
       const k = Number(kInput || '0');
-      const res = await fetch('/api/loterias/mega-sena/games/generate', {
+      const endpoint =
+        appendOnGenerate && setId
+          ? '/api/loterias/mega-sena/games/generate/append'
+          : '/api/loterias/mega-sena/games/generate';
+      const payload =
+        appendOnGenerate && setId
+          ? {
+              setId,
+              numbers: parsedNumbers,
+              k,
+              seed: seedInput ? Number(seedInput) : undefined,
+            }
+          : {
+              numbers: parsedNumbers,
+              k,
+              seed: seedInput ? Number(seedInput) : undefined,
+            };
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          numbers: parsedNumbers,
-          k,
-          seed: seedInput ? Number(seedInput) : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         alert(data?.error || 'Falha ao gerar combinações.');
         return;
       }
-      setSetId(data.setId);
-      setItems(data.items ?? []);
+      if (appendOnGenerate && setId) {
+        // append to existing list
+        setItems((prev) => [...prev, ...(data.items ?? [])]);
+      } else {
+        setSetId(data.setId);
+        setItems(data.items ?? []);
+        setManualPositions(new Set());
+      }
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setLoading(false);
@@ -166,9 +223,122 @@ export default function GamesPanel() {
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
       <div className='mb-3 text-sm text-zinc-200'>Jogos</div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        {/* Gerador */}
+        {/* Gerador (inclui Registrar apostas acima) */}
         <div className='rounded-md border border-white/10 p-3'>
-          <div className='text-sm text-zinc-300 mb-2'>Gerar combinações</div>
+          <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
+          <div className='space-y-2'>
+            <div className='text-xs text-zinc-500'>
+              Informe 6 dezenas para cadastrar uma aposta manualmente.
+            </div>
+            <div className='flex gap-2'>
+              {regOtp.map((val, idx) => (
+                <input
+                  key={idx}
+                  ref={(el) => (regRefs.current[idx] = el)}
+                  value={val}
+                  inputMode='numeric'
+                  maxLength={2}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
+                    setRegOtp((prev) => {
+                      const next = [...prev];
+                      next[idx] = raw;
+                      return next;
+                    });
+                    if (raw.length === 2) {
+                      const num = Number(raw);
+                      const isValid =
+                        Number.isInteger(num) && num >= 1 && num <= 60;
+                      setRegInvalid((prev) => {
+                        const next = [...prev];
+                        next[idx] = !isValid;
+                        return next;
+                      });
+                      if (isValid && idx + 1 < regOtp.length) {
+                        regRefs.current[idx + 1]?.focus();
+                      }
+                    } else {
+                      setRegInvalid((prev) => {
+                        const next = [...prev];
+                        next[idx] = false;
+                        return next;
+                      });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === 'Backspace' &&
+                      regOtp[idx].length === 0 &&
+                      idx > 0
+                    ) {
+                      regRefs.current[idx - 1]?.focus();
+                    }
+                    if (e.key === 'Tab' && !e.shiftKey && regInvalid[idx]) {
+                      e.preventDefault();
+                    }
+                  }}
+                  className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                    regInvalid[idx]
+                      ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
+                      : regDuplicateFlags[idx]
+                        ? 'bg-red-10 border-black-30 text-zinc-900 font-semibold'
+                        : 'bg-white border-black-30 text-zinc-900'
+                  }`}
+                  placeholder='00'
+                />
+              ))}
+              <div className='items-center gap-2'>
+                <button
+                  type='button'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
+                  disabled={
+                    regParsed.length !== 6 ||
+                    regInvalid.some(Boolean) ||
+                    regDuplicateFlags.some(Boolean)
+                  }
+                  onClick={async () => {
+                    const res = await fetch(
+                      '/api/loterias/mega-sena/games/add-items',
+                      {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify(
+                          setId ? { setId, items: [regParsed] } : { items: [regParsed] },
+                        ),
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao registrar aposta.');
+                      return;
+                    }
+                    if (!setId && data.setId) {
+                      setSetId(data.setId);
+                    }
+                    setItems((prev) => [...prev, ...(data.items ?? [])]);
+                    // marcar como manual os positions retornados
+                    const newPositions = (data.items ?? []).map((it: any) => it.position as number);
+                    setManualPositions((prev) => {
+                      const next = new Set(prev);
+                      for (const p of newPositions) next.add(p);
+                      return next;
+                    });
+                    setRegOtp(Array.from({ length: 6 }, () => ''));
+                    setRegInvalid(Array.from({ length: 6 }, () => false));
+                  }}
+                >
+                  Registrar
+                </button>
+                <div className='text-xs text-zinc-500'>
+                  {setId
+                    ? 'Aposta será adicionada ao conjunto atual.'
+                    : 'Um conjunto será criado automaticamente.'}
+                </div>
+              </div>
+            </div>
+            <div className='h-px bg-white/10 my-2' />
+            <div className='text-sm text-zinc-300'>Gerar combinações</div>
+          </div>
           <div className='space-y-2'>
             <div className='grid grid-cols-1 gap-2'>
               <div className='flex items-center gap-2'>
@@ -321,6 +491,14 @@ export default function GamesPanel() {
                   placeholder=''
                 />
               </label>
+              <label className='text-xs text-zinc-400 inline-flex items-center gap-2'>
+                <input
+                  type='checkbox'
+                  checked={appendOnGenerate}
+                  onChange={(e) => setAppendOnGenerate(e.target.checked)}
+                />
+                Adicionar aos jogos existentes
+              </label>
               <button
                 type='button'
                 className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
@@ -345,6 +523,7 @@ export default function GamesPanel() {
                   setItems([]);
                   setSetId(null);
                   setCheckedDraw([]);
+                  setManualPositions(new Set());
                 }}
                 disabled={items.length === 0 && !setId}
               >
@@ -628,7 +807,9 @@ export default function GamesPanel() {
                     className='border-t border-white/10'
                   >
                     <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
-                    <td className='py-2 pr-3'>( {it.position} )</td>
+                    <td className='py-2 pr-3'>
+                      {manualPositions.has(it.position) ? '-' : `( ${it.position} )`}
+                    </td>
                     <td className='py-2 pr-3 font-medium text-zinc-100'>
                       {parts}
                     </td>
