@@ -63,31 +63,33 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
     [users, selected],
   );
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Adicionar usuário */}
-      <section className="rounded-md border border-white/10 p-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-medium text-zinc-100">Adicionar usuário</h2>
-          <p className="text-xs text-zinc-400">
+      <section className='rounded-md border border-white/10 p-4'>
+        <div className='flex flex-col gap-1'>
+          <h2 className='text-sm font-medium text-zinc-100'>
+            Adicionar usuário
+          </h2>
+          <p className='text-xs text-zinc-400'>
             Inclua um e-mail autorizado a acessar o sistema.
           </p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className='mt-4 grid gap-3 sm:grid-cols-[1fr_auto]'>
           <TextInput
-            id="admin-users-add-email"
-            placeholder="email@exemplo.com"
-            type="email"
-            validatable="email"
+            id='admin-users-add-email'
+            placeholder='email@exemplo.com'
+            type='email'
+            validatable='email'
             onValidChange={(v) => setEmailValid(v)}
             forceValidate={forceValidate}
-            className="sm:col-span-1"
+            className='sm:col-span-1'
           />
-          <div className="sm:col-span-1 flex items-start">
+          <div className='sm:col-span-1 flex items-start'>
             <Button
-              type="button"
-              intent="primary"
-              variant="solid"
-              className="w-full sm:w-auto"
+              type='button'
+              intent='primary'
+              variant='solid'
+              className='w-full sm:w-auto'
               onClick={async () => {
                 setForceValidate(true);
                 if (!emailValid) {
@@ -144,30 +146,32 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
         </div>
         <div
           ref={liveRef}
-          role="status"
-          aria-live="assertive"
+          role='status'
+          aria-live='assertive'
           tabIndex={-1}
-          className="mt-3 text-xs text-zinc-400"
+          className='mt-3 text-xs text-zinc-400'
         >
           {status}
         </div>
       </section>
 
       {/* Listagem e remoção */}
-      <section className="rounded-md border border-white/10 p-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <section className='rounded-md border border-white/10 p-4'>
+        <div className='flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between'>
           <div>
-            <h2 className="text-sm font-medium text-zinc-100">Usuários permitidos</h2>
-            <p className="text-xs text-zinc-400">
+            <h2 className='text-sm font-medium text-zinc-100'>
+              Usuários permitidos
+            </h2>
+            <p className='text-xs text-zinc-400'>
               Selecione para remover um ou mais e-mails.
             </p>
           </div>
-          <div className="mt-2 sm:mt-0 flex items-center gap-2">
+          <div className='mt-2 sm:mt-0 flex items-center gap-2'>
             <Button
-              type="button"
-              intent="gold"
-              variant="solid"
-              size="sm"
+              type='button'
+              intent='gold'
+              variant='solid'
+              size='sm'
               onClick={() => {
                 dialog.open({
                   intent: 'message',
@@ -190,10 +194,10 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
               Importar CSV
             </Button>
             <Button
-              type="button"
-              intent="danger"
-              variant="outline"
-              size="sm"
+              type='button'
+              intent='danger'
+              variant='outline'
+              size='sm'
               onClick={() => {
                 dialog.open({
                   intent: 'message',
@@ -222,8 +226,9 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
             </Button>
           </div>
         </div>
-        <div className="mt-4 text-xs text-zinc-400">
-          Para listas grandes, use “Gerenciar remoção” para pesquisar e remover em massa.
+        <div className='mt-4 text-xs text-zinc-400'>
+          Para listas grandes, use “Gerenciar remoção” para pesquisar e remover
+          em massa.
         </div>
       </section>
     </div>
@@ -233,7 +238,11 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
 function RemovalModalContent({
   onConfirmRemove,
 }: {
-  onConfirmRemove: (emails: string[], removedCount: number, errorMsg?: string) => void;
+  onConfirmRemove: (
+    emails: string[],
+    removedCount: number,
+    errorMsg?: string,
+  ) => void;
 }) {
   const [term, setTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState<string | null>(null);
@@ -287,21 +296,21 @@ function RemovalModalContent({
   }
 
   return (
-    <div className="relative flex flex-col h-full">
+    <div className='relative flex flex-col h-full'>
       {/* Search area (fixed inside dialog content) */}
-      <div className="border-b border-white/10 pb-3">
-        <div className="flex gap-2">
+      <div className='border-b border-white/10 pb-3'>
+        <div className='flex gap-2'>
           <input
-            type="text"
+            type='text'
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Pesquisar por parte do e-mail"
-            className="h-11 w-full rounded-md border border-(--wine)/30 bg-transparent px-3 text-sm text-(--wine) placeholder:text-(--wine)/60 outline-none focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)"
-            aria-label="Pesquisar e-mails"
+            placeholder='Pesquisar por parte do e-mail'
+            className='h-11 w-full rounded-md border border-(--wine)/30 bg-transparent px-3 text-sm text-(--wine) placeholder:text-(--wine)/60 outline-none focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)'
+            aria-label='Pesquisar e-mails'
           />
           <Button
-            type="button"
-            intent="primary"
+            type='button'
+            intent='primary'
             disabled={!canSearch || loading}
             onClick={() => runSearch(true)}
           >
@@ -309,44 +318,51 @@ function RemovalModalContent({
           </Button>
         </div>
         {!canSearch ? (
-          <div className="mt-1 text-[11px] text-(--wine)/70">
+          <div className='mt-1 text-[11px] text-(--wine)/70'>
             Digite pelo menos 3 caracteres para pesquisar.
           </div>
         ) : null}
-        {error ? <div className="mt-1 text-[11px] text-red-600">{error}</div> : null}
+        {error ? (
+          <div className='mt-1 text-[11px] text-red-600'>{error}</div>
+        ) : null}
       </div>
 
       {/* Results list */}
       {/* Results area (only this area scrolls) */}
-      <div className="mt-4 flex-1 min-h-0 overflow-y-auto">
+      <div className='mt-4 flex-1 min-h-0 overflow-y-auto'>
         {!hasSearched ? (
-          <div className="text-xs text-zinc-500">Digite um termo e clique em pesquisar.</div>
+          <div className='text-xs text-zinc-500'>
+            Digite um termo e clique em pesquisar.
+          </div>
         ) : results.length === 0 ? (
-          <div className="text-xs text-zinc-400">Nenhum e-mail encontrado.</div>
+          <div className='text-xs text-zinc-400'>Nenhum e-mail encontrado.</div>
         ) : (
-          <ul className="divide-y divide-white/5 rounded-md border border-white/10 overflow-hidden">
+          <ul className='divide-y divide-white/5 rounded-md border border-white/10 overflow-hidden'>
             {results.map((email) => (
               <li
                 key={email}
-                className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                className='flex items-center justify-between gap-3 px-3 py-2 text-sm'
               >
-                <label className="flex items-center gap-3 min-w-0 flex-1">
+                <label className='flex items-center gap-3 min-w-0 flex-1'>
                   <input
                     aria-label={`Selecionar ${email}`}
-                    type="checkbox"
+                    type='checkbox'
                     checked={!!selected[email]}
                     onChange={(e) =>
-                      setSelected((prev) => ({ ...prev, [email]: e.target.checked }))
+                      setSelected((prev) => ({
+                        ...prev,
+                        [email]: e.target.checked,
+                      }))
                     }
-                    className="h-4 w-4 rounded border-zinc-600 bg-transparent shrink-0"
+                    className='h-4 w-4 rounded border-zinc-600 bg-transparent shrink-0'
                   />
-                  <span className="truncate text-zinc-800">{email}</span>
+                  <span className='truncate text-zinc-800'>{email}</span>
                 </label>
                 <Button
-                  type="button"
-                  intent="danger"
-                  variant="ghost"
-                  size="sm"
+                  type='button'
+                  intent='danger'
+                  variant='ghost'
+                  size='sm'
                   onClick={() => {
                     setSelected({ [email]: true });
                     setConfirming(true);
@@ -363,23 +379,23 @@ function RemovalModalContent({
       {/* Sticky footer controls */}
       {/* Footer actions (fixed inside dialog content) */}
       {hasSearched && results.length > 0 ? (
-        <div className="mt-4 border-t border-white/10 pt-3">
-          <div className="flex items-center justify-between gap-3 flex-nowrap">
-            <div className="flex items-center gap-3 flex-nowrap">
-              <label className="inline-flex items-center gap-2 text-xs text-zinc-600">
+        <div className='mt-4 border-t border-white/10 pt-3'>
+          <div className='flex items-center justify-between gap-3 flex-nowrap'>
+            <div className='flex items-center gap-3 flex-nowrap'>
+              <label className='inline-flex items-center gap-2 text-xs text-zinc-600'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={hardDelete}
                   onChange={(e) => setHardDelete(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-600 bg-transparent"
+                  className='h-4 w-4 rounded border-zinc-600 bg-transparent'
                 />
                 Excluir conta no Supabase (permanente)
               </label>
               {nextCursor ? (
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                  type='button'
+                  variant='outline'
+                  size='sm'
                   onClick={() => runSearch(false)}
                   disabled={loading}
                 >
@@ -387,9 +403,9 @@ function RemovalModalContent({
                 </Button>
               ) : null}
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
+                type='button'
+                variant='outline'
+                size='sm'
                 onClick={() => {
                   const map = Object.fromEntries(results.map((u) => [u, true]));
                   setSelected(map);
@@ -398,24 +414,24 @@ function RemovalModalContent({
                 Selecionar todos
               </Button>
               <Button
-                type="button"
-                variant="ghost"
-                size="sm"
+                type='button'
+                variant='ghost'
+                size='sm'
                 onClick={() => setSelected({})}
               >
                 Limpar todos
               </Button>
             </div>
-            <div className="flex items-center gap-2 flex-nowrap">
+            <div className='flex items-center gap-2 flex-nowrap'>
               {confirming ? (
                 <>
-                  <span className="text-xs text-zinc-600">
+                  <span className='text-xs text-zinc-600'>
                     Confirmar remoção de {selectedCount} selecionado(s)?
                   </span>
                   <Button
-                    type="button"
-                    intent="danger"
-                    size="sm"
+                    type='button'
+                    intent='danger'
+                    size='sm'
                     onClick={async () => {
                       const emails = results.filter((u) => selected[u]);
                       try {
@@ -427,20 +443,33 @@ function RemovalModalContent({
                         });
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok) {
-                          onConfirmRemove(emails, 0, data?.error ?? 'Falha ao remover.');
+                          onConfirmRemove(
+                            emails,
+                            0,
+                            data?.error ?? 'Falha ao remover.',
+                          );
                         } else {
-                          const removedAllowed = Number(data?.removedAllowed ?? 0);
+                          const removedAllowed = Number(
+                            data?.removedAllowed ?? 0,
+                          );
                           const deletedUsers = Number(data?.deletedUsers ?? 0);
                           // remove da lista os removidos ou deletados
                           const removedSet = new Set(
                             (data?.results ?? [])
-                              .filter((r: any) => r.removedAllowed || r.deletedUser)
+                              .filter(
+                                (r: any) => r.removedAllowed || r.deletedUser,
+                              )
                               .map((r: any) => r.email as string),
                           );
-                          setResults((prev) => prev.filter((e) => !removedSet.has(e)));
+                          setResults((prev) =>
+                            prev.filter((e) => !removedSet.has(e)),
+                          );
                           setSelected({});
                           setConfirming(false);
-                          onConfirmRemove(emails, deletedUsers || removedAllowed);
+                          onConfirmRemove(
+                            emails,
+                            deletedUsers || removedAllowed,
+                          );
                         }
                       } catch {
                         onConfirmRemove(emails, 0, 'Falha de rede ao remover.');
@@ -450,9 +479,9 @@ function RemovalModalContent({
                     Remover selecionados
                   </Button>
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                    type='button'
+                    variant='ghost'
+                    size='sm'
                     onClick={() => setConfirming(false)}
                   >
                     Cancelar
@@ -460,10 +489,10 @@ function RemovalModalContent({
                 </>
               ) : (
                 <Button
-                  type="button"
-                  intent="danger"
-                  variant="outline"
-                  size="sm"
+                  type='button'
+                  intent='danger'
+                  variant='outline'
+                  size='sm'
                   disabled={selectedCount === 0}
                   onClick={() => setConfirming(true)}
                 >
@@ -477,5 +506,3 @@ function RemovalModalContent({
     </div>
   );
 }
-
-

@@ -171,15 +171,26 @@ export default function GamesPanel() {
           <div className='text-sm text-zinc-300 mb-2'>Gerar combinações</div>
           <div className='space-y-2'>
             <div className='grid grid-cols-1 gap-2'>
-              <label className='block text-xs text-zinc-400'>
-                Quantidade de dezenas a combinar (7 a 15)
-                <input
-                  value={countInput}
-                  onChange={(e) => setCountInput(e.target.value)}
-                  className='mt-1 w-28 rounded-md border border-black-30 bg-transparent px-2 py-1 text-sm'
-                  placeholder='7'
-                />
-              </label>
+              <div className='flex items-center gap-2'>
+                <label className='block text-xs text-zinc-400'>
+                  Quantidade de dezenas a combinar (7 a 15)
+                  <input
+                    value={countInput}
+                    onChange={(e) => setCountInput(e.target.value)}
+                    className='mt-1 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                    placeholder='7'
+                  />
+                </label>
+                <label className='text-xs text-zinc-400'>
+                  Quantidade de combinações (k)
+                  <input
+                    value={kInput}
+                    onChange={(e) => setKInput(e.target.value)}
+                    className='ml-2 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                    placeholder='07'
+                  />
+                </label>
+              </div>
               <div className='text-xs text-zinc-500'>
                 Informe {countInput || '7'} dezenas abaixo. Cada “caixinha”
                 aceita 2 algarismos e avança automaticamente.
@@ -302,26 +313,17 @@ export default function GamesPanel() {
             </div>
             <div className='flex items-center gap-2'>
               <label className='text-xs text-zinc-400'>
-                Quantidade (k)
-                <input
-                  value={kInput}
-                  onChange={(e) => setKInput(e.target.value)}
-                  className='ml-2 w-24 rounded-md border border-black-30 bg-transparent px-2 py-1 text-sm'
-                  placeholder='07'
-                />
-              </label>
-              <label className='text-xs text-zinc-400'>
                 Seed (opcional)
                 <input
                   value={seedInput}
                   onChange={(e) => setSeedInput(e.target.value)}
-                  className='ml-2 w-28 rounded-md border border-black-30 bg-transparent px-2 py-1 text-sm'
+                  className='ml-2 w-28 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
                   placeholder=''
                 />
               </label>
               <button
                 type='button'
-                className='ml-auto rounded-md border border-black-30 px-3 py-1 text-sm hover:bg-white/5'
+                className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
                 disabled={
                   loading ||
                   parsedNumbers.length < 7 ||
@@ -337,7 +339,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-black-30 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
+                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
                 onClick={() => {
                   // Limpa jogos gerados localmente para permitir um novo fluxo
                   setItems([]);
@@ -477,7 +479,7 @@ export default function GamesPanel() {
             <div className='flex items-center gap-2'>
               <button
                 type='button'
-                className='rounded-md border border-black-30 px-3 py-1 text-sm hover:bg-white/5'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
                 disabled={
                   checkLoading ||
                   !setId ||
@@ -495,30 +497,41 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-black-30 px-3 py-1 text-sm hover:bg-white/5'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
                 disabled={
                   !setId ||
                   // Só pode salvar após conferência ter sido feita (checkedDraw preenchido)
                   checkedDraw.length !== 6
                 }
                 onClick={async () => {
-                  const contest = window.prompt('Informe o número do concurso para salvar a conferência:');
+                  const contest = window.prompt(
+                    'Informe o número do concurso para salvar a conferência:',
+                  );
                   if (!contest) return;
                   const n = Number(contest);
                   if (!Number.isInteger(n) || n <= 0) {
                     alert('Número de concurso inválido.');
                     return;
                   }
-                  const res = await fetch('/api/loterias/mega-sena/games/save-check', {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ setId, draw: parsedDraw, contest: n }),
-                  });
+                  const res = await fetch(
+                    '/api/loterias/mega-sena/games/save-check',
+                    {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({
+                        setId,
+                        draw: parsedDraw,
+                        contest: n,
+                      }),
+                    },
+                  );
                   const data = await res.json();
                   if (!res.ok) {
                     alert(data?.error || 'Falha ao salvar conferência.');
                   } else {
-                    alert(`Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`);
+                    alert(
+                      `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
+                    );
                   }
                 }}
               >
@@ -526,15 +539,28 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-black-30 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
+                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
                 onClick={async () => {
-                  if (!window.confirm('Tem certeza que deseja excluir TODAS as suas conferências salvas?')) return;
-                  if (!window.confirm('Confirma novamente? Esta ação não pode ser desfeita.')) return;
-                  const res = await fetch('/api/loterias/mega-sena/games/delete-checks', {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({}), // remove todas as conferências do usuário logado
-                  });
+                  if (
+                    !window.confirm(
+                      'Tem certeza que deseja excluir TODAS as suas conferências salvas?',
+                    )
+                  )
+                    return;
+                  if (
+                    !window.confirm(
+                      'Confirma novamente? Esta ação não pode ser desfeita.',
+                    )
+                  )
+                    return;
+                  const res = await fetch(
+                    '/api/loterias/mega-sena/games/delete-checks',
+                    {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({}), // remove todas as conferências do usuário logado
+                    },
+                  );
                   const data = await res.json();
                   if (!res.ok) {
                     alert(data?.error || 'Falha ao remover conferências.');

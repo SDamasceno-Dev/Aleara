@@ -162,7 +162,7 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
       <div className='mb-3 flex items-center justify-between gap-2'>
         <div className='text-sm text-zinc-200'>Estudos</div>
         <select
-          className='text-sm bg-transparent border border-(--black-30) rounded-md px-2 py-1'
+          className='text-sm bg-white-10 border border-black-30 rounded-md px-2 py-1'
           value={selected}
           onChange={(e) => {
             const v = e.target.value;
