@@ -9,6 +9,26 @@ function normalizeNumbers(nums: number[]): number[] {
   return [...nums].sort((a, b) => a - b);
 }
 
+function combinationsOfSix(sortedNums: number[]): number[][] {
+  const a = sortedNums;
+  const n = a.length;
+  const out: number[][] = [];
+  for (let i = 0; i < n - 5; i++) {
+    for (let j = i + 1; j < n - 4; j++) {
+      for (let k = j + 1; k < n - 3; k++) {
+        for (let l = k + 1; l < n - 2; l++) {
+          for (let m = l + 1; m < n - 1; m++) {
+            for (let o = m + 1; o < n; o++) {
+              out.push([a[i], a[j], a[k], a[l], a[m], a[o]]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -28,30 +48,34 @@ export async function POST(request: Request) {
   }
 
   let setId = maybeSetId;
-  // If no set provided, create a minimal manual set using the first valid aposta (6 dezenas)
+
+  // Build normalized bets exactly as provided (length 6..20), no combination expansion
+  const numbersKey = (a: number[]) => normalizeNumbers(a).join(',');
+  const localKeys = new Set<string>();
+  const betsFromPayload: number[][] = [];
+  for (const arr of items) {
+    if (!Array.isArray(arr) || arr.length < 6 || arr.length > 20) continue;
+    const base = normalizeNumbers(arr).filter(
+      (n) => Number.isInteger(n) && n >= 1 && n <= 60,
+    );
+    if (new Set(base).size !== base.length) continue;
+    const key = numbersKey(base);
+    if (localKeys.has(key)) continue;
+    localKeys.add(key);
+    betsFromPayload.push(base);
+  }
+  if (betsFromPayload.length === 0) {
+    return NextResponse.json({ error: 'Nenhuma aposta válida (6..20 dezenas).' }, { status: 400 });
+  }
+
+  // If no set provided, create a minimal manual set using the first 6-number combo
   if (!setId) {
-    // Find first valid 6-number item
-    let firstValid: number[] | null = null;
-    for (const arr of items) {
-      if (Array.isArray(arr) && arr.length === 6) {
-        const norm = normalizeNumbers(arr);
-        const ok =
-          norm.every((n) => Number.isInteger(n) && n >= 1 && n <= 60) &&
-          new Set(norm).size === 6;
-        if (ok) {
-          firstValid = norm;
-          break;
-        }
-      }
-    }
-    if (!firstValid) {
-      return NextResponse.json({ error: 'No valid 6-number item found' }, { status: 400 });
-    }
+    const firstSix = betsFromPayload[0];
     const { data: created, error: createErr } = await supabase
       .from('megasena_user_sets')
       .insert({
         user_id: user.id,
-        source_numbers: firstValid, // length 6 supported by new constraint
+        source_numbers: firstSix, // 6..20 allowed
         total_combinations: 1,
         sample_size: 0,
       })
@@ -70,26 +94,17 @@ export async function POST(request: Request) {
     .eq('set_id', setId);
   if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
 
-  const numbersKey = (a: number[]) => normalizeNumbers(a).join(',');
+  const rows: Array<{ set_id: string; position: number; numbers: number[]; matches: number | null }> = [];
   const existingKeys = new Set<string>(
     (existing ?? []).map((r) => numbersKey(r.numbers as number[])),
   );
   let maxPos = Math.max(-1, ...((existing ?? []).map((r) => r.position as number)));
-
-  const rows = [];
-  for (const arr of items) {
-    if (!Array.isArray(arr) || arr.length !== 6) continue;
-    const nums = normalizeNumbers(arr);
-    const allValid =
-      nums.every(
-        (n) => Number.isInteger(n) && n >= 1 && n <= 60,
-      ) && new Set(nums).size === 6;
-    if (!allValid) continue;
+  for (const nums of betsFromPayload) {
     const key = numbersKey(nums);
-    if (existingKeys.has(key)) continue; // skip duplicates within the set
+    if (existingKeys.has(key)) continue;
     maxPos += 1;
     rows.push({
-    set_id: setId,
+      set_id: setId!,
       position: maxPos,
       numbers: nums,
       matches: null,

@@ -1,5 +1,5 @@
 -- Title: Allow 6..15 source numbers in megasena_user_sets
--- Description: Relax check constraint to permit manual-only sets with 6 dezenas.
+-- Description: Relax check constraint to allow manual-only sets with 6 numbers.
 -- Affects: public.megasena_user_sets (constraint)
 -- Dependencies: 20251120_000006__mega__games__schema.sql
 -- Idempotent: yes

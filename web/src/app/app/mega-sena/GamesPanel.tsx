@@ -10,12 +10,14 @@ type GeneratedItem = {
 
 export default function GamesPanel() {
   // Registrar apostas (manual)
+  const [regCountInput, setRegCountInput] = useState('6');
   const [regOtp, setRegOtp] = useState<string[]>(
     Array.from({ length: 6 }, () => ''),
   );
   const [regInvalid, setRegInvalid] = useState<boolean[]>(
     Array.from({ length: 6 }, () => false),
   );
+  const [regCountError, setRegCountError] = useState<string | null>(null);
   const regRefs = useRef<Array<HTMLInputElement | null>>([]);
   const regDuplicateFlags = useMemo(() => {
     const norm = regOtp.map((v) =>
@@ -34,11 +36,35 @@ export default function GamesPanel() {
       .filter((v) => v.length === 2)
       .map((v) => Number(v))
       .filter((n) => Number.isInteger(n) && n >= 1 && n <= 60);
-    if (nums.length !== 6) return [];
+    const desired = Math.max(
+      6,
+      Math.min(20, Number(regCountInput || '6') || 6),
+    );
+    if (nums.length !== desired) return [];
     const unique = Array.from(new Set(nums)).sort((a, b) => a - b);
-    return unique.length === 6 ? unique : [];
-  }, [regOtp]);
+    return unique.length === desired ? unique : [];
+  }, [regOtp, regCountInput]);
   const [appendOnGenerate, setAppendOnGenerate] = useState(false);
+  // Keep Registrar OTP length in sync with regCountInput (6..20)
+  useEffect(() => {
+    const n = Math.max(6, Math.min(20, Number(regCountInput || '6') || 6));
+    setRegOtp((prev) => {
+      if (prev.length === n) return prev;
+      if (prev.length < n)
+        return [...prev, ...Array.from({ length: n - prev.length }, () => '')];
+      return prev.slice(0, n);
+    });
+    setRegInvalid((prev) => {
+      if (prev.length === n) return prev;
+      if (prev.length < n)
+        return [
+          ...prev,
+          ...Array.from({ length: n - prev.length }, () => false),
+        ];
+      return prev.slice(0, n).map(() => false);
+    });
+  }, [regCountInput]);
+
   const [numbersInput, setNumbersInput] = useState('');
   const [countInput, setCountInput] = useState('7');
   const [otpValues, setOtpValues] = useState<string[]>(
@@ -63,7 +89,9 @@ export default function GamesPanel() {
   const [checkLoading, setCheckLoading] = useState(false);
   const liveRef = useRef<HTMLDivElement | null>(null);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
-  const [manualPositions, setManualPositions] = useState<Set<number>>(new Set());
+  const [manualPositions, setManualPositions] = useState<Set<number>>(
+    new Set(),
+  );
 
   // Keep OTP inputs length in sync with countInput (7..15)
   useEffect(() => {
@@ -227,10 +255,66 @@ export default function GamesPanel() {
         <div className='rounded-md border border-white/10 p-3'>
           <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
           <div className='space-y-2'>
-            <div className='text-xs text-zinc-500'>
-              Informe 6 dezenas para cadastrar uma aposta manualmente.
+            <div className='flex items-start justify-between gap-4'>
+              <div className='text-xs text-zinc-500'>
+                Informe {regCountInput || '6'} dezenas para cadastrar uma aposta
+                manualmente.
+              </div>
+              {/* <div className='flex flex-col items-center gap-2'> */}
+              <div className='flex w-full flex-col'>
+                <label className='text-xs text-zinc-400'>
+                  Qtd. dezenas (6 a 20)
+                  <input
+                    type='number'
+                    min={6}
+                    max={20}
+                    inputMode='numeric'
+                    value={regCountInput}
+                    onChange={(e) => {
+                      // allow temporary empty while typing; validation on blur
+                      const v = e.target.value.replace(/\D+/g, '');
+                      setRegCountInput(v);
+                    }}
+                    onBlur={() => {
+                      const n = Number(regCountInput || '0');
+                      if (!Number.isInteger(n) || n < 6 || n > 20) {
+                        const clamped = Math.min(20, Math.max(6, n || 6));
+                        setRegCountInput(String(clamped));
+                        setRegCountError('Digite um número entre 6 e 20.');
+                        window.setTimeout(() => setRegCountError(null), 2000);
+                      } else {
+                        setRegCountError(null);
+                      }
+                    }}
+                    aria-invalid={regCountError ? 'true' : 'false'}
+                    className={`ml-2 w-16 rounded-md border px-2 py-1 text-sm ${
+                      regCountError ? 'border-(--alertError)' : 'border-black-30 bg-white-10'
+                    }`}
+                    placeholder='06'
+                  />
+                </label>
+                {regCountError ? (
+                  <div className='text-[11px] text-(--alertError) mt-1'>{
+                    regCountError
+                  }</div>
+                ) : null}
+                <button
+                  type='button'
+                  className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                  onClick={() => {
+                    const n = Math.max(
+                      6,
+                      Math.min(20, Number(regCountInput || '6') || 6),
+                    );
+                    setRegOtp(Array.from({ length: n }, () => ''));
+                    setRegInvalid(Array.from({ length: n }, () => false));
+                  }}
+                >
+                  Limpar apostas
+                </button>
+              </div>
             </div>
-            <div className='flex gap-2'>
+            <div className='flex flex-wrap gap-2'>
               {regOtp.map((val, idx) => (
                 <input
                   key={idx}
@@ -290,9 +374,9 @@ export default function GamesPanel() {
               <div className='items-center gap-2'>
                 <button
                   type='button'
-                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                   disabled={
-                    regParsed.length !== 6 ||
+                    regParsed.length === 0 ||
                     regInvalid.some(Boolean) ||
                     regDuplicateFlags.some(Boolean)
                   }
@@ -303,7 +387,9 @@ export default function GamesPanel() {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
                         body: JSON.stringify(
-                          setId ? { setId, items: [regParsed] } : { items: [regParsed] },
+                          setId
+                            ? { setId, items: [regParsed] }
+                            : { items: [regParsed] },
                         ),
                       },
                     );
@@ -317,14 +403,20 @@ export default function GamesPanel() {
                     }
                     setItems((prev) => [...prev, ...(data.items ?? [])]);
                     // marcar como manual os positions retornados
-                    const newPositions = (data.items ?? []).map((it: any) => it.position as number);
+                    const newPositions = (data.items ?? []).map(
+                      (it: any) => it.position as number,
+                    );
                     setManualPositions((prev) => {
                       const next = new Set(prev);
                       for (const p of newPositions) next.add(p);
                       return next;
                     });
-                    setRegOtp(Array.from({ length: 6 }, () => ''));
-                    setRegInvalid(Array.from({ length: 6 }, () => false));
+                    const n = Math.max(
+                      6,
+                      Math.min(20, Number(regCountInput || '6') || 6),
+                    );
+                    setRegOtp(Array.from({ length: n }, () => ''));
+                    setRegInvalid(Array.from({ length: n }, () => false));
                   }}
                 >
                   Registrar
@@ -501,7 +593,7 @@ export default function GamesPanel() {
               </label>
               <button
                 type='button'
-                className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
+                className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   loading ||
                   parsedNumbers.length < 7 ||
@@ -517,7 +609,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
+                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
                 onClick={() => {
                   // Limpa jogos gerados localmente para permitir um novo fluxo
                   setItems([]);
@@ -658,7 +750,7 @@ export default function GamesPanel() {
             <div className='flex items-center gap-2'>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   checkLoading ||
                   !setId ||
@@ -676,7 +768,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white/5'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   !setId ||
                   // Só pode salvar após conferência ter sido feita (checkedDraw preenchido)
@@ -718,7 +810,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white/5 text-red-300'
+                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
                 onClick={async () => {
                   if (
                     !window.confirm(
@@ -808,7 +900,9 @@ export default function GamesPanel() {
                   >
                     <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
                     <td className='py-2 pr-3'>
-                      {manualPositions.has(it.position) ? '-' : `( ${it.position} )`}
+                      {manualPositions.has(it.position)
+                        ? '-'
+                        : `( ${it.position} )`}
                     </td>
                     <td className='py-2 pr-3 font-medium text-zinc-100'>
                       {parts}

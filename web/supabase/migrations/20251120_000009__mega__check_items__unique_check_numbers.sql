@@ -1,5 +1,5 @@
 -- Title: Unique check item per (check_id, numbers)
--- Description: Avoid duplicate saved games (same dezenas) within the same check/concurso.
+-- Description: Avoid duplicate saved games (same numbers) within the same check/contest.
 -- Affects: public.megasena_check_items (index)
 -- Dependencies: 20251120_000007__mega__checks__schema.sql
 -- Idempotent: yes

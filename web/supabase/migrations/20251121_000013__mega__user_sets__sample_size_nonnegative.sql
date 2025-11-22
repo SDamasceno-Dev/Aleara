@@ -1,5 +1,5 @@
 -- Title: Allow non-negative sample_size in megasena_user_sets
--- Description: Relax sample_size check to >= 0 so sets criados manualmente podem iniciar com 0.
+-- Description: Relax sample_size check to >= 0 so manually created sets can start at 0.
 -- Affects: public.megasena_user_sets (constraint)
 -- Dependencies: 20251120_000006__mega__games__schema.sql
 -- Idempotent: yes

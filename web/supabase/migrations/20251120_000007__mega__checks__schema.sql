@@ -1,5 +1,5 @@
 -- Title: Mega-Sena checks (saved evaluation results) with RLS
--- Description: Persists user's saved evaluations (conferências) by contest and the checked items.
+-- Description: Persists user's saved evaluations (checks) by contest and the checked items.
 -- Affects: public.megasena_checks, public.megasena_check_items, policies, indexes
 -- Dependencies: public.megasena_user_sets; auth; public.is_admin() (for consistency)
 -- Idempotent: yes
