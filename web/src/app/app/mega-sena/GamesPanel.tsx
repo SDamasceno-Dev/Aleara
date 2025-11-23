@@ -107,6 +107,11 @@ export default function GamesPanel() {
   const [selectedListIds, setSelectedListIds] = useState<Set<string>>(
     new Set(),
   );
+  // Save-check modal
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveContest, setSaveContest] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Keep OTP inputs length in sync with countInput (7..15)
   useEffect(() => {
@@ -820,36 +825,10 @@ export default function GamesPanel() {
                   // Só pode salvar após conferência ter sido feita (checkedDraw preenchido)
                   checkedDraw.length !== 6
                 }
-                onClick={async () => {
-                  const contest = window.prompt(
-                    'Informe o número do concurso para salvar a conferência:',
-                  );
-                  if (!contest) return;
-                  const n = Number(contest);
-                  if (!Number.isInteger(n) || n <= 0) {
-                    alert('Número de concurso inválido.');
-                    return;
-                  }
-                  const res = await fetch(
-                    '/api/loterias/mega-sena/games/save-check',
-                    {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({
-                        setId,
-                        draw: parsedDraw,
-                        contest: n,
-                      }),
-                    },
-                  );
-                  const data = await res.json();
-                  if (!res.ok) {
-                    alert(data?.error || 'Falha ao salvar conferência.');
-                  } else {
-                    alert(
-                      `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
-                    );
-                  }
+                onClick={() => {
+                  setSaveContest('');
+                  setSaveError(null);
+                  setSaveOpen(true);
                 }}
               >
                 Salvar
@@ -1088,6 +1067,101 @@ export default function GamesPanel() {
           </table>
         </div>
       </div>
+      {/* Modal salvar conferência */}
+      {saveOpen ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center'>
+          <button
+            aria-label='Fechar'
+            onClick={() => setSaveOpen(false)}
+            className='absolute inset-0 bg-black/60 backdrop-blur-sm'
+          />
+          <div
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='save-title'
+            className='relative z-10 max-w-md w-[92vw] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'
+          >
+            <div className='px-5 py-3 border-b border-black/10 bg-white'>
+              <h2 id='save-title' className='text-sm font-semibold tracking-wider'>
+                Salvar conferência
+              </h2>
+            </div>
+            <div className='px-5 py-4 space-y-3'>
+              <div className='text-xs text-zinc-600'>
+                Informe o concurso para salvar os acertos deste set.
+              </div>
+              <div className='text-xs text-zinc-600'>
+                Sorteio: {checkedDraw.length === 6 ? checkedDraw.map(n => String(n).padStart(2,'0')).join(', ') : '—'}
+              </div>
+              <label className='text-xs text-zinc-700'>
+                Concurso
+                <input
+                  type='number'
+                  min={1}
+                  value={saveContest}
+                  onChange={(e) => setSaveContest(e.target.value.replace(/\D+/g, ''))}
+                  onBlur={() => {
+                    const n = Number(saveContest || '0');
+                    if (!Number.isInteger(n) || n <= 0) {
+                      setSaveError('Digite um número de concurso válido (> 0).');
+                    } else {
+                      setSaveError(null);
+                    }
+                  }}
+                  className={`mt-1 w-40 rounded-md border px-2 py-1 text-sm ${
+                    saveError ? 'border-(--alertError)' : 'border-black/20'
+                  }`}
+                  placeholder='Ex.: 2680'
+                />
+              </label>
+              {saveError ? (
+                <div className='text-[11px] text-(--alertError)'>{saveError}</div>
+              ) : null}
+            </div>
+            <div className='px-5 py-3 border-t border-black/10 bg-white flex items-center justify-end gap-2'>
+              <button
+                type='button'
+                className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
+                onClick={() => setSaveOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type='button'
+                className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
+                disabled={
+                  saveLoading ||
+                  checkedDraw.length !== 6 ||
+                  !Number.isInteger(Number(saveContest || '0')) ||
+                  Number(saveContest || '0') <= 0
+                }
+                onClick={async () => {
+                  setSaveLoading(true);
+                  try {
+                    const n = Number(saveContest || '0');
+                    const res = await fetch('/api/loterias/mega-sena/games/save-check', {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({ setId, draw: checkedDraw, contest: n }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao salvar conferência.');
+                      return;
+                    }
+                    alert(`Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`);
+                    setSaveOpen(false);
+                  } finally {
+                    setSaveLoading(false);
+                  }
+                }}
+              >
+                {saveLoading ? 'Salvando…' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {/* Modal de listas salvas */}
       {listsOpen ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
