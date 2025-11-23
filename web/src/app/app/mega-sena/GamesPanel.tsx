@@ -87,6 +87,7 @@ export default function GamesPanel() {
   );
   const drawRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [checkLoading, setCheckLoading] = useState(false);
+  const [resampleLoading, setResampleLoading] = useState(false);
   const liveRef = useRef<HTMLDivElement | null>(null);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
   const [manualPositions, setManualPositions] = useState<Set<number>>(
@@ -228,6 +229,38 @@ export default function GamesPanel() {
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResample() {
+    if (!setId) return;
+    setResampleLoading(true);
+    try {
+      const k = Number(kInput || '0');
+      const payload: any = { setId };
+      if (Number.isInteger(k) && k > 0) payload.k = k;
+      if (seedInput) payload.seed = Number(seedInput);
+      const res = await fetch('/api/loterias/mega-sena/games/resample', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data?.error || 'Falha ao re-sortear.');
+        return;
+      }
+      // Substitui itens pela nova amostra
+      setItems((data.items ?? []).map((it: any) => ({
+        position: it.position as number,
+        numbers: (it.numbers as number[]) ?? [],
+        matches: null as number | null,
+      })));
+      setCheckedDraw([]);
+      setManualPositions(new Set());
+      requestAnimationFrame(() => liveRef.current?.focus());
+    } finally {
+      setResampleLoading(false);
     }
   }
 
@@ -607,22 +640,33 @@ export default function GamesPanel() {
                 />
                 Adicionar aos jogos existentes
               </label>
-              <button
-                type='button'
-                className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={
-                  loading ||
-                  parsedNumbers.length < 7 ||
-                  parsedNumbers.length > 15 ||
-                  parsedNumbers.length !== otpValues.length ||
-                  otpValues.some((v) => v.length !== 2) ||
-                  otpInvalid.some((b) => b) ||
-                  duplicateFlags.some((b) => b)
-                }
-                onClick={handleGenerate}
-              >
-                {loading ? 'Gerando…' : 'Gerar'}
-              </button>
+              <div className='ml-auto flex flex-col gap-2'>
+                <button
+                  type='button'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                  disabled={
+                    loading ||
+                    parsedNumbers.length < 7 ||
+                    parsedNumbers.length > 15 ||
+                    parsedNumbers.length !== otpValues.length ||
+                    otpValues.some((v) => v.length !== 2) ||
+                    otpInvalid.some((b) => b) ||
+                    duplicateFlags.some((b) => b)
+                  }
+                  onClick={handleGenerate}
+                >
+                  {loading ? 'Gerando…' : 'Gerar'}
+                </button>
+                <button
+                  type='button'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10 w-28'
+                  disabled={resampleLoading || !setId}
+                  title='Refaz a amostra dos jogos a partir do mesmo conjunto base'
+                  onClick={handleResample}
+                >
+                  {resampleLoading ? 'Re-sorteando…' : 'Re-sortear'}
+                </button>
+              </div>
             </div>
             <div className='text-xs text-zinc-500'>
               Dezenas válidas: {parsedNumbers.join(', ') || '—'}
