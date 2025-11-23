@@ -92,6 +92,20 @@ export default function GamesPanel() {
   const [manualPositions, setManualPositions] = useState<Set<number>>(
     new Set(),
   );
+  const [listsOpen, setListsOpen] = useState(false);
+  const [listsLoading, setListsLoading] = useState(false);
+  const [betLists, setBetLists] = useState<
+    Array<{
+      id: string;
+      contestNo: number | null;
+      title: string | null;
+      count: number;
+      createdAt: string;
+    }>
+  >([]);
+  const [selectedListIds, setSelectedListIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Keep OTP inputs length in sync with countInput (7..15)
   useEffect(() => {
@@ -288,15 +302,17 @@ export default function GamesPanel() {
                     }}
                     aria-invalid={regCountError ? 'true' : 'false'}
                     className={`ml-2 w-16 rounded-md border px-2 py-1 text-sm ${
-                      regCountError ? 'border-(--alertError)' : 'border-black-30 bg-white-10'
+                      regCountError
+                        ? 'border-(--alertError)'
+                        : 'border-black-30 bg-white-10'
                     }`}
                     placeholder='06'
                   />
                 </label>
                 {regCountError ? (
-                  <div className='text-[11px] text-(--alertError) mt-1'>{
-                    regCountError
-                  }</div>
+                  <div className='text-[11px] text-(--alertError) mt-1'>
+                    {regCountError}
+                  </div>
                 ) : null}
                 <button
                   type='button'
@@ -607,20 +623,6 @@ export default function GamesPanel() {
               >
                 {loading ? 'Gerando…' : 'Gerar'}
               </button>
-              <button
-                type='button'
-                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
-                onClick={() => {
-                  // Limpa jogos gerados localmente para permitir um novo fluxo
-                  setItems([]);
-                  setSetId(null);
-                  setCheckedDraw([]);
-                  setManualPositions(new Set());
-                }}
-                disabled={items.length === 0 && !setId}
-              >
-                Limpar jogos gerados
-              </button>
             </div>
             <div className='text-xs text-zinc-500'>
               Dezenas válidas: {parsedNumbers.join(', ') || '—'}
@@ -856,8 +858,135 @@ export default function GamesPanel() {
         </div>
       </div>
 
-      {/* Resultados */}
-      <div className='mt-4 rounded-md border border-white/10'>
+      {/* Ações da lista e Resultados */}
+      <div className='mt-4 mb-2 flex items-center gap-2'>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            setListsOpen(true);
+            setListsLoading(true);
+            try {
+              const res = await fetch(
+                '/api/loterias/mega-sena/games/bets/lists',
+                { cache: 'no-store' },
+              );
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao listar apostas salvas.');
+                setBetLists([]);
+              } else {
+                setBetLists(data.items ?? []);
+              }
+            } finally {
+              setListsLoading(false);
+              setSelectedListIds(new Set());
+            }
+          }}
+        >
+          Gerenciar listas
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          disabled={!setId || items.length === 0}
+          onClick={async () => {
+            const contest = window.prompt(
+              'Número do concurso para salvar as apostas:',
+            );
+            if (!contest) return;
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              return;
+            }
+            const title =
+              window.prompt('Título (opcional) para esta lista de apostas:') ||
+              undefined;
+            const res = await fetch(
+              '/api/loterias/mega-sena/games/bets/save-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ setId, contestNo: n, title }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao salvar apostas.');
+            } else {
+              alert(
+                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
+              );
+            }
+          }}
+        >
+          Salvar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            const contest = window.prompt(
+              'Número do concurso para carregar as apostas:',
+            );
+            if (!contest) return;
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              return;
+            }
+            const mode = window.confirm(
+              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
+            )
+              ? 'replace'
+              : 'append';
+            const res = await fetch(
+              '/api/loterias/mega-sena/games/bets/load-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ contestNo: n, mode, setId }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao carregar apostas.');
+            } else {
+              if (!setId && data.setId) {
+                setSetId(data.setId);
+              }
+              alert(
+                `Apostas ${mode === 'replace' ? 'substituídas' : 'adicionadas'}: ${data.loaded}.`,
+              );
+              setCheckedDraw([]);
+              setManualPositions(new Set());
+              const fetched = (data.items ?? []).map((it: any) => ({
+                position: it.position as number,
+                numbers: (it.numbers as number[]) ?? [],
+                matches: null as number | null,
+              }));
+              if (fetched.length > 0) setItems(fetched);
+            }
+          }}
+        >
+          Carregar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+          onClick={() => {
+            setItems([]);
+            setSetId(null);
+            setCheckedDraw([]);
+            setManualPositions(new Set());
+          }}
+          disabled={items.length === 0 && !setId}
+        >
+          Limpar jogos gerados
+        </button>
+      </div>
+      <div className='rounded-md border border-white/10'>
         <div className='overflow-x-auto'>
           <table className='min-w-full text-sm'>
             <thead className='text-zinc-400'>
@@ -915,6 +1044,211 @@ export default function GamesPanel() {
           </table>
         </div>
       </div>
+      {/* Modal de listas salvas */}
+      {listsOpen ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center'>
+          <button
+            aria-label='Fechar'
+            onClick={() => setListsOpen(false)}
+            className='absolute inset-0 bg-black/60 backdrop-blur-sm'
+          />
+          <div
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='lists-title'
+            className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'
+          >
+            <div className='px-5 py-3 border-b border-black/10 bg-white'>
+              <h2
+                id='lists-title'
+                className='text-sm font-semibold tracking-wider'
+              >
+                Listas salvas
+              </h2>
+            </div>
+            <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
+              {listsLoading ? (
+                <div className='text-sm text-zinc-500'>Carregando…</div>
+              ) : betLists.length === 0 ? (
+                <div className='text-sm text-zinc-500'>
+                  Nenhuma lista encontrada.
+                </div>
+              ) : (
+                <div className='max-h-[60vh] overflow-y-auto scroll-y rounded-md border border-black/10'>
+                  <table className='w-full text-sm'>
+                    <thead className='sticky top-0 bg-black-10'>
+                      <tr className='text-left text-zinc-500'>
+                     <th className='w-10 py-2 pl-2'>
+                          <input
+                            type='checkbox'
+                            checked={
+                              selectedListIds.size > 0 &&
+                              selectedListIds.size === betLists.length
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedListIds(
+                                  new Set(betLists.map((b) => b.id)),
+                                );
+                              } else {
+                                setSelectedListIds(new Set());
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className='py-2'>Concurso</th>
+                        <th className='py-2'>Apostas</th>
+                        <th className='py-2'>Título</th>
+                        <th className='py-2'>Criado</th>
+                      </tr>
+                    </thead>
+                    <tbody className='text-zinc-900'>
+                      {betLists.map((b) => (
+                        <tr
+                          key={b.id}
+                          className='border-t border-black/10 hover:bg-black/5 cursor-pointer'
+                          onClick={async () => {
+                            // Primeiro confirma se deseja carregar
+                            const proceed = window.confirm(
+                              'Carregar as apostas deste item?',
+                            );
+                            if (!proceed) return;
+                            // Depois escolhe substituir ou adicionar
+                            const mode = window.confirm(
+                              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
+                            )
+                              ? 'replace'
+                              : 'append';
+                            const res = await fetch(
+                              '/api/loterias/mega-sena/games/bets/load-by-contest',
+                              {
+                                method: 'POST',
+                                headers: { 'content-type': 'application/json' },
+                                body: JSON.stringify({
+                                  contestNo: b.contestNo,
+                                  mode,
+                                  setId,
+                                }),
+                              },
+                            );
+                            const data = await res.json();
+                            if (!res.ok) {
+                              alert(
+                                data?.error || 'Falha ao carregar apostas.',
+                              );
+                              return;
+                            }
+                            if (!setId && data.setId) setSetId(data.setId);
+                            const fetched = (data.items ?? []).map(
+                              (it: any) => ({
+                                position: it.position as number,
+                                numbers: (it.numbers as number[]) ?? [],
+                                matches: null as number | null,
+                              }),
+                            );
+                            setItems(fetched);
+                            setCheckedDraw([]);
+                            setManualPositions(new Set());
+                            setListsOpen(false);
+                          }}
+                        >
+                           <td className='py-2 pl-2'>
+                            <input
+                              type='checkbox'
+                              checked={selectedListIds.has(b.id)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                setSelectedListIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (e.target.checked) next.add(b.id);
+                                  else next.delete(b.id);
+                                  return next;
+                                });
+                              }}
+                            />
+                          </td>
+                          <td className='py-2'>{b.contestNo ?? '—'}</td>
+                          <td className='py-2'>{b.count}</td>
+                          <td className='py-2'>{b.title ?? '—'}</td>
+                          <td className='py-2'>
+                            {new Date(b.createdAt).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className='px-5 py-3 border-t border-black/10 bg-white'>
+              <div className='flex w-full items-center justify-between'>
+                <div className='text-xs text-zinc-600'>
+                  Selecionados: {selectedListIds.size} de {betLists.length}
+                </div>
+                <div className='flex items-center gap-2'>
+                  <button
+                    type='button'
+                    className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
+                    onClick={() =>
+                      setSelectedListIds(new Set(betLists.map((b) => b.id)))
+                    }
+                    disabled={betLists.length === 0}
+                  >
+                    Selecionar tudo
+                  </button>
+                  <button
+                    type='button'
+                    className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
+                    onClick={() => setSelectedListIds(new Set())}
+                    disabled={selectedListIds.size === 0}
+                  >
+                    Limpar seleção
+                  </button>
+                  <button
+                    type='button'
+                    className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-black/5 text-red-600'
+                    onClick={async () => {
+                      if (selectedListIds.size === 0) return;
+                      if (!window.confirm('Excluir listas selecionadas?'))
+                        return;
+                      const res = await fetch(
+                        '/api/loterias/mega-sena/games/bets/lists/delete',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            listIds: Array.from(selectedListIds),
+                          }),
+                        },
+                      );
+                      const data = await res.json();
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao excluir.');
+                        return;
+                      }
+                      // refresh list
+                      setBetLists((prev) =>
+                        prev.filter((b) => !selectedListIds.has(b.id)),
+                      );
+                      setSelectedListIds(new Set());
+                    }}
+                    disabled={selectedListIds.size === 0}
+                  >
+                    Excluir selecionados
+                  </button>
+                  <button
+                    type='button'
+                    className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
+                    onClick={() => setListsOpen(false)}
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
