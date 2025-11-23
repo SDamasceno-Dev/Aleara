@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ImportCsvPanel } from './ImportCsvPanel';
 import { DataPanel } from './DataPanel';
 import GamesPanel from './GamesPanel';
+import ReportsPanel from './ReportsPanel';
 
 export default async function MegaSenaPage({
   searchParams,
@@ -22,6 +23,7 @@ export default async function MegaSenaPage({
   const commonTabs = [
     { id: 'overview', label: 'Dados', content: overview },
     { id: 'games', label: 'Jogos', content: <GamesPanel /> },
+    { id: 'reports', label: 'Relatórios', content: <ReportsPanel /> },
   ] as const;
   const tabs = isAdmin
     ? [...commonTabs, { id: 'import', label: 'Importação', content: importPanel }]
