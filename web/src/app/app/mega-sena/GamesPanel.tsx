@@ -113,6 +113,21 @@ export default function GamesPanel() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Matches summary (4/5/6) after conferir
+  const matchesSummary = useMemo(() => {
+    if (checkedDraw.length !== 6) return null;
+    let c4 = 0;
+    let c5 = 0;
+    let c6 = 0;
+    for (const it of items) {
+      const m = it.matches ?? null;
+      if (m === 4) c4 += 1;
+      else if (m === 5) c5 += 1;
+      else if (m === 6) c6 += 1;
+    }
+    return { c4, c5, c6, total: items.length };
+  }, [items, checkedDraw]);
+
   // Keep OTP inputs length in sync with countInput (7..15)
   useEffect(() => {
     const n = Math.max(7, Math.min(15, Number(countInput || '0') || 7));
@@ -1010,6 +1025,23 @@ export default function GamesPanel() {
         </button>
       </div>
       <div className='rounded-md border border-white/10'>
+        {matchesSummary ? (
+          <div className='flex items-center justify-end gap-3 px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
+            <span className='text-zinc-400'>Sumário de acertos:</span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>4</span>
+              <span className='font-semibold'>{matchesSummary.c4}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>5</span>
+              <span className='font-semibold'>{matchesSummary.c5}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>6</span>
+              <span className='font-semibold text-green-300'>{matchesSummary.c6}</span>
+            </span>
+          </div>
+        ) : null}
         <div className='overflow-x-auto'>
           <table className='min-w-full text-sm'>
             <thead className='text-zinc-400'>
