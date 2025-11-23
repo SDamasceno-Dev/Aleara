@@ -850,6 +850,20 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                onClick={() => {
+                  setDrawOtp(Array.from({ length: 6 }, () => ''));
+                  setDrawInvalid(Array.from({ length: 6 }, () => false));
+                  setCheckedDraw([]);
+                  setItems((prev) =>
+                    prev.map((it) => ({ ...it, matches: null as number | null })),
+                  );
+                }}
+              >
+                Limpar resultado
+              </button>
+              <button
+                type='button'
                 className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
                 onClick={async () => {
                   if (
