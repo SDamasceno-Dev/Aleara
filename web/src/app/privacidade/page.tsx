@@ -10,7 +10,13 @@ export default function PrivacidadePage() {
     <div className='relative min-h-full overflow-x-hidden'>
       <main className='relative z-10 mx-auto w-full max-w-3xl px-4 py-16'>
         <div className='flex flex-col items-center text-center'>
-          <Image src='/assets/prism.svg' alt='Aleara' width={72} height={72} priority />
+          <Image
+            src='/assets/Logo_Aleara.svg'
+            alt='Aleara'
+            width={72}
+            height={72}
+            priority
+          />
           <h1 className='mt-4 text-2xl font-semibold tracking-tight text-foreground'>
             Política de Privacidade
           </h1>

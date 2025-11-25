@@ -138,6 +138,21 @@ export default function ReportsPanel() {
         >
           Relatório geral
         </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={() => {
+            const url =
+              viewMode === 'aggregate'
+                ? '/api/loterias/mega-sena/reports/pdf-react?mode=aggregate'
+                : report
+                  ? `/api/loterias/mega-sena/reports/pdf-react?mode=contest&contestNo=${report.contestNo}`
+                  : '/api/loterias/mega-sena/reports/pdf-react?mode=aggregate';
+            window.open(url, '_blank');
+          }}
+        >
+          Exportar PDF
+        </button>
       </div>
 
       {loading ? (
