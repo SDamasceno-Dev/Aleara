@@ -1,0 +1,505 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+type GeneratedItem = { position: number; numbers: number[]; matches?: number | null };
+
+export function GamesPanel() {
+  // Registrar apostas (manual)
+  const [regCountInput, setRegCountInput] = useState('5');
+  const [regOtp, setRegOtp] = useState<string[]>(Array.from({ length: 5 }, () => ''));
+  const [regInvalid, setRegInvalid] = useState<boolean[]>(Array.from({ length: 5 }, () => false));
+  const regRefs = useRef<Array<HTMLInputElement | null>>([]);
+  useEffect(() => {
+    const n = Math.max(5, Math.min(15, Number(regCountInput || '5') || 5));
+    setRegOtp((prev) => (prev.length === n ? prev : prev.length < n ? [...prev, ...Array.from({ length: n - prev.length }, () => '')] : prev.slice(0, n)));
+    setRegInvalid((prev) => (prev.length === n ? prev : prev.length < n ? [...prev, ...Array.from({ length: n - prev.length }, () => false)] : prev.slice(0, n).map(() => false)));
+  }, [regCountInput]);
+  const regParsed = useMemo(() => {
+    const nums = regOtp
+      .map((v) => v.trim())
+      .filter((v) => v.length === 2)
+      .map((v) => Number(v))
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 80);
+    const desired = Math.max(5, Math.min(15, Number(regCountInput || '5') || 5));
+    if (nums.length !== desired) return [];
+    const unique = Array.from(new Set(nums)).sort((a, b) => a - b);
+    return unique.length === desired ? unique : [];
+  }, [regOtp, regCountInput]);
+
+  // Gerar
+  const [countInput, setCountInput] = useState('5');
+  const [otpValues, setOtpValues] = useState<string[]>(Array.from({ length: 5 }, () => ''));
+  const [otpInvalid, setOtpInvalid] = useState<boolean[]>(Array.from({ length: 5 }, () => false));
+  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [kInput, setKInput] = useState('05');
+  const [seedInput, setSeedInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [setId, setSetId] = useState<string | null>(null);
+  const [items, setItems] = useState<GeneratedItem[]>([]);
+  const [appendOnGenerate, setAppendOnGenerate] = useState(false);
+  useEffect(() => {
+    const n = Math.max(5, Math.min(15, Number(countInput || '0') || 5));
+    setOtpValues((prev) => (prev.length === n ? prev : prev.length < n ? [...prev, ...Array.from({ length: n - prev.length }, () => '')] : prev.slice(0, n)));
+    setOtpInvalid((prev) => (prev.length === n ? prev : prev.length < n ? [...prev, ...Array.from({ length: n - prev.length }, () => false)] : prev.slice(0, n).map(() => false)));
+  }, [countInput]);
+  const parsedNumbers = useMemo(() => {
+    const nums = Array.from(
+      new Set(
+        otpValues
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0)
+          .map((v) => Number(v))
+          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 80),
+      ),
+    ).sort((a, b) => a - b);
+    return nums;
+  }, [otpValues]);
+
+  // Conferir
+  const [drawOtp, setDrawOtp] = useState<string[]>(Array.from({ length: 5 }, () => ''));
+  const [drawInvalid, setDrawInvalid] = useState<boolean[]>(Array.from({ length: 5 }, () => false));
+  const drawRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
+  const checkedDrawSet = useMemo(() => new Set(checkedDraw), [checkedDraw]);
+  const liveRef = useRef<HTMLDivElement | null>(null);
+
+  // Actions
+  async function handleGenerate() {
+    if (items.length > 0 && !appendOnGenerate) {
+      const proceed = window.confirm(
+        'Gerar combinações irá sobrescrever os jogos exibidos. Deseja continuar? Para apenas adicionar, cancele e marque "Adicionar aos jogos existentes".',
+      );
+      if (!proceed) return;
+    }
+    setLoading(true);
+    try {
+      const k = Number(kInput || '0');
+      const endpoint =
+        appendOnGenerate && setId ? '/api/loterias/quina/games/generate/append' : '/api/loterias/quina/games/generate';
+      const payload: any = appendOnGenerate && setId ? { setId, numbers: parsedNumbers, k } : { numbers: parsedNumbers, k };
+      if (seedInput) payload.seed = Number(seedInput);
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data?.error || 'Falha ao gerar combinações.');
+        return;
+      }
+      if (appendOnGenerate && setId) {
+        setItems((prev) => [...prev, ...(data.items ?? [])]);
+      } else {
+        setSetId(data.setId);
+        setItems(data.items ?? []);
+      }
+      requestAnimationFrame(() => liveRef.current?.focus());
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function handleCheck(draw: number[]) {
+    if (!setId) return;
+    setCheckLoading(true);
+    try {
+      const res = await fetch('/api/loterias/quina/games/check', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ setId, draw }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data?.error || 'Falha ao conferir.');
+        return;
+      }
+      const map = new Map<number, number>();
+      for (const it of data.items ?? []) map.set(it.position as number, it.matches as number);
+      setItems((prev) => prev.map((it) => ({ ...it, matches: map.get(it.position) ?? it.matches ?? null })));
+      requestAnimationFrame(() => liveRef.current?.focus());
+    } finally {
+      setCheckLoading(false);
+    }
+  }
+
+  // Summary
+  const matchesSummary = useMemo(() => {
+    if (checkedDraw.length !== 5) return null;
+    let c2 = 0,
+      c3 = 0,
+      c4 = 0,
+      c5 = 0;
+    for (const it of items) {
+      const m = it.matches ?? null;
+      if (m === 2) c2 += 1;
+      else if (m === 3) c3 += 1;
+      else if (m === 4) c4 += 1;
+      else if (m === 5) c5 += 1;
+    }
+    return { c2, c3, c4, c5, total: items.length };
+  }, [items, checkedDraw]);
+
+  return (
+    <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
+      <div className='mb-3 text-sm text-zinc-200'>Jogos — Quina</div>
+
+      {/* Registrar apostas */}
+      <div className='rounded-md border border-white/10 p-3 mb-3'>
+        <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
+        <div className='flex items-center gap-2'>
+          <label className='text-xs text-zinc-400'>
+            Qtd. dezenas (5 a 15)
+            <input
+              type='number'
+              min={5}
+              max={15}
+              value={regCountInput}
+              onChange={(e) => setRegCountInput(e.target.value.replace(/\D+/g, ''))}
+              className='ml-2 w-16 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+              placeholder='05'
+            />
+          </label>
+        </div>
+        <div className='mt-2 flex flex-wrap gap-2'>
+          {regOtp.map((val, idx) => (
+            <input
+              key={idx}
+              ref={(el) => {
+                regRefs.current[idx] = el;
+              }}
+              value={val}
+              inputMode='numeric'
+              maxLength={2}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
+                setRegOtp((prev) => {
+                  const next = [...prev];
+                  next[idx] = raw;
+                  return next;
+                });
+                if (raw.length === 2) {
+                  const num = Number(raw);
+                  const isValid = Number.isInteger(num) && num >= 1 && num <= 80;
+                  setRegInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = !isValid;
+                    return next;
+                  });
+                  if (isValid && idx + 1 < regOtp.length) regRefs.current[idx + 1]?.focus();
+                } else {
+                  setRegInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = false;
+                    return next;
+                  });
+                }
+              }}
+              className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                regInvalid[idx] ? 'bg-white border-(--alertError) text-(--alertError) font-bold' : 'bg-white border-black-30 text-zinc-900'
+              }`}
+              placeholder='00'
+            />
+          ))}
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={regParsed.length === 0 || regInvalid.some(Boolean)}
+            onClick={async () => {
+              const res = await fetch('/api/loterias/quina/games/add-items', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(setId ? { setId, items: [regParsed] } : { items: [regParsed] }),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao registrar aposta.');
+                return;
+              }
+              if (!setId && data.setId) setSetId(data.setId);
+              setItems((prev) => [...prev, ...(data.items ?? [])]);
+            }}
+          >
+            Registrar
+          </button>
+        </div>
+      </div>
+
+      {/* Gerar combinações */}
+      <div className='rounded-md border border-white/10 p-3 mb-3'>
+        <div className='text-sm text-zinc-300 mb-2'>Gerar combinações</div>
+        <div className='flex items-center gap-2'>
+          <label className='text-xs text-zinc-400'>
+            Quantidade de dezenas (5 a 15)
+            <input
+              value={countInput}
+              onChange={(e) => setCountInput(e.target.value)}
+              className='ml-2 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+              placeholder='05'
+            />
+          </label>
+          <label className='text-xs text-zinc-400'>
+            k
+            <input
+              value={kInput}
+              onChange={(e) => setKInput(e.target.value)}
+              className='ml-2 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+              placeholder='05'
+            />
+          </label>
+          <label className='text-xs text-zinc-400'>
+            Seed (opcional)
+            <input
+              value={seedInput}
+              onChange={(e) => setSeedInput(e.target.value)}
+              className='ml-2 w-28 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+            />
+          </label>
+          <label className='text-xs text-zinc-400 inline-flex items-center gap-2 ml-auto'>
+            <input type='checkbox' checked={appendOnGenerate} onChange={(e) => setAppendOnGenerate(e.target.checked)} />
+            Adicionar aos jogos existentes
+          </label>
+        </div>
+        <div className='mt-2 flex flex-wrap gap-2'>
+          {otpValues.map((val, idx) => (
+            <input
+              key={idx}
+              ref={(el) => {
+                otpRefs.current[idx] = el;
+              }}
+              value={val}
+              inputMode='numeric'
+              maxLength={2}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
+                setOtpValues((prev) => {
+                  const next = [...prev];
+                  next[idx] = raw;
+                  return next;
+                });
+                if (raw.length === 2) {
+                  const num = Number(raw);
+                  const isValid = Number.isInteger(num) && num >= 1 && num <= 80;
+                  setOtpInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = !isValid;
+                    return next;
+                  });
+                  if (isValid && idx + 1 < otpValues.length) otpRefs.current[idx + 1]?.focus();
+                } else {
+                  setOtpInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = false;
+                    return next;
+                  });
+                }
+              }}
+              className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                otpInvalid[idx] ? 'bg-white border-(--alertError) text-(--alertError) font-bold' : 'bg-white border-black-30 text-zinc-900'
+              }`}
+              placeholder='00'
+            />
+          ))}
+        </div>
+        <div className='mt-2 flex gap-2'>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={
+              loading ||
+              parsedNumbers.length < otpValues.length ||
+              parsedNumbers.length !== otpValues.length ||
+              otpValues.some((v) => v.length !== 2) ||
+              otpInvalid.some((b) => b)
+            }
+            onClick={handleGenerate}
+          >
+            {loading ? 'Gerando…' : 'Gerar'}
+          </button>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={!setId}
+            onClick={async () => {
+              if (!setId) return;
+              const res = await fetch('/api/loterias/quina/games/resample', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ setId, k: Number(kInput || '0') || undefined, seed: seedInput ? Number(seedInput) : undefined }),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao re-sortear.');
+                return;
+              }
+              setItems((data.items ?? []).map((it: any) => ({ position: it.position as number, numbers: (it.numbers as number[]) ?? [], matches: null })));
+              setCheckedDraw([]);
+            }}
+          >
+            Re-sortear
+          </button>
+          <button
+            type='button'
+            className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+            onClick={() => {
+              setItems([]);
+              setSetId(null);
+              setCheckedDraw([]);
+            }}
+            disabled={items.length === 0 && !setId}
+          >
+            Limpar jogos gerados
+          </button>
+        </div>
+      </div>
+
+      {/* Conferir */}
+      <div className='rounded-md border border-white/10 p-3'>
+        <div className='text-sm text-zinc-300 mb-2'>Conferir resultado</div>
+        <div className='flex flex-wrap gap-2'>
+          {drawOtp.map((val, idx) => (
+            <input
+              key={idx}
+              ref={(el) => {
+                drawRefs.current[idx] = el;
+              }}
+              value={val}
+              inputMode='numeric'
+              maxLength={2}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
+                setDrawOtp((prev) => {
+                  const next = [...prev];
+                  next[idx] = raw;
+                  return next;
+                });
+                if (raw.length === 2) {
+                  setCheckedDraw([]);
+                  const num = Number(raw);
+                  const isValid = Number.isInteger(num) && num >= 1 && num <= 80;
+                  setDrawInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = !isValid;
+                    return next;
+                  });
+                  if (isValid && idx + 1 < drawOtp.length) drawRefs.current[idx + 1]?.focus();
+                } else {
+                  setDrawInvalid((prev) => {
+                    const next = [...prev];
+                    next[idx] = false;
+                    return next;
+                  });
+                }
+              }}
+              className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                drawInvalid[idx] ? 'bg-white border-(--alertError) text-(--alertError) font-bold' : 'bg-white border-black-30 text-zinc-900'
+              }`}
+              placeholder='00'
+            />
+          ))}
+        </div>
+        <div className='mt-2 flex gap-2'>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={checkLoading || !setId || drawOtp.some((v) => v.length !== 2) || drawInvalid.some((b) => b)}
+            onClick={async () => {
+              const draw = drawOtp.map((v) => Number(v));
+              setCheckedDraw(draw);
+              await handleCheck(draw);
+            }}
+          >
+            {checkLoading ? 'Conferindo…' : 'Conferir'}
+          </button>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={!setId || checkedDraw.length !== 5}
+            onClick={async () => {
+              const contest = window.prompt('Número do concurso:');
+              if (!contest) return;
+              const n = Number(contest);
+              if (!Number.isInteger(n) || n <= 0) {
+                alert('Concurso inválido.');
+                return;
+              }
+              const res = await fetch('/api/loterias/quina/games/save-check', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ setId, draw: checkedDraw, contest: n }),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao salvar conferência.');
+                return;
+              }
+              alert(`Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`);
+            }}
+          >
+            Salvar
+          </button>
+          <button
+            type='button'
+            className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300 ml-auto'
+            onClick={async () => {
+              if (!window.confirm('Excluir TODAS as suas conferências da Quina?')) return;
+              if (!window.confirm('Confirma novamente?')) return;
+              const res = await fetch('/api/loterias/quina/games/delete-checks', { method: 'POST' });
+              const data = await res.json();
+              if (!res.ok) alert(data?.error || 'Falha ao remover conferências.');
+              else alert('Conferências removidas.');
+            }}
+          >
+            Limpar conferências
+          </button>
+          <div ref={liveRef} tabIndex={-1} aria-live='polite' className='sr-only' />
+        </div>
+        {matchesSummary ? (
+          <div className='mt-2 text-sm text-zinc-300 flex items-center gap-3'>
+            <span className='text-zinc-400'>Sumário:</span>
+            <span>2: {matchesSummary.c2}</span>
+            <span>3: {matchesSummary.c3}</span>
+            <span>4: {matchesSummary.c4}</span>
+            <span>5: {matchesSummary.c5}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Resultados */}
+      <div className='mt-3 rounded-md border border-white/10'>
+        <div className='overflow-x-auto'>
+          <table className='min-w-full text-sm'>
+            <thead className='text-zinc-400'>
+              <tr className='text-left'>
+                <th className='py-2 pl-3 pr-3 font-medium w-12'>#</th>
+                <th className='py-2 pr-3 font-medium w-24'>Posição</th>
+                <th className='py-2 pr-3 font-medium'>Dezenas</th>
+                <th className='py-2 pr-3 font-medium w-24'>Acertos</th>
+              </tr>
+            </thead>
+            <tbody className='text-zinc-300/90'>
+              {items.map((it, idx) => (
+                <tr key={`${it.position}-${idx}`} className='border-t border-white/10'>
+                  <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
+                  <td className='py-2 pr-3'>( {it.position} )</td>
+                  <td className='py-2 pr-3 font-medium text-zinc-100'>
+                    {it.numbers.map((n, i) => {
+                      const s = String(n).padStart(2, '0');
+                      const hit = checkedDrawSet.has(n);
+                      return (
+                        <span key={`${it.position}-${n}-${i}`} className='inline-flex items-center'>
+                          <span className={hit ? 'inline-block px-2 py-1 bg-green-40 rounded-sm' : ''}>{s}</span>
+                          {i < it.numbers.length - 1 ? <span className='px-1 text-zinc-500'>•</span> : null}
+                        </span>
+                      );
+                    })}
+                  </td>
+                  <td className='py-2 pr-3'>{it.matches ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
