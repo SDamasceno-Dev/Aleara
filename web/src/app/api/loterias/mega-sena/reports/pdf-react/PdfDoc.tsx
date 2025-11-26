@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Image, Svg, Circle, Path } from '@react-pdf/renderer';
 
 type ContestRow = { contestNo: number; checkedAt: string; total: number; c4: number; c5: number; c6: number; hitRate: number };
 
@@ -77,6 +77,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   logo: { width: 40, height: 18, objectFit: 'contain' as const, marginRight: 0 },
+  pieWrap: { marginTop: 14, flexDirection: 'column', alignItems: 'center', gap: 8 },
+  pieTitle: { fontFamily: 'Roboto', fontSize: 9, color: COLORS.gray },
+  legend: { marginLeft: 14, gap: 4 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  swatch: { width: 8, height: 8 },
 });
 
 function HRow({
@@ -148,6 +153,42 @@ export function buildAggregateDoc(
   rows: ContestRow[],
   opts?: { logoSrc?: string },
 ) {
+  const sumHits = kpis.c4 + kpis.c5 + kpis.c6;
+  const size = 120;
+  const stroke = 16;
+  const r = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  // Segments computed to cover exactly 100% (avoid gaps from floating rounding)
+  const r4 = sumHits ? kpis.c4 / sumHits : 0;
+  const r5 = sumHits ? kpis.c5 / sumHits : 0;
+  const seg4 = r4 * circumference;
+  const seg5 = r5 * circumference;
+  // Compute last by remainder to avoid rounding gaps
+  let seg6 = Math.max(0, circumference - (seg4 + seg5));
+  const eps = 1.5; // small overlap to close seam visually
+  // Helpers to draw filled donut segments (avoid seam artefacts from stroke dashes)
+  const rOuter = size / 2 - 2;
+  const rInner = rOuter - stroke;
+  function polarToCartesian(cxN: number, cyN: number, rN: number, angleDeg: number) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return { x: cxN + rN * Math.cos(rad), y: cyN + rN * Math.sin(rad) };
+  }
+  function describeRingSegment(cxN: number, cyN: number, rOuterN: number, rInnerN: number, startAngle: number, endAngle: number) {
+    const startOuter = polarToCartesian(cxN, cyN, rOuterN, startAngle);
+    const endOuter = polarToCartesian(cxN, cyN, rOuterN, endAngle);
+    const startInner = polarToCartesian(cxN, cyN, rInnerN, endAngle);
+    const endInner = polarToCartesian(cxN, cyN, rInnerN, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+    return [
+      `M ${startOuter.x} ${startOuter.y}`,
+      `A ${rOuterN} ${rOuterN} 0 ${largeArcFlag} 1 ${endOuter.x} ${endOuter.y}`,
+      `L ${startInner.x} ${startInner.y}`,
+      `A ${rInnerN} ${rInnerN} 0 ${largeArcFlag} 0 ${endInner.x} ${endInner.y}`,
+      'Z',
+    ].join(' ');
+  }
   return (
     <Document title='Relatório geral — Mega‑Sena'>
       <Page size='A4' style={styles.page}>
@@ -166,11 +207,12 @@ export function buildAggregateDoc(
           <View style={styles.card}><Text style={styles.label}>Acertos 5</Text><Text style={styles.value}>{kpis.c5}</Text></View>
           <View style={styles.card}><Text style={styles.label}>Acertos 6</Text><Text style={styles.value}>{kpis.c6}</Text></View>
         </View>
-        {/* Header with spacer before last to push "Taxa" to the right edge */}
+        {/* Header: spacers antes e depois do grupo 4/5/6 para centralizá-lo entre Apostas e Taxa */}
         <View style={styles.tableHeader}>
           <View style={{ width: 70 }}><Text style={styles.th}>Concurso</Text></View>
           <View style={{ width: 120 }}><Text style={styles.th}>Conferido em</Text></View>
           <View style={{ width: 70 }}><Text style={[styles.th, styles.tdRight]}>Apostas</Text></View>
+          <View style={{ flexGrow: 1 }} />
           <View style={{ width: 30 }}><Text style={[styles.th, styles.tdRight]}>4</Text></View>
           <View style={{ width: 30 }}><Text style={[styles.th, styles.tdRight]}>5</Text></View>
           <View style={{ width: 30 }}><Text style={[styles.th, styles.tdRight]}>6</Text></View>
@@ -182,6 +224,7 @@ export function buildAggregateDoc(
             <View style={{ width: 70 }}><Text style={styles.td}>{r.contestNo}</Text></View>
             <View style={{ width: 120 }}><Text style={styles.td}>{new Date(r.checkedAt).toLocaleString('pt-BR')}</Text></View>
             <View style={{ width: 70 }}><Text style={[styles.td, styles.tdRight]}>{r.total}</Text></View>
+            <View style={{ flexGrow: 1 }} />
             <View style={{ width: 30 }}><Text style={[styles.td, styles.tdRight]}>{r.c4}</Text></View>
             <View style={{ width: 30 }}><Text style={[styles.td, styles.tdRight]}>{r.c5}</Text></View>
             <View style={{ width: 30 }}><Text style={[styles.td, styles.tdRight, { color: COLORS.green }]}>{r.c6}</Text></View>
@@ -189,6 +232,43 @@ export function buildAggregateDoc(
             <View style={{ width: 70 }}><Text style={[styles.td, styles.tdRight]}>{(r.hitRate * 100).toFixed(1)}%</Text></View>
           </View>
         ))}
+        {/* Pizza 4/5/6 abaixo da tabela */}
+        <View style={styles.pieWrap}>
+          <Text style={styles.pieTitle}>Distribuição de acertos (4/5/6)</Text>
+          <Svg width={size} height={size}>
+            {(() => {
+              let start = -90; // start at 12 o'clock
+              const segs: Array<{ ratio: number; color: string }> = [
+                { ratio: r4, color: '#eab308' }, // 4
+                { ratio: r5, color: '#f97316' }, // 5
+                { ratio: Math.max(0, 1 - (r4 + r5)), color: COLORS.green }, // 6 remainder
+              ];
+              return segs
+                .filter(s => s.ratio > 0)
+                .map((s, i) => {
+                  const sweep = s.ratio * 360;
+                  const end = start + sweep;
+                  const d = describeRingSegment(cx, cy, rOuter, rInner, start, end);
+                  start = end;
+                  return <Path key={i} d={d} fill={s.color} />;
+                });
+            })()}
+          </Svg>
+          <View style={styles.legend}>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: '#eab308' }]} />
+              <Text style={styles.muted}>Acertos 4: {kpis.c4} ({kpis.totalBets ? ((kpis.c4 / kpis.totalBets) * 100).toFixed(1) : '0.0'}%)</Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: '#f97316' }]} />
+              <Text style={styles.muted}>Acertos 5: {kpis.c5} ({kpis.totalBets ? ((kpis.c5 / kpis.totalBets) * 100).toFixed(1) : '0.0'}%)</Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: COLORS.green }]} />
+              <Text style={styles.muted}>Acertos 6: {kpis.c6} ({kpis.totalBets ? ((kpis.c6 / kpis.totalBets) * 100).toFixed(1) : '0.0'}%)</Text>
+            </View>
+          </View>
+        </View>
         <View style={styles.footer} fixed>
           <Text style={styles.muted}>© {new Date().getFullYear()} ALEARA. Todos os direitos reservados.</Text>
           <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />

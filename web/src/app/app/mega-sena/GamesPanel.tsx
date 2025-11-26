@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
 type GeneratedItem = {
   position: number;
@@ -112,6 +113,9 @@ export default function GamesPanel() {
   const [saveContest, setSaveContest] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Global overlay
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState<string>('Processando…');
 
   // Matches summary (4/5/6) after conferir
   const matchesSummary = useMemo(() => {
@@ -208,6 +212,8 @@ export default function GamesPanel() {
       if (!proceed) return;
       setManualPositions(new Set());
     }
+    setBusy(true);
+    setBusyMsg('Gerando combinações…');
     setLoading(true);
     try {
       const k = Number(kInput || '0');
@@ -249,11 +255,14 @@ export default function GamesPanel() {
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setLoading(false);
+      setBusy(false);
     }
   }
 
   async function handleResample() {
     if (!setId) return;
+    setBusy(true);
+    setBusyMsg('Re-sorteando jogos…');
     setResampleLoading(true);
     try {
       const k = Number(kInput || '0');
@@ -281,11 +290,14 @@ export default function GamesPanel() {
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setResampleLoading(false);
+      setBusy(false);
     }
   }
 
   async function handleCheck() {
     if (!setId) return;
+    setBusy(true);
+    setBusyMsg('Conferindo jogos…');
     setCheckLoading(true);
     try {
       const res = await fetch('/api/loterias/mega-sena/games/check', {
@@ -311,11 +323,13 @@ export default function GamesPanel() {
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setCheckLoading(false);
+      setBusy(false);
     }
   }
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
+      <LoadingOverlay show={busy} message={busyMsg} subtitle='Por favor, aguarde.' />
       <div className='mb-3 text-sm text-zinc-200'>Jogos</div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         {/* Gerador (inclui Registrar apostas acima) */}
@@ -450,6 +464,8 @@ export default function GamesPanel() {
                     regDuplicateFlags.some(Boolean)
                   }
                   onClick={async () => {
+                    setBusy(true);
+                    setBusyMsg('Registrando apostas…');
                     const res = await fetch(
                       '/api/loterias/mega-sena/games/add-items',
                       {
@@ -465,6 +481,7 @@ export default function GamesPanel() {
                     const data = await res.json();
                     if (!res.ok) {
                       alert(data?.error || 'Falha ao registrar aposta.');
+                      setBusy(false);
                       return;
                     }
                     if (!setId && data.setId) {
@@ -486,6 +503,7 @@ export default function GamesPanel() {
                     );
                     setRegOtp(Array.from({ length: n }, () => ''));
                     setRegInvalid(Array.from({ length: n }, () => false));
+                    setBusy(false);
                   }}
                 >
                   Registrar
@@ -866,18 +884,20 @@ export default function GamesPanel() {
                 type='button'
                 className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
                 onClick={async () => {
+                  setBusy(true);
+                  setBusyMsg('Limpando conferências…');
                   if (
                     !window.confirm(
                       'Tem certeza que deseja excluir TODAS as suas conferências salvas?',
                     )
                   )
-                    return;
+                  { setBusy(false); return; }
                   if (
                     !window.confirm(
                       'Confirma novamente? Esta ação não pode ser desfeita.',
                     )
                   )
-                    return;
+                  { setBusy(false); return; }
                   const res = await fetch(
                     '/api/loterias/mega-sena/games/delete-checks',
                     {
@@ -892,6 +912,7 @@ export default function GamesPanel() {
                   } else {
                     alert(`Conferências removidas: ${data.deleted ?? 0}.`);
                   }
+                  setBusy(false);
                 }}
               >
                 Limpar conferências
@@ -943,6 +964,8 @@ export default function GamesPanel() {
           className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
           disabled={!setId || items.length === 0}
           onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Salvando lista de apostas…');
             const contest = window.prompt(
               'Número do concurso para salvar as apostas:',
             );
@@ -950,6 +973,7 @@ export default function GamesPanel() {
             const n = Number(contest);
             if (!Number.isInteger(n) || n <= 0) {
               alert('Número de concurso inválido.');
+              setBusy(false);
               return;
             }
             const title =
@@ -971,6 +995,7 @@ export default function GamesPanel() {
                 `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
               );
             }
+            setBusy(false);
           }}
         >
           Salvar apostas (por concurso)
@@ -979,6 +1004,8 @@ export default function GamesPanel() {
           type='button'
           className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
           onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Carregando lista de apostas…');
             const contest = window.prompt(
               'Número do concurso para carregar as apostas:',
             );
@@ -986,6 +1013,7 @@ export default function GamesPanel() {
             const n = Number(contest);
             if (!Number.isInteger(n) || n <= 0) {
               alert('Número de concurso inválido.');
+              setBusy(false);
               return;
             }
             const mode = window.confirm(
@@ -1020,6 +1048,7 @@ export default function GamesPanel() {
               }));
               if (fetched.length > 0) setItems(fetched);
             }
+            setBusy(false);
           }}
         >
           Carregar apostas (por concurso)
@@ -1183,6 +1212,8 @@ export default function GamesPanel() {
                 }
                 onClick={async () => {
                   setSaveLoading(true);
+                  setBusy(true);
+                  setBusyMsg('Salvando conferência…');
                   try {
                     const n = Number(saveContest || '0');
                     const res = await fetch('/api/loterias/mega-sena/games/save-check', {
@@ -1199,6 +1230,7 @@ export default function GamesPanel() {
                     setSaveOpen(false);
                   } finally {
                     setSaveLoading(false);
+                    setBusy(false);
                   }
                 }}
               >
@@ -1283,6 +1315,8 @@ export default function GamesPanel() {
                             )
                               ? 'replace'
                               : 'append';
+                            setBusy(true);
+                            setBusyMsg('Carregando lista de apostas…');
                             const res = await fetch(
                               '/api/loterias/mega-sena/games/bets/load-by-contest',
                               {
@@ -1300,6 +1334,7 @@ export default function GamesPanel() {
                               alert(
                                 data?.error || 'Falha ao carregar apostas.',
                               );
+                              setBusy(false);
                               return;
                             }
                             if (!setId && data.setId) setSetId(data.setId);
@@ -1314,6 +1349,7 @@ export default function GamesPanel() {
                             setCheckedDraw([]);
                             setManualPositions(new Set());
                             setListsOpen(false);
+                            setBusy(false);
                           }}
                         >
                            <td className='py-2 pl-2'>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
 type ReportItem = { position: number; numbers: number[]; matches: number };
 type ReportData = {
@@ -24,8 +25,12 @@ export default function ReportsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [aggregate, setAggregate] = useState<AggregateData | null>(null);
   const [viewMode, setViewMode] = useState<'detail' | 'aggregate'>('detail');
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState<string>('Carregando…');
 
   async function loadLatest() {
+    setBusy(true);
+    setBusyMsg('Carregando última conferência…');
     setLoading(true);
     setError(null);
     try {
@@ -45,10 +50,13 @@ export default function ReportsPanel() {
       setViewMode('detail');
     } finally {
       setLoading(false);
+      setBusy(false);
     }
   }
 
   async function loadByContest(n: number) {
+    setBusy(true);
+    setBusyMsg('Carregando relatório do concurso…');
     setLoading(true);
     setError(null);
     try {
@@ -64,10 +72,13 @@ export default function ReportsPanel() {
       setViewMode('detail');
     } finally {
       setLoading(false);
+      setBusy(false);
     }
   }
 
   async function loadAggregate() {
+    setBusy(true);
+    setBusyMsg('Carregando relatório geral…');
     setLoading(true);
     setError(null);
     try {
@@ -87,6 +98,7 @@ export default function ReportsPanel() {
       setViewMode('aggregate');
     } finally {
       setLoading(false);
+      setBusy(false);
     }
   }
 
@@ -102,6 +114,7 @@ export default function ReportsPanel() {
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
+      <LoadingOverlay show={busy} message={busyMsg} subtitle='Preparando dados…' />
       <div className='mb-3 text-sm text-zinc-200'>Relatórios</div>
 
       <div className='mb-3 flex flex-wrap items-end gap-3'>
@@ -142,6 +155,8 @@ export default function ReportsPanel() {
           type='button'
           className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
           onClick={() => {
+            setBusy(true);
+            setBusyMsg('Gerando PDF…');
             const url =
               viewMode === 'aggregate'
                 ? '/api/loterias/mega-sena/reports/pdf-react?mode=aggregate'
@@ -149,6 +164,7 @@ export default function ReportsPanel() {
                   ? `/api/loterias/mega-sena/reports/pdf-react?mode=contest&contestNo=${report.contestNo}`
                   : '/api/loterias/mega-sena/reports/pdf-react?mode=aggregate';
             window.open(url, '_blank');
+            setTimeout(() => setBusy(false), 600); // libera rapidamente após abrir
           }}
         >
           Exportar PDF

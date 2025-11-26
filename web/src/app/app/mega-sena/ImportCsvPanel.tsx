@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/button';
 import { useRouter } from 'next/navigation';
+import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
 export function ImportCsvPanel() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function ImportCsvPanel() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmClear, setConfirmClear] = useState<0 | 1 | 2>(0);
+  const [busyMsg, setBusyMsg] = useState<string>('Processando…');
 
   async function onFileSelected(file: File) {
     setFileName(file.name);
@@ -23,6 +25,7 @@ export function ImportCsvPanel() {
       setStatus('Selecione um arquivo CSV primeiro.');
       return;
     }
+    setBusyMsg('Processando importação da Mega-Sena…');
     setBusy(true);
     try {
       const text = await file.text();
@@ -68,6 +71,7 @@ export function ImportCsvPanel() {
       );
       return;
     }
+    setBusyMsg('Limpando base da Mega-Sena…');
     setBusy(true);
     try {
       const res = await fetch('/api/loterias/mega-sena/clear', {
@@ -93,6 +97,7 @@ export function ImportCsvPanel() {
 
   return (
     <section className='rounded-lg border border-[var(--black-30)] bg-[var(--black-20)] p-4 space-y-3'>
+      <LoadingOverlay show={busy} message={busyMsg} subtitle='Isso pode levar alguns instantes.' />
       <div className='text-sm text-zinc-200'>
         Importação da base de sorteios
       </div>
