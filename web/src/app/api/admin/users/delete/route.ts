@@ -24,7 +24,6 @@ async function findUserIdByEmail(
   perPage = 1000,
 ): Promise<string | null> {
   const target = email.toLowerCase();
-  // @ts-expect-error: admin.listUsers typing varies across versions
   for (let page = 1; page <= maxPages; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
     if (error) return null;
