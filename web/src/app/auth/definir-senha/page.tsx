@@ -111,11 +111,12 @@ export default function DefinirSenhaPage() {
               } else {
                 attemptErr = byHash.error.message;
                 // Try with token + email
-                const byToken = await supabase.auth.verifyOtp({
-                  email: emailParam || undefined,
+                const tokenPayload: any = {
                   token: tokenHash,
                   type: t as any,
-                });
+                };
+                if (emailParam) tokenPayload.email = emailParam;
+                const byToken = await supabase.auth.verifyOtp(tokenPayload);
                 if (!byToken.error) {
                   lastErr = null;
                   try { console.log('[definir-senha] verifyOtp OK with type', t, 'via token+email'); } catch {}

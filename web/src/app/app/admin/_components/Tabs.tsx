@@ -49,7 +49,9 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
           return (
             <button
               key={tab.id}
-              ref={(el) => (tabRefs.current[idx] = el)}
+              ref={(el) => {
+                tabRefs.current[idx] = el;
+              }}
               id={tabId}
               role="tab"
               aria-selected={isActive}

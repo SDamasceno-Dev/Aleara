@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { renderToStream } from '@react-pdf/renderer';
+import { renderToStream, type DocumentProps } from '@react-pdf/renderer';
 import React from 'react';
-import { buildAggregateDoc, buildContestDoc } from './PdfDoc';
+import { buildAggregateDoc, buildContestDoc, type ContestRow } from './PdfDoc';
 
 function formatNumbers(nums: number[]): string {
   return (nums ?? []).map((n) => String(n).padStart(2, '0')).join(', ');
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const mode = (url.searchParams.get('mode') || 'aggregate') as 'aggregate' | 'contest';
   const contestNo = Number(url.searchParams.get('contestNo') || '0');
 
-  let doc: React.ReactElement;
+  let doc: React.ReactElement<DocumentProps>;
   const origin = new URL(request.url).origin;
   // Prefer PNG/JPG for @react-pdf Image (SVG não é suportado)
   const logoSrc = `${origin}/assets/Logo_AlearaReport.png`;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image, Svg, Circle, Path } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Image, Svg, Circle, Path, type DocumentProps } from '@react-pdf/renderer';
 
-type ContestRow = { contestNo: number; checkedAt: string; total: number; c4: number; c5: number; c6: number; hitRate: number };
+export type ContestRow = { contestNo: number; checkedAt: string; total: number; c4: number; c5: number; c6: number; hitRate: number };
 
 // Palette
 const COLORS = {
@@ -107,10 +107,7 @@ function HRow({
           }
         >
           <Text
-            style={[
-              styles.th,
-              aligns?.[i] === 'right' ? { textAlign: 'right' as const } : null,
-            ]}
+            style={[styles.th, ...(aligns?.[i] === 'right' ? [styles.tdRight] : [])]}
           >
             {c as any}
           </Text>
@@ -131,7 +128,7 @@ function TRow({
   flexLast?: boolean;
 }) {
   return (
-    <View style={[styles.row, zebra ? styles.zebra : null]}>
+    <View style={[styles.row, ...(zebra ? [styles.zebra] : [])]}>
       {children.map((c, i) => (
         <View
           key={i}
@@ -152,7 +149,7 @@ export function buildAggregateDoc(
   kpis: { totalConferences: number; totalBets: number; avgPerCheck: number; c4: number; c5: number; c6: number; hitRate: number },
   rows: ContestRow[],
   opts?: { logoSrc?: string },
-) {
+): React.ReactElement<DocumentProps> {
   const sumHits = kpis.c4 + kpis.c5 + kpis.c6;
   const size = 120;
   const stroke = 16;
@@ -220,7 +217,7 @@ export function buildAggregateDoc(
           <View style={{ width: 70 }}><Text style={[styles.th, styles.tdRight]}>Taxa</Text></View>
         </View>
         {rows.map((r, idx) => (
-          <View key={`${r.contestNo}-${r.checkedAt}`} style={[styles.row, idx % 2 === 1 ? styles.zebra : null]}>
+          <View key={`${r.contestNo}-${r.checkedAt}`} style={[styles.row, ...(idx % 2 === 1 ? [styles.zebra] : [])]}>
             <View style={{ width: 70 }}><Text style={styles.td}>{r.contestNo}</Text></View>
             <View style={{ width: 120 }}><Text style={styles.td}>{new Date(r.checkedAt).toLocaleString('pt-BR')}</Text></View>
             <View style={{ width: 70 }}><Text style={[styles.td, styles.tdRight]}>{r.total}</Text></View>
@@ -284,7 +281,7 @@ export function buildContestDoc(
   kpis: { total: number; c4: number; c5: number; c6: number; hitRate: number },
   rows: { position: number; numbers: number[]; matches: number }[],
   opts?: { logoSrc?: string },
-) {
+): React.ReactElement<DocumentProps> {
   const formatNumbers = (nums: number[]) => (nums ?? []).map((n) => String(n).padStart(2, '0')).join(', ');
   return (
     <Document title={`Relatório do concurso ${contestNo} — Mega‑Sena`}>
