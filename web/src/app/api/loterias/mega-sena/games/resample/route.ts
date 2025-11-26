@@ -7,8 +7,8 @@ function binom(n: number, k: number): number {
   let nn = BigInt(n);
   let kk = BigInt(k);
   if (kk > nn - kk) kk = nn - kk;
-  let result = 1n;
-  for (let i = 1n; i <= kk; i++) {
+  let result = BigInt(1);
+  for (let i = BigInt(1); i <= kk; i = i + BigInt(1)) {
     result = (result * (nn - kk + i)) / i;
   }
   return Number(result);
