@@ -140,6 +140,68 @@ export function GamesPanel() {
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
       <div className='mb-3 text-sm text-zinc-200'>Jogos — Quina</div>
+      {/* Ações de listas */}
+      <div className='mb-3 flex items-center gap-2'>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          disabled={!setId || items.length === 0}
+          onClick={async () => {
+            const contest = window.prompt('Número do concurso para salvar as apostas:');
+            if (!contest) return;
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              return;
+            }
+            const title = window.prompt('Título (opcional):') || undefined;
+            const res = await fetch('/api/loterias/quina/games/bets/save-by-contest', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ setId, contestNo: n, title }),
+            });
+            const data = await res.json();
+            if (!res.ok) alert(data?.error || 'Falha ao salvar apostas.');
+            else alert(`Apostas salvas para o concurso ${n}. Total: ${data.total}.`);
+          }}
+        >
+          Salvar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            const contest = window.prompt('Número do concurso para carregar as apostas:');
+            if (!contest) return;
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              return;
+            }
+            const mode = window.confirm('Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).') ? 'replace' : 'append';
+            const res = await fetch('/api/loterias/quina/games/bets/load-by-contest', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ contestNo: n, mode, setId }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao carregar apostas.');
+              return;
+            }
+            if (!setId && data.setId) setSetId(data.setId);
+            const fetched = (data.items ?? []).map((it: any) => ({
+              position: it.position as number,
+              numbers: (it.numbers as number[]) ?? [],
+              matches: null as number | null,
+            }));
+            if (fetched.length > 0) setItems(fetched);
+          }}
+        >
+          Carregar apostas (por concurso)
+        </button>
+        <ManageLists setId={setId} setItems={setItems} setCheckedDraw={setCheckedDraw} />
+      </div>
 
       {/* Registrar apostas */}
       <div className='rounded-md border border-white/10 p-3 mb-3'>
@@ -499,6 +561,170 @@ export function GamesPanel() {
         </div>
       </div>
     </section>
+  );
+}
+
+function ManageLists({
+  setId,
+  setItems,
+  setCheckedDraw,
+}: {
+  setId: string | null;
+  setItems: React.Dispatch<React.SetStateAction<GeneratedItem[]>>;
+  setCheckedDraw: React.Dispatch<React.SetStateAction<number[]>>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [betLists, setBetLists] = useState<
+    Array<{ id: string; contestNo: number | null; title: string | null; count: number; createdAt: string }>
+  >([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  return (
+    <>
+      <button
+        type='button'
+        className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+        onClick={async () => {
+          setOpen(true);
+          setLoading(true);
+          try {
+            const res = await fetch('/api/loterias/quina/games/bets/lists');
+            const data = await res.json();
+            if (!res.ok) alert(data?.error || 'Falha ao listar.');
+            else setBetLists(data.items ?? []);
+          } finally {
+            setLoading(false);
+            setSelected(new Set());
+          }
+        }}
+      >
+        Gerenciar listas
+      </button>
+      {open ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center'>
+          <button aria-label='Fechar' onClick={() => setOpen(false)} className='absolute inset-0 bg-black/60 backdrop-blur-sm' />
+          <div className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'>
+            <div className='px-5 py-3 border-b border-black/10 bg-white'>
+              <h2 className='text-sm font-semibold tracking-wider'>Listas salvas — Quina</h2>
+            </div>
+            <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
+              {loading ? (
+                <div className='text-sm text-zinc-500'>Carregando…</div>
+              ) : betLists.length === 0 ? (
+                <div className='text-sm text-zinc-500'>Nenhuma lista encontrada.</div>
+              ) : (
+                <div className='max-h-[60vh] overflow-y-auto scroll-y rounded-md border border-black/10'>
+                  <table className='w-full text-sm'>
+                    <thead className='sticky top-0 bg-black-10'>
+                      <tr className='text-left text-zinc-500'>
+                        <th className='w-10 py-2 pl-2'>
+                          <input
+                            type='checkbox'
+                            checked={selected.size > 0 && selected.size === betLists.length}
+                            onChange={(e) => setSelected(e.target.checked ? new Set(betLists.map((b) => b.id)) : new Set())}
+                          />
+                        </th>
+                        <th className='py-2'>Concurso</th>
+                        <th className='py-2'>Apostas</th>
+                        <th className='py-2'>Título</th>
+                        <th className='py-2'>Criado</th>
+                      </tr>
+                    </thead>
+                    <tbody className='text-zinc-900'>
+                      {betLists.map((b) => (
+                        <tr
+                          key={b.id}
+                          className='border-t border-black/10 hover:bg-black/5 cursor-pointer'
+                          onClick={async () => {
+                            const proceed = window.confirm('Carregar as apostas deste item?');
+                            if (!proceed) return;
+                            const mode = window.confirm('Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).')
+                              ? 'replace'
+                              : 'append';
+                            const res = await fetch('/api/loterias/quina/games/bets/load-by-contest', {
+                              method: 'POST',
+                              headers: { 'content-type': 'application/json' },
+                              body: JSON.stringify({ contestNo: b.contestNo, mode, setId }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                              alert(data?.error || 'Falha ao carregar apostas.');
+                              return;
+                            }
+                            if (!setId && data.setId) {
+                              // eslint-disable-next-line no-self-assign
+                            }
+                            const fetched = (data.items ?? []).map((it: any) => ({
+                              position: it.position as number,
+                              numbers: (it.numbers as number[]) ?? [],
+                              matches: null as number | null,
+                            }));
+                            setItems(fetched);
+                            setCheckedDraw([]);
+                            setOpen(false);
+                          }}
+                        >
+                          <td className='py-2 pl-2'>
+                            <input
+                              type='checkbox'
+                              checked={selected.has(b.id)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                setSelected((prev) => {
+                                  const next = new Set(prev);
+                                  if (e.target.checked) next.add(b.id);
+                                  else next.delete(b.id);
+                                  return next;
+                                });
+                              }}
+                            />
+                          </td>
+                          <td className='py-2'>{b.contestNo ?? '—'}</td>
+                          <td className='py-2'>{b.count}</td>
+                          <td className='py-2'>{b.title ?? '—'}</td>
+                          <td className='py-2'>{new Date(b.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className='px-5 py-3 border-t border-black/10 bg-white flex items-center justify-between'>
+              <div className='text-xs text-zinc-600'>Selecionados: {selected.size}</div>
+              <div className='flex items-center gap-2'>
+                <button
+                  type='button'
+                  className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-black/5 text-red-600'
+                  disabled={selected.size === 0}
+                  onClick={async () => {
+                    if (selected.size === 0) return;
+                    if (!window.confirm('Excluir listas selecionadas?')) return;
+                    const res = await fetch('/api/loterias/quina/games/bets/lists/delete', {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({ listIds: Array.from(selected) }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao excluir.');
+                      return;
+                    }
+                    setBetLists((prev) => prev.filter((b) => !selected.has(b.id)));
+                    setSelected(new Set());
+                  }}
+                >
+                  Excluir selecionados
+                </button>
+                <button type='button' className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5' onClick={() => setOpen(false)}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 

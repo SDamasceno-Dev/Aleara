@@ -43,12 +43,31 @@ export function ImportCsvPanel() {
           data = { error: t };
         } catch {}
       }
+      const meta =
+        typeof data?.processed === 'number'
+          ? ` processadas ${data.processed} linhas`
+          : '';
+      const errCount =
+        Array.isArray(data?.errors) && data.errors.length
+          ? `, erros ${data.errors.length}`
+          : '';
       if (!res.ok) {
-        setStatus(data?.error ?? 'Falha ao importar.');
+        setStatus(`${data?.error ?? 'Falha ao importar.'}${meta}${errCount}`);
+        if (Array.isArray(data?.errors) && data.errors.length) {
+          // Log primeiras ocorrências para depuração
+          // eslint-disable-next-line no-console
+          console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
+        }
       } else {
         setStatus(
-          `Importação concluída: inseridos ${data?.imported ?? 0}, atualizados ${data?.updated ?? 0}, ignorados ${data?.skipped ?? 0}.`,
+          `Importação concluída: inseridos ${data?.imported ?? 0}, atualizados ${data?.updated ?? 0}, ignorados ${
+            data?.skipped ?? 0
+          }.${meta}${errCount}`,
         );
+        if (Array.isArray(data?.errors) && data.errors.length) {
+          // eslint-disable-next-line no-console
+          console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
+        }
         router.refresh();
       }
     } catch (e) {

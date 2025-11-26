@@ -33,12 +33,45 @@ async function assertAdmin() {
   return { ok: true as const, supabase };
 }
 
+function detectDelimiter(firstLine: string): string {
+  const candidates: Array<string> = [',', ';', '\t'];
+  const counts: Record<string, number> = { ',': 0, ';': 0, '\t': 0 };
+  let inQuotes = false;
+  for (let i = 0; i < firstLine.length; i += 1) {
+    const ch = firstLine[i];
+    if (ch === '"') {
+      // toggle only when not an escaped quote
+      if (firstLine[i + 1] !== '"') {
+        inQuotes = !inQuotes;
+      } else {
+        i += 1; // skip escaped quote
+      }
+      continue;
+    }
+    if (!inQuotes && (ch === ',' || ch === ';' || ch === '\n' || ch === '\t')) {
+      if (ch in counts) counts[ch] += 1;
+    }
+  }
+  // choose the delimiter with highest count, default to comma
+  let best = ',';
+  let bestCount = -1;
+  for (const c of candidates) {
+    if (counts[c] > bestCount) {
+      best = c;
+      bestCount = counts[c];
+    }
+  }
+  return best;
+}
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
+  const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const nl = s.indexOf('\n');
+  const firstLine = nl >= 0 ? s.slice(0, nl) : s;
+  const delim = detectDelimiter(firstLine);
   let row: string[] = [];
   let field = '';
   let inQuotes = false;
-  const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   for (let i = 0; i < s.length; i += 1) {
     const ch = s[i];
     if (inQuotes) {
@@ -52,23 +85,39 @@ function parseCsv(text: string): string[][] {
       } else {
         field += ch;
       }
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ',' || ch === ';' || ch === '\t') {
+      continue;
+    }
+    if (ch === '"') {
+      // start quoted field only if at beginning of field; stray quotes inside unquoted field are literal
+      if (field.length === 0) {
+        inQuotes = true;
+      } else {
+        field += '"';
+      }
+      continue;
+    }
+    if (ch === delim) {
       row.push(field);
       field = '';
-    } else if (ch === '\n') {
+      continue;
+    }
+    if (ch === '\n') {
       row.push(field);
       rows.push(row);
       row = [];
       field = '';
-    } else {
-      field += ch;
+      continue;
     }
+    field += ch;
   }
+  // flush last field/row
   row.push(field);
-  if (row.length > 1 || (row.length === 1 && row[0].trim().length > 0)) rows.push(row);
-  if (rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
+  if (row.length > 1 || (row.length === 1 && row[0].trim().length > 0)) {
+    rows.push(row);
+  }
+  if (rows.length && rows[0].length) {
+    rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
+  }
   return rows;
 }
 function parseDateBR(v: string): string | null {
