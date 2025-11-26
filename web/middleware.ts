@@ -1,32 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  if (pathname.startsWith('/app')) {
-    // Supabase session requires both auth/access token and refresh token
-    const all = request.cookies.getAll();
-    const hasAuthToken = all.some(
-      (c) =>
-        c.name.startsWith('sb-') &&
-        (c.name.endsWith('-auth-token') || c.name.endsWith('-access-token')) &&
-        c.value != null &&
-        c.value !== '',
-    );
-    const hasRefreshToken = all.some(
-      (c) =>
-        c.name.startsWith('sb-') &&
-        c.name.endsWith('-refresh-token') &&
-        c.value != null &&
-        c.value !== '',
-    );
-    const hasSupabaseSession = hasAuthToken && hasRefreshToken;
-    if (!hasSupabaseSession) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/';
-      return NextResponse.redirect(url);
-    }
-  }
+// NOTE:
+// We removed cookie-based auth gating here because Supabase client-side auth
+// persists tokens in localStorage, não em cookies httpOnly. O gate correto
+// já é feito no layout de /app com o server client (SSR) que redireciona
+// para "/" quando não há sessão. Mantemos o middleware como pass-through.
+export function middleware(_: NextRequest) {
   return NextResponse.next();
 }
 
