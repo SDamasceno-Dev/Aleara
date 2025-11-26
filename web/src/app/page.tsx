@@ -21,7 +21,7 @@ export default function Home() {
       <div className='relative z-10 mx-auto w-full max-w-md px-4 py-10'>
         <div className='mb-8 flex flex-col items-center justify-center gap-3 text-center'>
           <Image
-            src='/assets/prism.svg'
+            src='/assets/Logo_Aleara.svg'
             alt='Aleara'
             width={256}
             height={256}
@@ -147,7 +147,12 @@ export default function Home() {
             }}
             className='glass-dark inline-flex h-11 w-full items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-zinc-100 transition-colors hover:bg-white/5'
           >
-            <Image src='/assets/icons/google-icon-logo.svg' alt='Google' width={16} height={16} />
+            <Image
+              src='/assets/icons/google-icon-logo.svg'
+              alt='Google'
+              width={16}
+              height={16}
+            />
             <span>Continuar com Google</span>
           </button>
           <div className='flex items-center justify-center gap-4 pt-4 text-xs text-zinc-400/90'>

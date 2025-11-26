@@ -142,64 +142,68 @@ function DialogRoot({
       <div data-dialog-root-placeholder aria-hidden />
       {typeof document !== 'undefined' && state.open
         ? createPortal(
-    <div className='fixed inset-0 z-50 flex items-center justify-center'>
-      {/* overlay */}
-      <button
-        aria-label='Fechar'
-        onClick={close}
-        className={dialogOverlay}
-        aria-hidden='true'
-        tabIndex={-1}
-      />
-      {/* content */}
-      <div
-        role='dialog'
-        aria-modal='true'
-        aria-labelledby='dialog-title'
-        aria-describedby='dialog-description'
+            <div className='fixed inset-0 z-50 flex items-center justify-center'>
+              {/* overlay */}
+              <button
+                aria-label='Fechar'
+                onClick={close}
+                className={dialogOverlay}
+                aria-hidden='true'
+                tabIndex={-1}
+              />
+              {/* content */}
+              <div
+                role='dialog'
+                aria-modal='true'
+                aria-labelledby='dialog-title'
+                aria-describedby='dialog-description'
                 className={`${dialogContainer} ${styles.border} ${
                   state.size === 'xl'
                     ? 'min-w-[80vw] w-[82vw] max-w-[96vw] h-[80vh]'
                     : 'max-w-md'
                 } flex flex-col`}
-        ref={containerRef}
-        tabIndex={-1}
-      >
-        <div className={`${dialogHeaderBar} ${styles.headerBg}`}>
-          <h2
-            id='dialog-title'
-            className='text-xs font-semibold tracking-widest'
-          >
+                ref={containerRef}
+                tabIndex={-1}
+              >
+                <div className={`${dialogHeaderBar} ${styles.headerBg}`}>
+                  <h2
+                    id='dialog-title'
+                    className='text-base font-semibold tracking-widest'
+                  >
                     {state.title ?? 'AVISO'}
-          </h2>
-          <button
-            onClick={close}
-            className='absolute right-2 top-1.5 rounded-md p-1 text-white/90 hover:bg-white/15'
-            aria-label='Fechar diálogo'
-          >
-            <svg viewBox='0 0 24 24' className='h-4 w-4' aria-hidden='true'>
-              <path
-                d='M6 6l12 12M18 6L6 18'
-                stroke='currentColor'
-                strokeWidth='2'
-                strokeLinecap='round'
-              />
-            </svg>
-          </button>
-        </div>
-        <div
-          id='dialog-description'
+                  </h2>
+                  <button
+                    onClick={close}
+                    className='absolute right-2 top-1.5 rounded-md p-1 text-white/90 hover:bg-white/15'
+                    aria-label='Fechar diálogo'
+                  >
+                    <svg
+                      viewBox='0 0 24 24'
+                      className='h-4 w-4'
+                      aria-hidden='true'
+                    >
+                      <path
+                        d='M6 6l12 12M18 6L6 18'
+                        stroke='currentColor'
+                        strokeWidth='2'
+                        strokeLinecap='round'
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div
+                  id='dialog-description'
                   className='px-5 py-4 text-sm text-zinc-700 flex-1 min-h-0 overflow-hidden'
-        >
-          {typeof state.description === 'string' ? (
-            <p>{state.description}</p>
-          ) : (
-            state.description
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+                >
+                  {typeof state.description === 'string' ? (
+                    <p>{state.description}</p>
+                  ) : (
+                    state.description
+                  )}
+                </div>
+              </div>
+            </div>,
+            document.body,
           )
         : null}
     </>

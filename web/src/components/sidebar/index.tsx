@@ -39,11 +39,11 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
   useEffect(() => {
     try {
-      const isLotteryRoute = lotterySlugs.some((l) => l.slug === currentLottery);
-      const saved =
-        typeof window !== 'undefined' ? (localStorage.getItem('lastLottery') ?? '') : '';
-      const validSaved = lotterySlugs.some((l) => l.slug === saved) ? saved : '';
-      setSelectedLottery(isLotteryRoute ? currentLottery : validSaved);
+      const isLotteryRoute = lotterySlugs.some(
+        (l) => l.slug === currentLottery,
+      );
+      // When outside lottery routes, reset selection to placeholder
+      setSelectedLottery(isLotteryRoute ? currentLottery : '');
     } catch {
       setSelectedLottery(currentLottery);
     }
@@ -51,7 +51,13 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <div className='flex flex-col items-center gap-2'>
-      <Image src='/assets/prism.svg' alt='Aleara' width={64} height={64} priority />
+      <Image
+        src='/assets/Logo_Aleara.svg'
+        alt='Aleara'
+        width={64}
+        height={64}
+        priority
+      />
       <aside className='w-56 rounded-lg overflow-hidden'>
         <nav className='flex p-2 flex-col bg-black/20 h-[calc(100vh-13rem)]'>
           <div className='space-y-1'>

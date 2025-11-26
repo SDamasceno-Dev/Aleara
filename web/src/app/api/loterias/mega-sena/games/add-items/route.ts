@@ -1,0 +1,137 @@
+import { NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+
+type AddItemsRequest =
+  | { setId: string; items: number[][] }
+  | { items: number[][]; setId?: undefined };
+
+function normalizeNumbers(nums: number[]): number[] {
+  return [...nums].sort((a, b) => a - b);
+}
+
+function combinationsOfSix(sortedNums: number[]): number[][] {
+  const a = sortedNums;
+  const n = a.length;
+  const out: number[][] = [];
+  for (let i = 0; i < n - 5; i++) {
+    for (let j = i + 1; j < n - 4; j++) {
+      for (let k = j + 1; k < n - 3; k++) {
+        for (let l = k + 1; l < n - 2; l++) {
+          for (let m = l + 1; m < n - 1; m++) {
+            for (let o = m + 1; o < n; o++) {
+              out.push([a[i], a[j], a[k], a[l], a[m], a[o]]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+export async function POST(request: Request) {
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let body: AddItemsRequest;
+  try {
+    body = (await request.json()) as AddItemsRequest;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+  const { items } = body as any;
+  const maybeSetId: string | undefined = (body as any).setId;
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: 'Missing items' }, { status: 400 });
+  }
+
+  let setId = maybeSetId;
+
+  // Build normalized bets exactly as provided (length 6..20), no combination expansion
+  const numbersKey = (a: number[]) => normalizeNumbers(a).join(',');
+  const localKeys = new Set<string>();
+  const betsFromPayload: number[][] = [];
+  for (const arr of items) {
+    if (!Array.isArray(arr) || arr.length < 6 || arr.length > 20) continue;
+    const base = normalizeNumbers(arr).filter(
+      (n) => Number.isInteger(n) && n >= 1 && n <= 60,
+    );
+    if (new Set(base).size !== base.length) continue;
+    const key = numbersKey(base);
+    if (localKeys.has(key)) continue;
+    localKeys.add(key);
+    betsFromPayload.push(base);
+  }
+  if (betsFromPayload.length === 0) {
+    return NextResponse.json({ error: 'Nenhuma aposta válida (6..20 dezenas).' }, { status: 400 });
+  }
+
+  // If no set provided, create a minimal manual set using the first 6-number combo
+  if (!setId) {
+    const firstSix = betsFromPayload[0];
+    const { data: created, error: createErr } = await supabase
+      .from('megasena_user_sets')
+      .insert({
+        user_id: user.id,
+        source_numbers: firstSix, // 6..20 allowed
+        total_combinations: 1,
+        sample_size: 0,
+      })
+      .select('id')
+      .single();
+    if (createErr || !created) {
+      return NextResponse.json({ error: createErr?.message || 'Cannot create set' }, { status: 500 });
+    }
+    setId = created.id as string;
+  }
+
+  // Ensure ownership via RLS and compute next positions
+  const { data: existing, error: exErr } = await supabase
+    .from('megasena_user_items')
+    .select('position, numbers')
+    .eq('set_id', setId);
+  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+
+  const rows: Array<{ set_id: string; position: number; numbers: number[]; matches: number | null }> = [];
+  const existingKeys = new Set<string>(
+    (existing ?? []).map((r) => numbersKey(r.numbers as number[])),
+  );
+  let maxPos = Math.max(-1, ...((existing ?? []).map((r) => r.position as number)));
+  for (const nums of betsFromPayload) {
+    const key = numbersKey(nums);
+    if (existingKeys.has(key)) continue;
+    maxPos += 1;
+    rows.push({
+      set_id: setId!,
+      position: maxPos,
+      numbers: nums,
+      matches: null,
+    });
+    existingKeys.add(key);
+  }
+
+  if (rows.length === 0) {
+    return NextResponse.json({ ok: true, added: 0, items: [] });
+  }
+
+  const { error: insErr } = await supabase.from('megasena_user_items').insert(rows);
+  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+
+  // Atualiza sample_size do set para refletir os novos itens
+  const newCount = (existing?.length ?? 0) + rows.length;
+  await supabase
+    .from('megasena_user_sets')
+    .update({ sample_size: newCount })
+    .eq('id', setId);
+
+  return NextResponse.json({
+    ok: true,
+    added: rows.length,
+    setId,
+    items: rows.map((r) => ({ position: r.position, numbers: r.numbers, matches: null })),
+  });
+}
+
+
