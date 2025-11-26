@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DialogProvider, useDialog } from '@/components/dialog';
+import type { DialogIntent } from './types';
 
 const meta = {
   title: 'Components/Dialog',
@@ -9,7 +10,7 @@ const meta = {
 export default meta;
 type Story = StoryObj;
 
-function Demo({ intent }: { intent: 'alert' | 'warning' | 'message' }) {
+function Demo({ intent }: { intent: DialogIntent }) {
   const dialog = useDialog();
   return (
     <button
@@ -39,7 +40,7 @@ export const Message: Story = {
 export const Warning: Story = {
   render: () => (
     <DialogProvider>
-      <Demo intent='warning' />
+      <Demo intent='alertWarning' />
     </DialogProvider>
   ),
 };
@@ -47,7 +48,7 @@ export const Warning: Story = {
 export const Alert: Story = {
   render: () => (
     <DialogProvider>
-      <Demo intent='alert' />
+      <Demo intent='alertError' />
     </DialogProvider>
   ),
 };

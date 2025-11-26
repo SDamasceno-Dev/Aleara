@@ -70,7 +70,9 @@ export function Tabs({
               role='tab'
               aria-selected={isActive}
               aria-controls={panelId}
-              ref={(el) => (tabRefs.current[idx] = el)}
+              ref={(el) => {
+                tabRefs.current[idx] = el;
+              }}
               className={`px-3 py-2 text-xs sm:text-sm rounded-t-md border-b-2 ${
                 isActive
                   ? 'border-[var(--color-primary)] text-zinc-100'

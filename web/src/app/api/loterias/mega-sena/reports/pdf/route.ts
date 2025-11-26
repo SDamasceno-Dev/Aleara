@@ -291,7 +291,12 @@ export async function GET(request: Request) {
       mode === 'aggregate'
         ? `relatorio-geral-megasena.pdf`
         : `relatorio-concurso-${contestNo}.pdf`;
-    return new NextResponse(pdf, {
+    // Convert Uint8Array to ArrayBuffer to satisfy BodyInit type
+    const arrayBuffer = pdf.buffer.slice(
+      pdf.byteOffset,
+      pdf.byteOffset + pdf.byteLength,
+    ) as ArrayBuffer;
+    return new NextResponse(arrayBuffer, {
       headers: {
         'content-type': 'application/pdf',
         'content-disposition': `attachment; filename="${filename}"`,

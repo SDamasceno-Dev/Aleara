@@ -401,7 +401,9 @@ export default function GamesPanel() {
               {regOtp.map((val, idx) => (
                 <input
                   key={idx}
-                  ref={(el) => (regRefs.current[idx] = el)}
+                  ref={(el) => {
+                    regRefs.current[idx] = el;
+                  }}
                   value={val}
                   inputMode='numeric'
                   maxLength={2}
@@ -548,7 +550,9 @@ export default function GamesPanel() {
                 {otpValues.map((val, idx) => (
                   <input
                     key={idx}
-                    ref={(el) => (otpRefs.current[idx] = el)}
+                    ref={(el) => {
+                      otpRefs.current[idx] = el;
+                    }}
                     value={val}
                     inputMode='numeric'
                     maxLength={2}
@@ -724,7 +728,9 @@ export default function GamesPanel() {
               {drawOtp.map((val, idx) => (
                 <input
                   key={idx}
-                  ref={(el) => (drawRefs.current[idx] = el)}
+                  ref={(el) => {
+                    drawRefs.current[idx] = el;
+                  }}
                   value={val}
                   inputMode='numeric'
                   maxLength={2}
