@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export async function GET(_: Request, { params }: { params: { setId: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ setId: string }> }) {
+  const { setId } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const setId = params.setId;
   const url = new URL(_.url);
   const page = Math.max(1, Number(url.searchParams.get('page') ?? 1) || 1);
   const size = Math.min(1000, Math.max(1, Number(url.searchParams.get('size') ?? 100) || 100));
