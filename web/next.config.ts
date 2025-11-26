@@ -18,7 +18,9 @@ const nextConfig: NextConfig = {
       // images (local + google avatars + data/blob)
       `img-src 'self' data: blob: https: lh3.googleusercontent.com`,
       // scripts (in dev allow unsafe-eval for HMR)
-      `script-src 'self'${isProd ? '' : ` 'unsafe-eval'`}`,
+      // NOTE: In production, we also allow 'unsafe-inline' to support Next.js inline bootstrapping.
+      // For a stricter policy, migrate to a nonce-based CSP via Middleware.
+      `script-src 'self' 'unsafe-inline'${isProd ? '' : ` 'unsafe-eval'`}`,
       // styles (Tailwind inline)
       `style-src 'self' 'unsafe-inline'`,
       `font-src 'self' data:`,
