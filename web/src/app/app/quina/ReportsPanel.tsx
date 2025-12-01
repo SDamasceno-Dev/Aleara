@@ -217,13 +217,12 @@ export default function ReportsPanel() {
                       <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
                       <td className='py-2 pr-3'>( {it.position} )</td>
                       <td className='py-2 pr-3 font-medium text-zinc-100'>
-                        {it.notes /* placeholder */ ??
-                          it.numbers.map((n, i) => (
-                            <span key={`${it.position}-${n}-${i}`} className='inline-flex items-center'>
-                              <span>{String(n).padStart(2, '0')}</span>
-                              {i < it.numbers.length - 1 ? <span className='px-1 text-zinc-500'>•</span> : null}
-                            </span>
-                          ))}
+                        {it.numbers.map((n, i) => (
+                          <span key={`${it.position}-${n}-${i}`} className='inline-flex items-center'>
+                            <span>{String(n).padStart(2, '0')}</span>
+                            {i < it.numbers.length - 1 ? <span className='px-1 text-zinc-500'>•</span> : null}
+                          </span>
+                        ))}
                       </td>
                       <td className='py-2 pr-3'>{it.matches}</td>
                     </tr>
