@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ImportCsvPanel } from './ImportCsvPanel';
 import { DataPanel } from './DataPanel';
 import { GamesPanel } from './GamesPanel';
+import ReportsPanel from './ReportsPanel';
 
 export default async function QuinaPage({
   searchParams,
@@ -24,6 +25,7 @@ export default async function QuinaPage({
   const commonTabs = [
     { id: 'overview', label: 'Dados', content: overview },
     { id: 'games', label: 'Jogos', content: <GamesPanel /> },
+    { id: 'reports', label: 'Relatórios', content: <ReportsPanel /> },
   ] as const;
   const tabs = isAdmin ? [...commonTabs, { id: 'import', label: 'Importação', content: <ImportCsvPanel /> }] : [...commonTabs];
   const allowedIds = new Set(tabs.map((t) => t.id));
@@ -37,7 +39,7 @@ export default async function QuinaPage({
         ariaLabel='Quina'
         refreshOnChange
         className='min-h-0 flex flex-col'
-        tablistClassName='sticky top-0 z-10'
+        tablistClassName='sticky top-0 z-10 bg-background/90 backdrop-blur-sm'
         panelsClassName='min-h-0 flex-1 overflow-y-auto scroll-y pt-4'
       />
     </div>

@@ -36,7 +36,7 @@ export function StudiesSidebar() {
   }
 
   return (
-    <aside className='rounded-md border border-white/10 p-3'>
+    <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
       <div className='text-sm text-zinc-200 mb-2'>Estudos</div>
       <select
         value={selected}
@@ -44,7 +44,7 @@ export function StudiesSidebar() {
           const v = e.target.value;
           if (v) loadStudy(v);
         }}
-        className='w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-zinc-100'
+        className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1.5 text-sm text-zinc-100'
       >
         <option value=''>Escolha uma opção</option>
         {catalog.map((c) => (
@@ -61,7 +61,7 @@ export function StudiesSidebar() {
             className='absolute inset-0 bg-black/60 backdrop-blur-sm'
           />
           <div className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'>
-            <div className='px-5 py-3 border-b border-black/10 bg-white'>
+            <div className='px-5 py-3 border-b border-black/10 bg-white sticky top-0 z-10'>
               <h2 className='text-sm font-semibold tracking-wider'>{studyTitle}</h2>
             </div>
             <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
@@ -70,10 +70,10 @@ export function StudiesSidebar() {
               ) : items.length === 0 ? (
                 <div className='text-sm text-zinc-500'>Sem dados.</div>
               ) : (
-                <div className='max-h-[60vh] overflow-y-auto scroll-y rounded-md border border-black/10'>
-                  <table className='w-full text-sm'>
-                    <thead className='sticky top-0 bg-black-10'>
-                      <tr className='text-left text-zinc-500'>
+                <div className='max-h-[60vh] overflow-y-auto overflow-x-auto scroll-y rounded-md border border-black/10'>
+                  <table className='min-w-full text-sm'>
+                    <thead className='sticky top-0 bg-white text-zinc-700 shadow-sm'>
+                      <tr className='text-left'>
                         <th className='py-2 pl-3 pr-3 w-12'>#</th>
                         <th className='py-2 pr-3'>Item</th>
                         <th className='py-2 pr-3 w-24 text-right'>Valor</th>
@@ -81,10 +81,10 @@ export function StudiesSidebar() {
                     </thead>
                     <tbody className='text-zinc-900'>
                       {items.map((it) => (
-                        <tr key={it.item_key} className='border-t border-black/10'>
-                          <td className='py-2 pl-3 pr-3'>{it.rank}</td>
-                          <td className='py-2 pr-3'>{it.item_key}</td>
-                          <td className='py-2 pr-3 text-right'>{it.value}</td>
+                        <tr key={it.item_key} className='border-t border-black/10 hover:bg-[var(--black-10)] cursor-pointer'>
+                          <td className='py-2 pl-3 pr-3 text-zinc-600'>{it.rank}</td>
+                          <td className='py-2 pr-3 font-medium'>{String(it.item_key).replace(/^.*?:/, '')}</td>
+                          <td className='py-2 pr-3 text-right text-zinc-700'>{it.value}</td>
                         </tr>
                       ))}
                     </tbody>
