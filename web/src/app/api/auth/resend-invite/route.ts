@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { env } from '@/env';
 
 export async function POST(request: Request) {
   const { origin } = new URL(request.url);
+  const baseUrl = env.SITE_URL || origin;
   let body: any;
   try {
     body = await request.json();
@@ -17,7 +19,7 @@ export async function POST(request: Request) {
   try {
     const admin = createSupabaseAdminClient();
     const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${origin}/auth/definir-senha?email=${encodeURIComponent(email)}`,
+      redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
     } as any);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { env } from '@/env';
 
 type InviteResult = {
   email: string;
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
   }
   const supabase = adminAssert.supabase;
   const { origin } = new URL(request.url);
+  const baseUrl = env.SITE_URL || origin;
   let body: any;
   try {
     body = await request.json();
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
 
       // Try inviting the user via Supabase Auth
       const { data, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${origin}/auth/definir-senha?email=${encodeURIComponent(email)}`,
+        redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
       } as any);
       if (inviteErr) {
         // If already exists, mark as exists; otherwise error
