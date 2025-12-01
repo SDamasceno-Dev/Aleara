@@ -55,6 +55,31 @@ export const env = {
     }
     return raw;
   })(),
+  // Preferred absolute base URL for building auth links in emails (server-side only)
+  SITE_URL: (() => {
+    const raw = (process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? '').trim();
+    if (!raw) {
+      // optional; warn only
+      // eslint-disable-next-line no-console
+      console.warn('Optional SITE_URL/NEXT_PUBLIC_SITE_URL not set. Falling back to request origin at runtime.');
+      return '';
+    }
+    try {
+      const u = new URL(raw);
+      if (!/^https?:$/.test(u.protocol)) throw new Error('Invalid protocol');
+      return u.origin;
+    } catch (e) {
+      const msg = `Invalid SITE_URL/NEXT_PUBLIC_SITE_URL: ${String(e)}`;
+      if (process.env.NODE_ENV === 'production') {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error(msg);
+      }
+      return '';
+    }
+  })(),
 };
 
 

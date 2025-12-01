@@ -2,15 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-  Home,
-  TicketPercent,
-  History,
-  Settings,
-  LogOut,
-  Coins,
-  LayoutDashboard,
-} from 'lucide-react';
+import { Home, LogOut, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 const itemBase =
@@ -110,15 +102,6 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 </Link>
               </>
             ) : null}
-            <Link href='/app/apostas' className={itemBase}>
-              <TicketPercent className='h-4 w-4' /> Apostas
-            </Link>
-            <Link href='/app/historico' className={itemBase}>
-              <History className='h-4 w-4' /> Histórico
-            </Link>
-            <Link href='/app/configuracoes' className={itemBase}>
-              <Settings className='h-4 w-4' /> Configurações
-            </Link>
           </div>
           <div className='mt-auto pt-2'>
             <form method='post' action='/auth/signout'>
