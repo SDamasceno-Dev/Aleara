@@ -4,7 +4,13 @@ import { env } from '@/env';
 
 export async function POST(request: Request) {
   const { origin } = new URL(request.url);
-  const baseUrl = env.SITE_URL || origin;
+  const baseUrl = env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin;
+  if (process.env.NODE_ENV === 'production' && !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)) {
+    return NextResponse.json(
+      { error: 'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.' },
+      { status: 500 },
+    );
+  }
   let body: any;
   try {
     body = await request.json();
