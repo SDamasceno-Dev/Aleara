@@ -24,7 +24,13 @@ export async function POST(request: Request) {
   }
   const supabase = adminAssert.supabase;
   const { origin } = new URL(request.url);
-  const baseUrl = env.SITE_URL || origin;
+  const baseUrl = env.SITE_URL || env.NEXT_PUBLIC_SUPABASE_URL /* dummy to ensure tree-shake safe access */ ? (env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin) : origin;
+  if (process.env.NODE_ENV === 'production' && !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)) {
+    return NextResponse.json(
+      { error: 'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.' },
+      { status: 500 },
+    );
+  }
   let body: any;
   try {
     body = await request.json();
