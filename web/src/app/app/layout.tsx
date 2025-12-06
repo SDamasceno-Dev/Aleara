@@ -3,7 +3,11 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -18,12 +22,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const role = (profile?.role as 'ADMIN' | 'USER' | null) ?? null;
   const displayName =
     (user.user_metadata as any)?.full_name ??
-    ((user.identities?.[0]?.identity_data as any)?.name ?? null) ??
+    (user.identities?.[0]?.identity_data as any)?.name ??
+    null ??
     profile?.display_name ??
     user.email;
   const avatarUrl =
     (user.user_metadata as any)?.avatar_url ??
-    ((user.identities?.[0]?.identity_data as any)?.picture ?? null) ??
+    (user.identities?.[0]?.identity_data as any)?.picture ??
+    null ??
     null;
 
   return (
@@ -34,7 +40,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className='flex flex-row justify-end pb-4'>
             <div className='flex items-center gap-3 '>
               <div className='leading-tight text-right'>
-                <div className='text-sm text-zinc-100'>{displayName || 'Usuário'}</div>
+                <div className='text-sm text-zinc-100'>
+                  {displayName || 'Usuário'}
+                </div>
                 <div className='text-[10px] text-zinc-400/80'>
                   {role === 'ADMIN' ? 'Admin' : 'Plano standard'}
                 </div>
@@ -54,7 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               )}
             </div>
           </div>
-        <div className='flex-1 min-h-0 flex flex-col'>{children}</div>
+          <div className='flex-1 min-h-0 flex flex-col'>{children}</div>
         </div>
       </div>
     </div>

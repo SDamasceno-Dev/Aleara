@@ -44,7 +44,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: any;
   try {
@@ -55,19 +56,30 @@ export async function POST(request: Request) {
   const setId: string = String(body?.setId ?? '');
   const kInput = body?.k != null ? Number(body.k) : null;
   const seedInput = body?.seed != null ? Number(body.seed) : null;
-  const reseed = Number.isFinite(seedInput as number) ? (seedInput as number) : Math.floor(Math.random() * 2 ** 31);
-  if (!setId) return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
+  const reseed = Number.isFinite(seedInput as number)
+    ? (seedInput as number)
+    : Math.floor(Math.random() * 2 ** 31);
+  if (!setId)
+    return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
 
   const { data: setRow, error } = await supabase
     .from('quina_user_sets')
     .select('id, source_numbers, sample_size')
     .eq('id', setId)
     .maybeSingle();
-  if (error || !setRow) return NextResponse.json({ error: 'Set not found' }, { status: 404 });
+  if (error || !setRow)
+    return NextResponse.json({ error: 'Set not found' }, { status: 404 });
   const src: number[] = (setRow.source_numbers as number[]) ?? [];
-  if (src.length < 5 || src.length > 20) return NextResponse.json({ error: 'Invalid source_numbers' }, { status: 400 });
+  if (src.length < 5 || src.length > 20)
+    return NextResponse.json(
+      { error: 'Invalid source_numbers' },
+      { status: 400 },
+    );
   const total = binom(src.length, 5);
-  const k = kInput && kInput > 0 ? Math.min(kInput, total) : (setRow.sample_size as number);
+  const k =
+    kInput && kInput > 0
+      ? Math.min(kInput, total)
+      : (setRow.sample_size as number);
   const allIdx = generateAllCombIndices(src.length, 5);
   const rnd = mulberry32(reseed);
   const idxArr = Array.from({ length: allIdx.length }, (_, i) => i);
@@ -83,15 +95,29 @@ export async function POST(request: Request) {
     numbers: allIdx[pos].map((ii) => src[ii]),
   }));
   // Replace items
-  const { error: delErr } = await supabase.from('quina_user_items').delete().eq('set_id', setId);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  const { error: delErr } = await supabase
+    .from('quina_user_items')
+    .delete()
+    .eq('set_id', setId);
+  if (delErr)
+    return NextResponse.json({ error: delErr.message }, { status: 500 });
   for (let i = 0; i < items.length; i += 1000) {
-    const batch = items.slice(i, i + 1000).map((it) => ({ set_id: setId, position: it.position, numbers: it.numbers }));
-    const { error: insErr } = await supabase.from('quina_user_items').insert(batch);
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    const batch = items
+      .slice(i, i + 1000)
+      .map((it) => ({
+        set_id: setId,
+        position: it.position,
+        numbers: it.numbers,
+      }));
+    const { error: insErr } = await supabase
+      .from('quina_user_items')
+      .insert(batch);
+    if (insErr)
+      return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
-  await supabase.from('quina_user_sets').update({ sample_size: k, seed: reseed }).eq('id', setId);
+  await supabase
+    .from('quina_user_sets')
+    .update({ sample_size: k, seed: reseed })
+    .eq('id', setId);
   return NextResponse.json({ ok: true, setId, seed: reseed, items });
 }
-
-

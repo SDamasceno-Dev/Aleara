@@ -1,10 +1,12 @@
 # Migrations convention
 
 File name format:
+
 - `YYYYMMDD_HHMMSS__domain__target__action.sql`
 - Example: `20251120_000007__mega__checks__schema.sql`
 
 Header block at the top of every file:
+
 ```
 -- Title: <short and clear>
 -- Description: <what + why (1-3 lines)>
@@ -16,6 +18,7 @@ Header block at the top of every file:
 ```
 
 General rules:
+
 - Prefer idempotent guards (`if not exists`, `drop ... if exists`, `do $$ begin if not exists (...) then ... end if; end $$;`).
 - Wrap multi-statement structural changes with `begin; ... commit;`.
 - RLS: enable RLS and create policies for `select/insert/update/delete` with `USING` and `WITH CHECK` symmetric.
@@ -27,5 +30,3 @@ General rules:
   - Policy: `<table>_<action>_<scope>`
   - Trigger: `trg_<table>_<event>_<purpose>`
   - Function: `fn_<domain>_<purpose>`
-
-

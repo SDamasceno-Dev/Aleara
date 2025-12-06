@@ -5,7 +5,10 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const url = new URL(request.url);
   const studyKey = url.searchParams.get('study_key');
-  const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit') || '60')));
+  const limit = Math.min(
+    200,
+    Math.max(1, Number(url.searchParams.get('limit') || '60')),
+  );
 
   if (!studyKey) {
     // Return catalog
@@ -13,12 +16,17 @@ export async function GET(request: Request) {
       .from('quina_stats_catalog')
       .select('study_key, title')
       .order('study_key', { ascending: true });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ catalog: data ?? [] });
   }
 
   const [{ data: catalog }, { data: items, error }] = await Promise.all([
-    supabase.from('quina_stats_catalog').select('study_key, title, params').eq('study_key', studyKey).maybeSingle(),
+    supabase
+      .from('quina_stats_catalog')
+      .select('study_key, title, params')
+      .eq('study_key', studyKey)
+      .maybeSingle(),
     supabase
       .from('quina_stats_items')
       .select('rank, item_key, value, extra')
@@ -26,11 +34,10 @@ export async function GET(request: Request) {
       .order('rank', { ascending: true })
       .limit(limit),
   ]);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({
     study: catalog ?? { study_key: studyKey, title: studyKey, params: {} },
     items: items ?? [],
   });
 }
-
-

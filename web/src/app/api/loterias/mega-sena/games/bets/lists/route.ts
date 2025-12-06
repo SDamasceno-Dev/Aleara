@@ -5,14 +5,18 @@ export async function GET() {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabase
     .from('megasena_bet_lists')
-    .select('id, contest_no, title, is_favorite, created_at, megasena_bet_list_items(count)')
+    .select(
+      'id, contest_no, title, is_favorite, created_at, megasena_bet_list_items(count)',
+    )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   const items = (data ?? []).map((row: any) => ({
     id: row.id as string,
@@ -20,10 +24,11 @@ export async function GET() {
     title: (row.title as string) ?? null,
     isFavorite: !!row.is_favorite,
     createdAt: row.created_at as string,
-    count: (Array.isArray(row.megasena_bet_list_items) && row.megasena_bet_list_items[0]?.count) || 0,
+    count:
+      (Array.isArray(row.megasena_bet_list_items) &&
+        row.megasena_bet_list_items[0]?.count) ||
+      0,
   }));
 
   return NextResponse.json({ ok: true, items });
 }
-
-

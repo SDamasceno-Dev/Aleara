@@ -20,14 +20,27 @@ async function assertAdmin() {
 export async function POST(request: Request) {
   const adminAssert = await assertAdmin();
   if (!adminAssert.ok) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: adminAssert.status });
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: adminAssert.status },
+    );
   }
   const supabase = adminAssert.supabase;
   const { origin } = new URL(request.url);
-  const baseUrl = env.SITE_URL || env.NEXT_PUBLIC_SUPABASE_URL /* dummy to ensure tree-shake safe access */ ? (env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin) : origin;
-  if (process.env.NODE_ENV === 'production' && !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)) {
+  const baseUrl =
+    env.SITE_URL ||
+    env.NEXT_PUBLIC_SUPABASE_URL /* dummy to ensure tree-shake safe access */
+      ? env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin
+      : origin;
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)
+  ) {
     return NextResponse.json(
-      { error: 'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.' },
+      {
+        error:
+          'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.',
+      },
       { status: 500 },
     );
   }
@@ -43,7 +56,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
   }
   if (emails.length > 200) {
-    return NextResponse.json({ error: 'Too many emails (max 200)' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Too many emails (max 200)' },
+      { status: 400 },
+    );
   }
 
   const { data: currentUserData } = await supabase.auth.getUser();
@@ -54,7 +70,11 @@ export async function POST(request: Request) {
   const normalized = Array.from(
     new Set(
       emails
-        .map((e) => String(e ?? '').trim().toLowerCase())
+        .map((e) =>
+          String(e ?? '')
+            .trim()
+            .toLowerCase(),
+        )
         .filter((e) => e.length > 0 && re.test(e)),
     ),
   );
@@ -69,13 +89,22 @@ export async function POST(request: Request) {
       if (upsertErr) throw upsertErr;
 
       // Try inviting the user via Supabase Auth
-      const { data, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
-      } as any);
+      const { data, error: inviteErr } =
+        await admin.auth.admin.inviteUserByEmail(email, {
+          redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
+        } as any);
       if (inviteErr) {
         // If already exists, mark as exists; otherwise error
-        if (String(inviteErr.message || '').toLowerCase().includes('already registered')) {
-          results.push({ email, status: 'exists', message: 'User already exists' });
+        if (
+          String(inviteErr.message || '')
+            .toLowerCase()
+            .includes('already registered')
+        ) {
+          results.push({
+            email,
+            status: 'exists',
+            message: 'User already exists',
+          });
           continue;
         }
         results.push({ email, status: 'error', message: inviteErr.message });
@@ -94,7 +123,11 @@ export async function POST(request: Request) {
       }
       results.push({ email, status: 'invited' });
     } catch (e: any) {
-      results.push({ email, status: 'error', message: String(e?.message ?? e) });
+      results.push({
+        email,
+        status: 'error',
+        message: String(e?.message ?? e),
+      });
     }
   }
 
@@ -102,10 +135,12 @@ export async function POST(request: Request) {
   const exists = results.filter((r) => r.status === 'exists').length;
   const errors = results.filter((r) => r.status === 'error').length;
   if (invited === 0 && exists === 0 && errors > 0) {
-    const firstError = results.find((r) => r.status === 'error')?.message ?? 'Invite failed';
-    return NextResponse.json({ ok: false, error: firstError, invited, exists, errors, results }, { status: 400 });
+    const firstError =
+      results.find((r) => r.status === 'error')?.message ?? 'Invite failed';
+    return NextResponse.json(
+      { ok: false, error: firstError, invited, exists, errors, results },
+      { status: 400 },
+    );
   }
   return NextResponse.json({ ok: true, invited, exists, errors, results });
 }
-
-

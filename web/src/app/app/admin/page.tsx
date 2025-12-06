@@ -17,14 +17,19 @@ export default async function AdminPage() {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
   const { data: profile } = userId
-    ? await supabase.from('profiles').select('display_name, role').eq('user_id', userId).maybeSingle()
+    ? await supabase
+        .from('profiles')
+        .select('display_name, role')
+        .eq('user_id', userId)
+        .maybeSingle()
     : { data: null as any };
 
   return (
     <div className='p-4 space-y-2'>
       <h1 className='text-lg font-semibold'>Área Privada (Admin)</h1>
       <p className='text-sm text-zinc-400'>
-        Bem-vindo, {profile?.display_name || userData.user?.email} — papel: {profile?.role || 'ADMIN'}
+        Bem-vindo, {profile?.display_name || userData.user?.email} — papel:{' '}
+        {profile?.role || 'ADMIN'}
       </p>
       <div className='mt-4'>
         <Tabs
@@ -59,5 +64,3 @@ export default async function AdminPage() {
     </div>
   );
 }
-
-

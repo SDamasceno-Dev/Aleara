@@ -55,8 +55,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install deps
         run: npm ci
-      - name: Lint (warning-free)
-        run: npm run lint -- --max-warnings=0
+      - name: Lint (Next.js)
+        run: npx next lint --max-warnings=0
 
   TypeCheck:
     name: TypeCheck

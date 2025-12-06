@@ -25,12 +25,19 @@ async function findUserIdByEmail(
 ): Promise<string | null> {
   const target = email.toLowerCase();
   for (let page = 1; page <= maxPages; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage,
+    } as any);
     if (error) return null;
     const users = data?.users ?? [];
-    const found = users.find((u: any) =>
-      (u.email ?? '').toLowerCase() === target ||
-      (u.identities ?? []).some((id: any) => (id?.identity_data?.email ?? '').toLowerCase() === target),
+    const found = users.find(
+      (u: any) =>
+        (u.email ?? '').toLowerCase() === target ||
+        (u.identities ?? []).some(
+          (id: any) =>
+            (id?.identity_data?.email ?? '').toLowerCase() === target,
+        ),
     );
     if (found) return found.id ?? null;
     if (users.length < perPage) break;
@@ -41,7 +48,10 @@ async function findUserIdByEmail(
 export async function POST(request: Request) {
   const adminAssert = await assertAdmin();
   if (!adminAssert.ok) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: adminAssert.status });
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: adminAssert.status },
+    );
   }
   const supabase = adminAssert.supabase;
   const admin = createSupabaseAdminClient();
@@ -58,7 +68,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
   }
   const re = /^[\w.!#$%&’*+/=?`{|}~^-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-  const list = Array.from(new Set(emails.map((e) => String(e ?? '').trim().toLowerCase()).filter((e) => re.test(e))));
+  const list = Array.from(
+    new Set(
+      emails
+        .map((e) =>
+          String(e ?? '')
+            .trim()
+            .toLowerCase(),
+        )
+        .filter((e) => re.test(e)),
+    ),
+  );
 
   const results: DeleteResult[] = [];
 
@@ -68,11 +88,18 @@ export async function POST(request: Request) {
     .delete()
     .in('email', list)
     .select('email');
-  const removedSet = new Set<string>((removed ?? []).map((r: any) => (r.email as string).toLowerCase()));
+  const removedSet = new Set<string>(
+    (removed ?? []).map((r: any) => (r.email as string).toLowerCase()),
+  );
 
   if (remErr) {
     for (const email of list) {
-      results.push({ email, removedAllowed: false, deletedUser: false, message: remErr.message });
+      results.push({
+        email,
+        removedAllowed: false,
+        deletedUser: false,
+        message: remErr.message,
+      });
     }
     return NextResponse.json({ ok: false, results }, { status: 400 });
   }
@@ -131,7 +158,8 @@ export async function POST(request: Request) {
   const deletedUsers = results.filter((r) => r.deletedUser).length;
   const errors = results.filter((r) => r.message).length;
   const ok = errors === 0;
-  return NextResponse.json({ ok, removedAllowed, deletedUsers, errors, results }, { status: ok ? 200 : 400 });
+  return NextResponse.json(
+    { ok, removedAllowed, deletedUsers, errors, results },
+    { status: ok ? 200 : 400 },
+  );
 }
-
-

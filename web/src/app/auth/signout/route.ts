@@ -15,5 +15,3 @@ export async function POST(request: Request) {
   // Use 303 to convert POST to GET on redirect (avoids 405 on '/')
   return NextResponse.redirect(`${origin}/`, { status: 303 });
 }
-
-

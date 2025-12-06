@@ -9,5 +9,3 @@ export function getAppVersion(): { version: string; rev?: string } {
     : undefined;
   return { version, rev };
 }
-
-

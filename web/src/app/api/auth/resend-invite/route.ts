@@ -5,9 +5,15 @@ import { env } from '@/env';
 export async function POST(request: Request) {
   const { origin } = new URL(request.url);
   const baseUrl = env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin;
-  if (process.env.NODE_ENV === 'production' && !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)) {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !(env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)
+  ) {
     return NextResponse.json(
-      { error: 'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.' },
+      {
+        error:
+          'Missing SITE_URL/NEXT_PUBLIC_SITE_URL in production. Configure your public app URL.',
+      },
       { status: 500 },
     );
   }
@@ -17,7 +23,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const email = String(body?.email ?? '').trim().toLowerCase();
+  const email = String(body?.email ?? '')
+    .trim()
+    .toLowerCase();
   const re = /^[\w.!#$%&’*+/=?`{|}~^-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
   if (!re.test(email)) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
@@ -32,8 +40,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json({ error: String(e?.message ?? e) }, { status: 500 });
+    return NextResponse.json(
+      { error: String(e?.message ?? e) },
+      { status: 500 },
+    );
   }
 }
-
-

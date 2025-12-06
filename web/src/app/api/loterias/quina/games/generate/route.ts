@@ -44,7 +44,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: any;
   try {
@@ -52,26 +53,44 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const src: number[] = Array.isArray(body?.numbers) ? body.numbers.map((x: any) => Number(x)) : [];
+  const src: number[] = Array.isArray(body?.numbers)
+    ? body.numbers.map((x: any) => Number(x))
+    : [];
   const k: number = Number(body?.k ?? 0);
   const seedInput = body?.seed != null ? Number(body.seed) : null;
-  const setSeed = Number.isFinite(seedInput as number) ? (seedInput as number) : Math.floor(Math.random() * 2 ** 31);
+  const setSeed = Number.isFinite(seedInput as number)
+    ? (seedInput as number)
+    : Math.floor(Math.random() * 2 ** 31);
 
-  const uniq = Array.from(new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 80))).sort((a, b) => a - b);
+  const uniq = Array.from(
+    new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 80)),
+  ).sort((a, b) => a - b);
   if (uniq.length < 5 || uniq.length > 15) {
-    return NextResponse.json({ error: 'Provide 5 to 15 unique numbers between 1 and 80' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Provide 5 to 15 unique numbers between 1 and 80' },
+      { status: 400 },
+    );
   }
   const total = binom(uniq.length, 5);
   if (!Number.isFinite(total) || total <= 0) {
-    return NextResponse.json({ error: 'Invalid combination count' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid combination count' },
+      { status: 400 },
+    );
   }
   if (!Number.isInteger(k) || k <= 0 || k > total) {
-    return NextResponse.json({ error: `k must be between 1 and ${total}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `k must be between 1 and ${total}` },
+      { status: 400 },
+    );
   }
   const cap = Math.min(k, 5000);
   const allIdxComb = generateAllCombIndices(uniq.length, 5);
   if (allIdxComb.length !== total) {
-    return NextResponse.json({ error: 'Internal combination generation mismatch' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal combination generation mismatch' },
+      { status: 500 },
+    );
   }
   const rnd = mulberry32(setSeed);
   const indices = Array.from({ length: total }, (_, i) => i);
@@ -99,7 +118,8 @@ export async function POST(request: Request) {
     })
     .select('id')
     .single();
-  if (setErr) return NextResponse.json({ error: setErr.message }, { status: 500 });
+  if (setErr)
+    return NextResponse.json({ error: setErr.message }, { status: 500 });
   const setId = setInsert.id as string;
   for (let i = 0; i < items.length; i += 1000) {
     const batch = items.slice(i, i + 1000).map((it) => ({
@@ -108,9 +128,8 @@ export async function POST(request: Request) {
       numbers: it.numbers,
     }));
     const { error } = await supabase.from('quina_user_items').insert(batch);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ setId, seed: setSeed, total, items });
 }
-
-

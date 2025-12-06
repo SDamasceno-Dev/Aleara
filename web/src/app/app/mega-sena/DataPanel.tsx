@@ -30,7 +30,10 @@ function formatDateBR(iso: string): string {
 
 function formatBRL(v: number | null): string {
   if (v == null) return '-';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(v);
 }
 
 export async function DataPanel() {
@@ -46,32 +49,42 @@ export async function DataPanel() {
     'decade_dist',
     'last_digit',
   ];
-  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] = await Promise.all([
-    supabase
-      .from('megasena_draws')
-      .select(
-        'concurso, data_sorteio, bola1, bola2, bola3, bola4, bola5, bola6, ganhadores_6, rateio_6, estimativa_premio',
-      )
-      .order('concurso', { ascending: false })
-      .limit(3),
-    supabase
-      .from('megasena_stats_dezenas')
-      .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
-      .order('vezes_sorteada', { ascending: false })
-      .order('dezena', { ascending: true }),
-    supabase.from('megasena_stats_catalog').select('study_key, title'),
-    supabase
-      .from('megasena_stats_items')
-      .select('study_key, item_key, rank, value, extra')
-      .in('study_key', previewKeys)
-      .order('study_key', { ascending: true })
-      .order('rank', { ascending: true }),
-  ]);
+  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] =
+    await Promise.all([
+      supabase
+        .from('megasena_draws')
+        .select(
+          'concurso, data_sorteio, bola1, bola2, bola3, bola4, bola5, bola6, ganhadores_6, rateio_6, estimativa_premio',
+        )
+        .order('concurso', { ascending: false })
+        .limit(3),
+      supabase
+        .from('megasena_stats_dezenas')
+        .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
+        .order('vezes_sorteada', { ascending: false })
+        .order('dezena', { ascending: true }),
+      supabase.from('megasena_stats_catalog').select('study_key, title'),
+      supabase
+        .from('megasena_stats_items')
+        .select('study_key, item_key, rank, value, extra')
+        .in('study_key', previewKeys)
+        .order('study_key', { ascending: true })
+        .order('rank', { ascending: true }),
+    ]);
 
-  if (drawsRes.error || statsRes.error || studiesCatalogRes.error || studiesItemsRes.error) {
+  if (
+    drawsRes.error ||
+    statsRes.error ||
+    studiesCatalogRes.error ||
+    studiesItemsRes.error
+  ) {
     return (
       <div className='rounded-lg border border-border/60 bg-card/90 p-4 text-sm text-red-300/90'>
-        Falha ao carregar dados: {drawsRes.error?.message || statsRes.error?.message || studiesCatalogRes.error?.message || studiesItemsRes.error?.message}
+        Falha ao carregar dados:{' '}
+        {drawsRes.error?.message ||
+          statsRes.error?.message ||
+          studiesCatalogRes.error?.message ||
+          studiesItemsRes.error?.message}
       </div>
     );
   }
@@ -82,10 +95,18 @@ export async function DataPanel() {
     study_key: c.study_key as string,
     title: c.title as string,
   }));
-  const previewsMap = new Map<string, Array<{ item_key: string; rank: number; value: number; extra?: any }>>();
+  const previewsMap = new Map<
+    string,
+    Array<{ item_key: string; rank: number; value: number; extra?: any }>
+  >();
   for (const it of (studiesItemsRes.data as any[]) ?? []) {
     const arr = previewsMap.get(it.study_key) ?? [];
-    arr.push({ item_key: it.item_key, rank: it.rank, value: Number(it.value), extra: it.extra });
+    arr.push({
+      item_key: it.item_key,
+      rank: it.rank,
+      value: Number(it.value),
+      extra: it.extra,
+    });
     previewsMap.set(it.study_key, arr);
   }
   const previews = allStudies.map((s) => ({
@@ -116,22 +137,37 @@ export async function DataPanel() {
                 <th className='py-2 pr-3 font-medium'>Dezenas</th>
                 <th className='py-2 pr-3 font-medium'>Ganhadores (6)</th>
                 <th className='py-2 pr-3 font-medium'>Rateio (6)</th>
-                <th className='py-2 pr-3 font-medium whitespace-nowrap'>Estimativa prêmio</th>
+                <th className='py-2 pr-3 font-medium whitespace-nowrap'>
+                  Estimativa prêmio
+                </th>
               </tr>
             </thead>
             <tbody className='text-zinc-300/90'>
               {rows.map((r) => {
-                const dezenas = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6]
+                const dezenas = [
+                  r.bola1,
+                  r.bola2,
+                  r.bola3,
+                  r.bola4,
+                  r.bola5,
+                  r.bola6,
+                ]
                   .map((n) => String(n).padStart(2, '0'))
                   .join(' • ');
                 return (
                   <tr key={r.concurso} className='border-t border-white/10'>
                     <td className='py-2 pr-3'>{r.concurso}</td>
-                    <td className='py-2 pr-3'>{formatDateBR(r.data_sorteio)}</td>
-                    <td className='py-2 pr-3 font-medium text-zinc-100'>{dezenas}</td>
+                    <td className='py-2 pr-3'>
+                      {formatDateBR(r.data_sorteio)}
+                    </td>
+                    <td className='py-2 pr-3 font-medium text-zinc-100'>
+                      {dezenas}
+                    </td>
                     <td className='py-2 pr-3'>{r.ganhadores_6 ?? 0}</td>
                     <td className='py-2 pr-3'>{formatBRL(r.rateio_6)}</td>
-                    <td className='py-2 pr-3'>{formatBRL(r.estimativa_premio)}</td>
+                    <td className='py-2 pr-3'>
+                      {formatBRL(r.estimativa_premio)}
+                    </td>
                   </tr>
                 );
               })}
@@ -186,5 +222,3 @@ export async function DataPanel() {
     </section>
   );
 }
-
-

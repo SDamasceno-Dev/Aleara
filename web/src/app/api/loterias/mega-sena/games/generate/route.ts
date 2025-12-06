@@ -47,7 +47,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: any;
   try {
@@ -55,21 +56,36 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const src: number[] = Array.isArray(body?.numbers) ? body.numbers.map((x: any) => Number(x)) : [];
+  const src: number[] = Array.isArray(body?.numbers)
+    ? body.numbers.map((x: any) => Number(x))
+    : [];
   const k: number = Number(body?.k ?? 0);
   const seedInput = body?.seed != null ? Number(body.seed) : null;
-  const setSeed = Number.isFinite(seedInput as number) ? (seedInput as number) : Math.floor(Math.random() * 2 ** 31);
+  const setSeed = Number.isFinite(seedInput as number)
+    ? (seedInput as number)
+    : Math.floor(Math.random() * 2 ** 31);
 
-  const uniq = Array.from(new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60))).sort((a, b) => a - b);
+  const uniq = Array.from(
+    new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60)),
+  ).sort((a, b) => a - b);
   if (uniq.length < 7 || uniq.length > 15) {
-    return NextResponse.json({ error: 'Provide 7 to 15 unique numbers between 1 and 60' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Provide 7 to 15 unique numbers between 1 and 60' },
+      { status: 400 },
+    );
   }
   const total = binom(uniq.length, 6);
   if (!Number.isFinite(total) || total <= 0) {
-    return NextResponse.json({ error: 'Invalid combination count' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid combination count' },
+      { status: 400 },
+    );
   }
   if (!Number.isInteger(k) || k <= 0 || k > total) {
-    return NextResponse.json({ error: `k must be between 1 and ${total}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `k must be between 1 and ${total}` },
+      { status: 400 },
+    );
   }
   // cap k for safety
   const cap = Math.min(k, 5000);
@@ -79,7 +95,10 @@ export async function POST(request: Request) {
   const totalCheck = allIdxComb.length;
   if (totalCheck !== total) {
     // Fallback in case of mismatch (should not happen)
-    return NextResponse.json({ error: 'Internal combination generation mismatch' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal combination generation mismatch' },
+      { status: 500 },
+    );
   }
   // Fisher–Yates shuffle partially to pick first cap elements deterministically by seed
   const rnd = mulberry32(setSeed);
@@ -109,7 +128,8 @@ export async function POST(request: Request) {
     })
     .select('id')
     .single();
-  if (setErr) return NextResponse.json({ error: setErr.message }, { status: 500 });
+  if (setErr)
+    return NextResponse.json({ error: setErr.message }, { status: 500 });
   const setId = setInsert.id as string;
 
   // insert items in batches
@@ -120,10 +140,9 @@ export async function POST(request: Request) {
       numbers: it.numbers,
     }));
     const { error } = await supabase.from('megasena_user_items').insert(batch);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ setId, seed: setSeed, total, items });
 }
-
-

@@ -280,11 +280,13 @@ export default function GamesPanel() {
         return;
       }
       // Substitui itens pela nova amostra
-      setItems((data.items ?? []).map((it: any) => ({
-        position: it.position as number,
-        numbers: (it.numbers as number[]) ?? [],
-        matches: null as number | null,
-      })));
+      setItems(
+        (data.items ?? []).map((it: any) => ({
+          position: it.position as number,
+          numbers: (it.numbers as number[]) ?? [],
+          matches: null as number | null,
+        })),
+      );
       setCheckedDraw([]);
       setManualPositions(new Set());
       requestAnimationFrame(() => liveRef.current?.focus());
@@ -329,7 +331,11 @@ export default function GamesPanel() {
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
-      <LoadingOverlay show={busy} message={busyMsg} subtitle='Por favor, aguarde.' />
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Por favor, aguarde.'
+      />
       <div className='mb-3 text-sm text-zinc-200'>Jogos</div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         {/* Gerador (inclui Registrar apostas acima) */}
@@ -880,7 +886,10 @@ export default function GamesPanel() {
                   setDrawInvalid(Array.from({ length: 6 }, () => false));
                   setCheckedDraw([]);
                   setItems((prev) =>
-                    prev.map((it) => ({ ...it, matches: null as number | null })),
+                    prev.map((it) => ({
+                      ...it,
+                      matches: null as number | null,
+                    })),
                   );
                 }}
               >
@@ -896,14 +905,18 @@ export default function GamesPanel() {
                     !window.confirm(
                       'Tem certeza que deseja excluir TODAS as suas conferências salvas?',
                     )
-                  )
-                  { setBusy(false); return; }
+                  ) {
+                    setBusy(false);
+                    return;
+                  }
                   if (
                     !window.confirm(
                       'Confirma novamente? Esta ação não pode ser desfeita.',
                     )
-                  )
-                  { setBusy(false); return; }
+                  ) {
+                    setBusy(false);
+                    return;
+                  }
                   const res = await fetch(
                     '/api/loterias/mega-sena/games/delete-checks',
                     {
@@ -1087,7 +1100,9 @@ export default function GamesPanel() {
             </span>
             <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
               <span className='text-zinc-400'>6</span>
-              <span className='font-semibold text-green-300'>{matchesSummary.c6}</span>
+              <span className='font-semibold text-green-300'>
+                {matchesSummary.c6}
+              </span>
             </span>
           </div>
         ) : null}
@@ -1163,7 +1178,10 @@ export default function GamesPanel() {
             className='relative z-10 max-w-md w-[92vw] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'
           >
             <div className='px-5 py-3 border-b border-black/10 bg-white'>
-              <h2 id='save-title' className='text-sm font-semibold tracking-wider'>
+              <h2
+                id='save-title'
+                className='text-sm font-semibold tracking-wider'
+              >
                 Salvar conferência
               </h2>
             </div>
@@ -1172,7 +1190,12 @@ export default function GamesPanel() {
                 Informe o concurso para salvar os acertos deste set.
               </div>
               <div className='text-xs text-zinc-600'>
-                Sorteio: {checkedDraw.length === 6 ? checkedDraw.map(n => String(n).padStart(2,'0')).join(', ') : '—'}
+                Sorteio:{' '}
+                {checkedDraw.length === 6
+                  ? checkedDraw
+                      .map((n) => String(n).padStart(2, '0'))
+                      .join(', ')
+                  : '—'}
               </div>
               <label className='text-xs text-zinc-700'>
                 Concurso
@@ -1180,11 +1203,15 @@ export default function GamesPanel() {
                   type='number'
                   min={1}
                   value={saveContest}
-                  onChange={(e) => setSaveContest(e.target.value.replace(/\D+/g, ''))}
+                  onChange={(e) =>
+                    setSaveContest(e.target.value.replace(/\D+/g, ''))
+                  }
                   onBlur={() => {
                     const n = Number(saveContest || '0');
                     if (!Number.isInteger(n) || n <= 0) {
-                      setSaveError('Digite um número de concurso válido (> 0).');
+                      setSaveError(
+                        'Digite um número de concurso válido (> 0).',
+                      );
                     } else {
                       setSaveError(null);
                     }
@@ -1196,7 +1223,9 @@ export default function GamesPanel() {
                 />
               </label>
               {saveError ? (
-                <div className='text-[11px] text-(--alertError)'>{saveError}</div>
+                <div className='text-[11px] text-(--alertError)'>
+                  {saveError}
+                </div>
               ) : null}
             </div>
             <div className='px-5 py-3 border-t border-black/10 bg-white flex items-center justify-end gap-2'>
@@ -1222,17 +1251,26 @@ export default function GamesPanel() {
                   setBusyMsg('Salvando conferência…');
                   try {
                     const n = Number(saveContest || '0');
-                    const res = await fetch('/api/loterias/mega-sena/games/save-check', {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({ setId, draw: checkedDraw, contest: n }),
-                    });
+                    const res = await fetch(
+                      '/api/loterias/mega-sena/games/save-check',
+                      {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({
+                          setId,
+                          draw: checkedDraw,
+                          contest: n,
+                        }),
+                      },
+                    );
                     const data = await res.json();
                     if (!res.ok) {
                       alert(data?.error || 'Falha ao salvar conferência.');
                       return;
                     }
-                    alert(`Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`);
+                    alert(
+                      `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
+                    );
                     setSaveOpen(false);
                   } finally {
                     setSaveLoading(false);
@@ -1280,7 +1318,7 @@ export default function GamesPanel() {
                   <table className='w-full text-sm'>
                     <thead className='sticky top-0 bg-black-10'>
                       <tr className='text-left text-zinc-500'>
-                     <th className='w-10 py-2 pl-2'>
+                        <th className='w-10 py-2 pl-2'>
                           <input
                             type='checkbox'
                             checked={
@@ -1358,7 +1396,7 @@ export default function GamesPanel() {
                             setBusy(false);
                           }}
                         >
-                           <td className='py-2 pl-2'>
+                          <td className='py-2 pl-2'>
                             <input
                               type='checkbox'
                               checked={selectedListIds.has(b.id)}

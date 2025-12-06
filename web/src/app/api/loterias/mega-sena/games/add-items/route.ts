@@ -33,7 +33,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: AddItemsRequest;
   try {
@@ -65,7 +66,10 @@ export async function POST(request: Request) {
     betsFromPayload.push(base);
   }
   if (betsFromPayload.length === 0) {
-    return NextResponse.json({ error: 'Nenhuma aposta válida (6..20 dezenas).' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Nenhuma aposta válida (6..20 dezenas).' },
+      { status: 400 },
+    );
   }
 
   // If no set provided, create a minimal manual set using the first 6-number combo
@@ -82,7 +86,10 @@ export async function POST(request: Request) {
       .select('id')
       .single();
     if (createErr || !created) {
-      return NextResponse.json({ error: createErr?.message || 'Cannot create set' }, { status: 500 });
+      return NextResponse.json(
+        { error: createErr?.message || 'Cannot create set' },
+        { status: 500 },
+      );
     }
     setId = created.id as string;
   }
@@ -92,13 +99,22 @@ export async function POST(request: Request) {
     .from('megasena_user_items')
     .select('position, numbers')
     .eq('set_id', setId);
-  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+  if (exErr)
+    return NextResponse.json({ error: exErr.message }, { status: 500 });
 
-  const rows: Array<{ set_id: string; position: number; numbers: number[]; matches: number | null }> = [];
+  const rows: Array<{
+    set_id: string;
+    position: number;
+    numbers: number[];
+    matches: number | null;
+  }> = [];
   const existingKeys = new Set<string>(
     (existing ?? []).map((r) => numbersKey(r.numbers as number[])),
   );
-  let maxPos = Math.max(-1, ...((existing ?? []).map((r) => r.position as number)));
+  let maxPos = Math.max(
+    -1,
+    ...(existing ?? []).map((r) => r.position as number),
+  );
   for (const nums of betsFromPayload) {
     const key = numbersKey(nums);
     if (existingKeys.has(key)) continue;
@@ -116,8 +132,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, added: 0, items: [] });
   }
 
-  const { error: insErr } = await supabase.from('megasena_user_items').insert(rows);
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+  const { error: insErr } = await supabase
+    .from('megasena_user_items')
+    .insert(rows);
+  if (insErr)
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
 
   // Atualiza sample_size do set para refletir os novos itens
   const newCount = (existing?.length ?? 0) + rows.length;
@@ -130,8 +149,10 @@ export async function POST(request: Request) {
     ok: true,
     added: rows.length,
     setId,
-    items: rows.map((r) => ({ position: r.position, numbers: r.numbers, matches: null })),
+    items: rows.map((r) => ({
+      position: r.position,
+      numbers: r.numbers,
+      matches: null,
+    })),
   });
 }
-
-
