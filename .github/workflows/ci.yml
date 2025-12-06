@@ -53,8 +53,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install deps
         run: npm ci
-      - name: Lint (Next.js)
-        run: npx next lint
+      - name: Lint (ESLint)
+        run: npx eslint . --ext .ts,.tsx --max-warnings=0
 
   TypeCheck:
     name: TypeCheck
