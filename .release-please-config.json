@@ -1,0 +1,12 @@
+{
+  "packages": {
+    "web": {
+      "release-type": "node",
+      "package-name": "aleara-web",
+      "changelog-path": "web/CHANGELOG.md",
+      "bump-minor-pre-major": true
+    }
+  }
+}
+
+
