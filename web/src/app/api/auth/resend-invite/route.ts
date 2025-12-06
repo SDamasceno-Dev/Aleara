@@ -17,13 +17,14 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const email = String(body?.email ?? '')
+  const parsed = (body ?? {}) as { email?: unknown };
+  const email = String(parsed.email ?? '')
     .trim()
     .toLowerCase();
   const re = /^[\w.!#$%&’*+/=?`{|}~^-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -34,14 +35,15 @@ export async function POST(request: Request) {
     const admin = createSupabaseAdminClient();
     const { error } = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
-    } as any);
+    });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: String(e?.message ?? e) },
+      { error: message },
       { status: 500 },
     );
   }

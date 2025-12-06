@@ -59,7 +59,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = (data ?? []) as Array<{ email: string; created_at?: string | null; created_by?: string | null }>;
+  const rows = (data ?? []) as Array<{
+    email: string;
+    created_at?: string | null;
+    created_by?: string | null;
+  }>;
   const items: AllowItem[] = rows.map((r) => ({
     email: r.email,
     created_at: r.created_at ?? null,
@@ -123,7 +127,9 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const parsed = (body ?? {}) as { emails?: unknown };
-  const emails: string[] = Array.isArray(parsed.emails) ? (parsed.emails as unknown[]).map((e) => String(e)) : [];
+  const emails: string[] = Array.isArray(parsed.emails)
+    ? (parsed.emails as unknown[]).map((e) => String(e))
+    : [];
   if (emails.length === 0) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
   }

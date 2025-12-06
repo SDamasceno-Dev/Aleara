@@ -70,7 +70,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const raw = (body ?? {}) as { emails?: unknown; hardDelete?: unknown };
-  const emails: string[] = Array.isArray(raw.emails) ? (raw.emails as unknown[]).map((e) => String(e)) : [];
+  const emails: string[] = Array.isArray(raw.emails)
+    ? (raw.emails as unknown[]).map((e) => String(e))
+    : [];
   const hardDelete = Boolean(raw.hardDelete);
   if (emails.length === 0) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
@@ -97,7 +99,9 @@ export async function POST(request: Request) {
     .in('email', list)
     .select('email');
   const removedRows = (removed ?? []) as Array<{ email: string }>;
-  const removedSet = new Set<string>(removedRows.map((r) => r.email.toLowerCase()));
+  const removedSet = new Set<string>(
+    removedRows.map((r) => r.email.toLowerCase()),
+  );
 
   if (remErr) {
     for (const email of list) {

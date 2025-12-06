@@ -44,14 +44,15 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const emails: string[] = Array.isArray(body?.emails) ? body.emails : [];
-  const role = (body?.role as 'USER' | 'ADMIN' | undefined) ?? 'USER';
+  const parsed = (body ?? {}) as { emails?: unknown; role?: unknown };
+  const emails: string[] = Array.isArray(parsed.emails) ? (parsed.emails as unknown[]).map((e) => String(e)) : [];
+  const role = (parsed.role as 'USER' | 'ADMIN' | undefined) ?? 'USER';
   if (emails.length === 0) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
   }
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
       const { data, error: inviteErr } =
         await admin.auth.admin.inviteUserByEmail(email, {
           redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
-        } as any);
+        });
       if (inviteErr) {
         // If already exists, mark as exists; otherwise error
         if (
@@ -117,16 +118,17 @@ export async function POST(request: Request) {
           {
             user_id: userId,
             role,
-          } as any,
+          },
           { onConflict: 'user_id' },
         );
       }
       results.push({ email, status: 'invited' });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
       results.push({
         email,
         status: 'error',
-        message: String(e?.message ?? e),
+        message,
       });
     }
   }
