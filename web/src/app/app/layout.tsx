@@ -20,16 +20,18 @@ export default async function AppLayout({
     .eq('user_id', user.id)
     .maybeSingle();
   const role = (profile?.role as 'ADMIN' | 'USER' | null) ?? null;
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const identities = Array.isArray(user.identities) ? user.identities : [];
+  const firstIdentity = (identities[0] as any) ?? {};
   const displayName =
-    (user.user_metadata as any)?.full_name ??
-    (user.identities?.[0]?.identity_data as any)?.name ??
-    null ??
-    profile?.display_name ??
-    user.email;
+    (typeof meta.full_name === 'string' && (meta.full_name as string)) ||
+    (firstIdentity?.identity_data?.name as string | undefined) ||
+    (profile?.display_name as string | undefined) ||
+    (user.email as string | undefined) ||
+    'Usuário';
   const avatarUrl =
-    (user.user_metadata as any)?.avatar_url ??
-    (user.identities?.[0]?.identity_data as any)?.picture ??
-    null ??
+    (typeof meta.avatar_url === 'string' && (meta.avatar_url as string)) ||
+    (firstIdentity?.identity_data?.picture as string | undefined) ||
     null;
 
   return (
