@@ -59,12 +59,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const items: AllowItem[] =
-    (data as any[])?.map((r) => ({
-      email: r.email,
-      created_at: r.created_at ?? null,
-      created_by: r.created_by ?? null,
-    })) ?? [];
+  const rows = (data ?? []) as Array<{ email: string; created_at?: string | null; created_by?: string | null }>;
+  const items: AllowItem[] = rows.map((r) => ({
+    email: r.email,
+    created_at: r.created_at ?? null,
+    created_by: r.created_by ?? null,
+  }));
 
   const nextCursor =
     items.length === limit ? (items[items.length - 1]?.email ?? null) : null;
@@ -79,13 +79,14 @@ export async function POST(request: Request) {
   }
   const supabase = admin.supabase;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const emailRaw = (body?.email ?? '').trim();
+  const parsed = (body ?? {}) as { email?: unknown };
+  const emailRaw = String(parsed.email ?? '').trim();
   if (!emailRaw) {
     return NextResponse.json({ error: 'Missing email' }, { status: 400 });
   }
@@ -115,13 +116,14 @@ export async function DELETE(request: Request) {
   }
   const supabase = admin.supabase;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const emails: string[] = Array.isArray(body?.emails) ? body.emails : [];
+  const parsed = (body ?? {}) as { emails?: unknown };
+  const emails: string[] = Array.isArray(parsed.emails) ? (parsed.emails as unknown[]).map((e) => String(e)) : [];
   if (emails.length === 0) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });
   }
@@ -147,5 +149,6 @@ export async function DELETE(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, removed: (data as any[])?.length ?? 0 });
+  const removedRows = (data ?? []) as Array<{ email: string }>;
+  return NextResponse.json({ ok: true, removed: removedRows.length });
 }
