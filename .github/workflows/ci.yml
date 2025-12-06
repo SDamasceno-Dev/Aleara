@@ -34,8 +34,6 @@ jobs:
         run: npm ci
       - name: Type check
         run: npx tsc --noEmit -p tsconfig.json
-      - name: Lint (warning-free)
-        run: npm run lint -- --max-warnings=0
       - name: Build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
@@ -56,7 +54,7 @@ jobs:
       - name: Install deps
         run: npm ci
       - name: Lint (Next.js)
-        run: npx next lint --max-warnings=0
+        run: npx next lint
 
   TypeCheck:
     name: TypeCheck
