@@ -34,7 +34,8 @@ export function Tabs({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeId, setActiveId] = useState<string>(() => {
-    if (initialTabId && tabs.some((t) => t.id === initialTabId)) return initialTabId;
+    if (initialTabId && tabs.some((t) => t.id === initialTabId))
+      return initialTabId;
     return tabs[0]?.id ?? '';
   });
 
@@ -45,7 +46,11 @@ export function Tabs({
   }, [initialTabId, tabs]);
 
   const activeIndex = useMemo(
-    () => Math.max(0, tabs.findIndex((t) => t.id === activeId)),
+    () =>
+      Math.max(
+        0,
+        tabs.findIndex((t) => t.id === activeId),
+      ),
     [activeId, tabs],
   );
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -81,7 +86,9 @@ export function Tabs({
               onClick={() => {
                 setActiveId(tab.id);
                 if (refreshOnChange) {
-                  const sp = new URLSearchParams(searchParams?.toString() ?? '');
+                  const sp = new URLSearchParams(
+                    searchParams?.toString() ?? '',
+                  );
                   sp.set(paramName, tab.id);
                   router.replace(`?${sp.toString()}`);
                 }
@@ -92,7 +99,9 @@ export function Tabs({
                   setActiveId(tabs[next].id);
                   tabRefs.current[next]?.focus();
                   if (refreshOnChange) {
-                    const sp = new URLSearchParams(searchParams?.toString() ?? '');
+                    const sp = new URLSearchParams(
+                      searchParams?.toString() ?? '',
+                    );
                     sp.set(paramName, tabs[next].id);
                     router.replace(`?${sp.toString()}`);
                   }
@@ -101,7 +110,9 @@ export function Tabs({
                   setActiveId(tabs[prev].id);
                   tabRefs.current[prev]?.focus();
                   if (refreshOnChange) {
-                    const sp = new URLSearchParams(searchParams?.toString() ?? '');
+                    const sp = new URLSearchParams(
+                      searchParams?.toString() ?? '',
+                    );
                     sp.set(paramName, tabs[prev].id);
                     router.replace(`?${sp.toString()}`);
                   }
@@ -135,5 +146,3 @@ export function Tabs({
     </div>
   );
 }
-
-

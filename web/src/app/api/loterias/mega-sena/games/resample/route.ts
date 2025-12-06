@@ -44,7 +44,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: any;
   try {
@@ -55,8 +56,11 @@ export async function POST(request: Request) {
   const setId = String(body?.setId ?? '');
   const newK = body?.k != null ? Number(body.k) : null;
   const seedInput = body?.seed != null ? Number(body.seed) : null;
-  const newSeed = Number.isFinite(seedInput as number) ? (seedInput as number) : Math.floor(Math.random() * 2 ** 31);
-  if (!setId) return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
+  const newSeed = Number.isFinite(seedInput as number)
+    ? (seedInput as number)
+    : Math.floor(Math.random() * 2 ** 31);
+  if (!setId)
+    return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
 
   // fetch set
   const { data: setRow, error: setErr } = await supabase
@@ -64,15 +68,23 @@ export async function POST(request: Request) {
     .select('id, source_numbers, sample_size')
     .eq('id', setId)
     .maybeSingle();
-  if (setErr || !setRow) return NextResponse.json({ error: 'Set not found' }, { status: 404 });
+  if (setErr || !setRow)
+    return NextResponse.json({ error: 'Set not found' }, { status: 404 });
 
   const uniq: number[] = (setRow.source_numbers as number[]) ?? [];
   if (!Array.isArray(uniq) || uniq.length < 7 || uniq.length > 15) {
-    return NextResponse.json({ error: 'Invalid source numbers' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid source numbers' },
+      { status: 400 },
+    );
   }
   const k = newK && newK > 0 ? newK : (setRow.sample_size as number);
   const total = binom(uniq.length, 6);
-  if (k > total) return NextResponse.json({ error: `k must be ≤ ${total}` }, { status: 400 });
+  if (k > total)
+    return NextResponse.json(
+      { error: `k must be ≤ ${total}` },
+      { status: 400 },
+    );
 
   const allIdx = generateAllCombIndices(uniq.length, 6);
   const rnd = mulberry32(newSeed);
@@ -90,20 +102,30 @@ export async function POST(request: Request) {
   });
 
   // replace items and update set metadata
-  const { error: delErr } = await supabase.from('megasena_user_items').delete().eq('set_id', setId);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  const { error: delErr } = await supabase
+    .from('megasena_user_items')
+    .delete()
+    .eq('set_id', setId);
+  if (delErr)
+    return NextResponse.json({ error: delErr.message }, { status: 500 });
   for (let i = 0; i < items.length; i += 1000) {
-    const batch = items.slice(i, i + 1000).map((it) => ({ set_id: setId, position: it.position, numbers: it.numbers }));
+    const batch = items
+      .slice(i, i + 1000)
+      .map((it) => ({
+        set_id: setId,
+        position: it.position,
+        numbers: it.numbers,
+      }));
     const { error } = await supabase.from('megasena_user_items').insert(batch);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
   }
   const { error: updErr } = await supabase
     .from('megasena_user_sets')
     .update({ sample_size: k, seed: newSeed })
     .eq('id', setId);
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
+  if (updErr)
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, setId, seed: newSeed, items });
 }
-
-

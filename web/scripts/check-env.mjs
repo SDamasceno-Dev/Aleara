@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
+
 import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
@@ -20,7 +20,10 @@ if (envFile) {
     const key = line.slice(0, eq).trim();
     let val = line.slice(eq + 1).trim();
     // Strip optional quotes
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
       val = val.slice(1, -1);
     }
     if (!(key in process.env)) {
@@ -28,7 +31,9 @@ if (envFile) {
     }
   }
 } else {
-  console.warn('[env] .env.local not found. Reading only from current process.env.');
+  console.warn(
+    '[env] .env.local not found. Reading only from current process.env.',
+  );
 }
 
 const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
@@ -47,7 +52,9 @@ if (process.env.NODE_ENV === 'production') {
   for (const key of requiredInProd) {
     const val = process.env[key];
     if (!val || !String(val).trim()) {
-      console.error(`[env] Missing required env var: ${key} (required in production)`);
+      console.error(
+        `[env] Missing required env var: ${key} (required in production)`,
+      );
       ok = false;
     }
   }
@@ -79,5 +86,3 @@ if (!ok) {
 } else {
   console.log('[env] Environment looks good.');
 }
-
-

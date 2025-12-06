@@ -17,11 +17,15 @@ export async function DELETE() {
   const supabase = admin.supabase;
 
   // RLS allows delete only for admin (policy already created in migration)
-  const { error } = await supabase.from('megasena_draws').delete().neq('concurso', -1);
+  const { error } = await supabase
+    .from('megasena_draws')
+    .delete()
+    .neq('concurso', -1);
   if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 },
+    );
   }
   return NextResponse.json({ ok: true });
 }
-
-

@@ -5,7 +5,10 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return new NextResponse(JSON.stringify({ error: 'Proibido' }), { status: 401 });
+  if (!user)
+    return new NextResponse(JSON.stringify({ error: 'Proibido' }), {
+      status: 401,
+    });
 
   const url = new URL(request.url);
   const contestNo = Number(url.searchParams.get('contestNo') || '0');
@@ -19,8 +22,13 @@ export async function GET(request: Request) {
     .eq('user_id', user.id)
     .eq('contest_no', contestNo)
     .maybeSingle();
-  if (chkErr) return NextResponse.json({ error: chkErr.message }, { status: 500 });
-  if (!check) return NextResponse.json({ error: 'No check found for this contest' }, { status: 404 });
+  if (chkErr)
+    return NextResponse.json({ error: chkErr.message }, { status: 500 });
+  if (!check)
+    return NextResponse.json(
+      { error: 'No check found for this contest' },
+      { status: 404 },
+    );
 
   const checkId = check.id as string;
   const { data: items, error: itemsErr } = await supabase
@@ -28,9 +36,13 @@ export async function GET(request: Request) {
     .select('position, numbers, matches')
     .eq('check_id', checkId)
     .order('position', { ascending: true });
-  if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+  if (itemsErr)
+    return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
-  let c2 = 0, c3 = 0, c4 = 0, c5 = 0;
+  let c2 = 0,
+    c3 = 0,
+    c4 = 0,
+    c5 = 0;
   for (const r of items ?? []) {
     const m = (r.matches as number) ?? 0;
     if (m === 2) c2 += 1;
@@ -54,5 +66,3 @@ export async function GET(request: Request) {
     })),
   });
 }
-
-

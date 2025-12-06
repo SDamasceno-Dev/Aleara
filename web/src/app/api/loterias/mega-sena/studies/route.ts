@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const key = url.searchParams.get('key');
   // default to 60 items if not provided
   const rawLimit = Number(url.searchParams.get('limit') ?? '');
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(1000, rawLimit) : 60;
+  const limit =
+    Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(1000, rawLimit) : 60;
   if (!key) {
     return NextResponse.json({ error: 'Missing key' }, { status: 400 });
   }
@@ -27,5 +28,3 @@ export async function GET(request: Request) {
   }
   return NextResponse.json({ catalog, items: items ?? [] });
 }
-
-

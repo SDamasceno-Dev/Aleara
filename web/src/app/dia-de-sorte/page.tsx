@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function Page() {
-	redirect('/app/dia-de-sorte');
+  redirect('/app/dia-de-sorte');
 }
-
-

@@ -11,11 +11,14 @@ async function assertAdmin() {
 
 export async function DELETE() {
   const admin = await assertAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Forbidden' }, { status: admin.status });
+  if (!admin.ok)
+    return NextResponse.json({ error: 'Forbidden' }, { status: admin.status });
   const supabase = admin.supabase;
-  const { error } = await supabase.from('quina_draws').delete().neq('concurso', -1);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { error } = await supabase
+    .from('quina_draws')
+    .delete()
+    .neq('concurso', -1);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, deleted: 'all' });
 }
-
-

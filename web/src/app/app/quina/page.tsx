@@ -20,16 +20,23 @@ export default async function QuinaPage({
     isAdmin = !!data;
   }
   const sp = (await searchParams) ?? undefined;
-  const requestedTab = sp && typeof sp.tab === 'string' ? (sp.tab as string) : null;
+  const requestedTab =
+    sp && typeof sp.tab === 'string' ? (sp.tab as string) : null;
   const overview = <DataPanel />;
   const commonTabs = [
     { id: 'overview', label: 'Dados', content: overview },
     { id: 'games', label: 'Jogos', content: <GamesPanel /> },
     { id: 'reports', label: 'Relatórios', content: <ReportsPanel /> },
   ] as const;
-  const tabs = isAdmin ? [...commonTabs, { id: 'import', label: 'Importação', content: <ImportCsvPanel /> }] : [...commonTabs];
+  const tabs = isAdmin
+    ? [
+        ...commonTabs,
+        { id: 'import', label: 'Importação', content: <ImportCsvPanel /> },
+      ]
+    : [...commonTabs];
   const allowedIds = new Set(tabs.map((t) => t.id));
-  const initialId = requestedTab && allowedIds.has(requestedTab) ? requestedTab : 'overview';
+  const initialId =
+    requestedTab && allowedIds.has(requestedTab) ? requestedTab : 'overview';
   return (
     <div className='flex-1 min-h-0 flex flex-col'>
       <h1 className='text-lg font-semibold text-zinc-100'>Quina</h1>
@@ -45,4 +52,3 @@ export default async function QuinaPage({
     </div>
   );
 }
-

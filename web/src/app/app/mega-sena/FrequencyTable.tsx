@@ -7,10 +7,12 @@ type FrequencyRow = {
 };
 
 function formatPercent(p: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(p) + '%';
+  return (
+    new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(p) + '%'
+  );
 }
 
 export async function FrequencyTable() {
@@ -62,5 +64,3 @@ export async function FrequencyTable() {
     </section>
   );
 }
-
-

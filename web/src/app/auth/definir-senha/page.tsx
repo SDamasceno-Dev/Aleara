@@ -19,13 +19,21 @@ export default function DefinirSenhaPage() {
         // Debug: log initial URL context
         try {
           // eslint-disable-next-line no-console
-          console.log('[definir-senha] mount href=', typeof window !== 'undefined' ? window.location.href : '(no-window)');
+          console.log(
+            '[definir-senha] mount href=',
+            typeof window !== 'undefined'
+              ? window.location.href
+              : '(no-window)',
+          );
         } catch {}
         // Accept both hash and query-style callbacks
         const hasWindow = typeof window !== 'undefined';
         const hash = hasWindow ? window.location.hash : '';
         const search = hasWindow ? window.location.search : '';
-        const parse = (s: string) => new URLSearchParams(s.startsWith('#') || s.startsWith('?') ? s.slice(1) : s);
+        const parse = (s: string) =>
+          new URLSearchParams(
+            s.startsWith('#') || s.startsWith('?') ? s.slice(1) : s,
+          );
 
         if (hash || search) {
           const hashParams = hash ? parse(hash) : new URLSearchParams();
@@ -37,8 +45,10 @@ export default function DefinirSenhaPage() {
           if (err && !cancelled) {
             setStatus(decodeURIComponent(err.replace(/\+/g, ' ')));
           }
-          const access_token = params.get('access_token') || qsParams.get('access_token');
-          const refresh_token = params.get('refresh_token') || qsParams.get('refresh_token');
+          const access_token =
+            params.get('access_token') || qsParams.get('access_token');
+          const refresh_token =
+            params.get('refresh_token') || qsParams.get('refresh_token');
           const code = params.get('code') || qsParams.get('code');
           const tokenHash = qsParams.get('token') || params.get('token'); // from verify?token=...&type=...
           const tokenType = qsParams.get('type') || params.get('type');
@@ -89,13 +99,17 @@ export default function DefinirSenhaPage() {
             if (!cancelled) setAuthed(!!data.user);
             try {
               // eslint-disable-next-line no-console
-              console.log('[definir-senha] exchangeCodeForSession', { error: error?.message, authed: !!data.user });
+              console.log('[definir-senha] exchangeCodeForSession', {
+                error: error?.message,
+                authed: !!data.user,
+              });
             } catch {}
           } else if (tokenHash) {
             // Handle verify links that redirect with token (& optional type)
-            const candidates = (tokenType && tokenType.length > 0)
-              ? [tokenType]
-              : ['signup', 'invite', 'magiclink', 'recovery', 'email_change'];
+            const candidates =
+              tokenType && tokenType.length > 0
+                ? [tokenType]
+                : ['signup', 'invite', 'magiclink', 'recovery', 'email_change'];
             let lastErr: string | null = null;
             for (const t of candidates) {
               // Try token_hash first (email link), then token+email (OTP format)
@@ -106,7 +120,13 @@ export default function DefinirSenhaPage() {
               });
               if (!byHash.error) {
                 lastErr = null;
-                try { console.log('[definir-senha] verifyOtp OK with type', t, 'via token_hash'); } catch {}
+                try {
+                  console.log(
+                    '[definir-senha] verifyOtp OK with type',
+                    t,
+                    'via token_hash',
+                  );
+                } catch {}
                 break;
               } else {
                 attemptErr = byHash.error.message;
@@ -119,7 +139,13 @@ export default function DefinirSenhaPage() {
                 const byToken = await supabase.auth.verifyOtp(tokenPayload);
                 if (!byToken.error) {
                   lastErr = null;
-                  try { console.log('[definir-senha] verifyOtp OK with type', t, 'via token+email'); } catch {}
+                  try {
+                    console.log(
+                      '[definir-senha] verifyOtp OK with type',
+                      t,
+                      'via token+email',
+                    );
+                  } catch {}
                   break;
                 } else {
                   attemptErr = byToken.error.message;
@@ -136,7 +162,12 @@ export default function DefinirSenhaPage() {
             if (!cancelled) setAuthed(!!data.user);
             try {
               // eslint-disable-next-line no-console
-              console.log('[definir-senha] after verifyOtp authed=', !!data.user, 'status=', lastErr);
+              console.log(
+                '[definir-senha] after verifyOtp authed=',
+                !!data.user,
+                'status=',
+                lastErr,
+              );
             } catch {}
           }
         }
@@ -163,34 +194,37 @@ export default function DefinirSenhaPage() {
   }, [supabase]);
 
   return (
-    <div className="mx-auto max-w-md p-6">
-      <h1 className="text-lg font-semibold text-zinc-100">Definir senha</h1>
-      <p className="mt-1 text-sm text-zinc-400">
-        Crie sua senha de acesso. Ela deve ter pelo menos 20 caracteres e incluir caracteres
-        especiais.
+    <div className='mx-auto max-w-md p-6'>
+      <h1 className='text-lg font-semibold text-zinc-100'>Definir senha</h1>
+      <p className='mt-1 text-sm text-zinc-400'>
+        Crie sua senha de acesso. Ela deve ter pelo menos 20 caracteres e
+        incluir caracteres especiais.
       </p>
-      <div className="mt-4 rounded-md border border-white/10 bg-card-foreground p-4 relative z-50">
+      <div className='mt-4 rounded-md border border-white/10 bg-card-foreground p-4 relative z-50'>
         {!ready ? (
-          <div className="text-sm text-zinc-300">Preparando…</div>
+          <div className='text-sm text-zinc-300'>Preparando…</div>
         ) : authed ? (
           <PasswordForm />
         ) : (
-          <div className="space-y-3 text-sm text-zinc-300">
+          <div className='space-y-3 text-sm text-zinc-300'>
             <div>Link inválido ou expirado.</div>
-            <div className="space-y-2">
-              <label htmlFor="invite-email" className="block text-xs text-zinc-400">
+            <div className='space-y-2'>
+              <label
+                htmlFor='invite-email'
+                className='block text-xs text-zinc-400'
+              >
                 Informe seu e-mail para reenviar o convite
               </label>
               <input
-                id="invite-email"
-                type="email"
+                id='invite-email'
+                type='email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@exemplo.com"
-                className="h-11 w-full rounded-md border border-white/20 bg-white/5 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)"
+                placeholder='email@exemplo.com'
+                className='h-11 w-full rounded-md border border-white/20 bg-white/5 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)'
               />
               <button
-                type="button"
+                type='button'
                 disabled={resending || !email}
                 onClick={async () => {
                   setResending(true);
@@ -213,23 +247,23 @@ export default function DefinirSenhaPage() {
                     setResending(false);
                   }
                 }}
-                className="inline-flex items-center justify-center rounded-md bg-(--wine) px-4 py-2 text-sm text-white hover:opacity-95 disabled:opacity-60"
+                className='inline-flex items-center justify-center rounded-md bg-(--wine) px-4 py-2 text-sm text-white hover:opacity-95 disabled:opacity-60'
               >
                 {resending ? 'Reenviando…' : 'Reenviar convite'}
               </button>
-              <div className="text-xs text-zinc-500">ou</div>
+              <div className='text-xs text-zinc-500'>ou</div>
               <button
-                type="button"
+                type='button'
                 disabled={!email}
                 onClick={async () => {
                   setStatus(null);
                   try {
                     const redirectTo =
-                      (typeof window !== 'undefined'
+                      typeof window !== 'undefined'
                         ? `${window.location.origin}/auth/definir-senha?email=${encodeURIComponent(
                             email,
                           )}`
-                        : `/auth/definir-senha?email=${encodeURIComponent(email)}`);
+                        : `/auth/definir-senha?email=${encodeURIComponent(email)}`;
                     const { error } = await supabase.auth.signInWithOtp({
                       email,
                       options: { emailRedirectTo: redirectTo },
@@ -243,7 +277,7 @@ export default function DefinirSenhaPage() {
                     setStatus('Falha ao enviar magic link.');
                   }
                 }}
-                className="inline-flex items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm text-zinc-100 hover:bg-white/10 disabled:opacity-60"
+                className='inline-flex items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm text-zinc-100 hover:bg-white/10 disabled:opacity-60'
               >
                 Enviar link de acesso (magic link)
               </button>
@@ -251,7 +285,11 @@ export default function DefinirSenhaPage() {
           </div>
         )}
         {status ? (
-          <div className="mt-2 text-xs text-red-500" role="alert" aria-live="assertive">
+          <div
+            className='mt-2 text-xs text-red-500'
+            role='alert'
+            aria-live='assertive'
+          >
             {status}
           </div>
         ) : null}
@@ -259,5 +297,3 @@ export default function DefinirSenhaPage() {
     </div>
   );
 }
-
-

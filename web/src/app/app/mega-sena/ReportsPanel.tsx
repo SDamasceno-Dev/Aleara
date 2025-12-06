@@ -12,9 +12,25 @@ type ReportData = {
   items: ReportItem[];
 };
 
-type AggregateRow = { contestNo: number; checkedAt: string; total: number; c4: number; c5: number; c6: number; hitRate: number };
+type AggregateRow = {
+  contestNo: number;
+  checkedAt: string;
+  total: number;
+  c4: number;
+  c5: number;
+  c6: number;
+  hitRate: number;
+};
 type AggregateData = {
-  kpis: { totalConferences: number; totalBets: number; avgPerCheck: number; c4: number; c5: number; c6: number; hitRate: number };
+  kpis: {
+    totalConferences: number;
+    totalBets: number;
+    avgPerCheck: number;
+    c4: number;
+    c5: number;
+    c6: number;
+    hitRate: number;
+  };
   rows: AggregateRow[];
 };
 
@@ -34,7 +50,9 @@ export default function ReportsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/loterias/mega-sena/reports/latest', { cache: 'no-store' });
+      const res = await fetch('/api/loterias/mega-sena/reports/latest', {
+        cache: 'no-store',
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error || 'Falha ao carregar relatório.');
@@ -60,7 +78,10 @@ export default function ReportsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/loterias/mega-sena/reports/by-contest?contestNo=${n}`, { cache: 'no-store' });
+      const res = await fetch(
+        `/api/loterias/mega-sena/reports/by-contest?contestNo=${n}`,
+        { cache: 'no-store' },
+      );
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error || 'Falha ao carregar relatório.');
@@ -82,7 +103,9 @@ export default function ReportsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/loterias/mega-sena/reports/aggregate', { cache: 'no-store' });
+      const res = await fetch('/api/loterias/mega-sena/reports/aggregate', {
+        cache: 'no-store',
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error || 'Falha ao carregar relatório geral.');
@@ -90,7 +113,18 @@ export default function ReportsPanel() {
         return;
       }
       if (data?.empty) {
-        setAggregate({ kpis: { totalConferences: 0, totalBets: 0, avgPerCheck: 0, c4: 0, c5: 0, c6: 0, hitRate: 0 }, rows: [] });
+        setAggregate({
+          kpis: {
+            totalConferences: 0,
+            totalBets: 0,
+            avgPerCheck: 0,
+            c4: 0,
+            c5: 0,
+            c6: 0,
+            hitRate: 0,
+          },
+          rows: [],
+        });
       } else {
         setAggregate(data as AggregateData);
       }
@@ -108,13 +142,18 @@ export default function ReportsPanel() {
   }, []);
 
   const drawStr = useMemo(
-    () => (report?.draw ?? []).map((n) => String(n).padStart(2, '0')).join(', '),
+    () =>
+      (report?.draw ?? []).map((n) => String(n).padStart(2, '0')).join(', '),
     [report],
   );
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
-      <LoadingOverlay show={busy} message={busyMsg} subtitle='Preparando dados…' />
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Preparando dados…'
+      />
       <div className='mb-3 text-sm text-zinc-200'>Relatórios</div>
 
       <div className='mb-3 flex flex-wrap items-end gap-3'>
@@ -122,7 +161,9 @@ export default function ReportsPanel() {
           Concurso
           <input
             value={contestInput}
-            onChange={(e) => setContestInput(e.target.value.replace(/\D+/g, ''))}
+            onChange={(e) =>
+              setContestInput(e.target.value.replace(/\D+/g, ''))
+            }
             className='ml-2 w-24 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
             placeholder='Ex.: 2680'
           />
@@ -177,34 +218,50 @@ export default function ReportsPanel() {
         <div className='text-sm text-(--alertError)'>{error}</div>
       ) : viewMode === 'aggregate' ? (
         !aggregate || aggregate.kpis.totalConferences === 0 ? (
-          <div className='text-sm text-zinc-400'>Nenhuma conferência encontrada.</div>
+          <div className='text-sm text-zinc-400'>
+            Nenhuma conferência encontrada.
+          </div>
         ) : (
           <>
             {/* KPIs agregados */}
             <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-6'>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Conferências</div>
-                <div className='text-lg font-semibold text-zinc-100'>{aggregate.kpis.totalConferences}</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.totalConferences}
+                </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Apostas</div>
-                <div className='text-lg font-semibold text-zinc-100'>{aggregate.kpis.totalBets}</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.totalBets}
+                </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
-                <div className='text-[11px] text-zinc-400'>Média/conferência</div>
-                <div className='text-lg font-semibold text-zinc-100'>{aggregate.kpis.avgPerCheck.toFixed(1)}</div>
+                <div className='text-[11px] text-zinc-400'>
+                  Média/conferência
+                </div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.avgPerCheck.toFixed(1)}
+                </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 4</div>
-                <div className='text-lg font-semibold text-zinc-100'>{aggregate.kpis.c4}</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.c4}
+                </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 5</div>
-                <div className='text-lg font-semibold text-zinc-100'>{aggregate.kpis.c5}</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.c5}
+                </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 6</div>
-                <div className='text-lg font-semibold text-green-300'>{aggregate.kpis.c6}</div>
+                <div className='text-lg font-semibold text-green-300'>
+                  {aggregate.kpis.c6}
+                </div>
               </div>
             </div>
 
@@ -222,8 +279,12 @@ export default function ReportsPanel() {
                 <table className='min-w-full text-sm'>
                   <thead className='text-zinc-400'>
                     <tr className='text-left'>
-                      <th className='py-2 pl-3 pr-3 font-medium w-24'>Concurso</th>
-                      <th className='py-2 pr-3 font-medium w-44'>Conferido em</th>
+                      <th className='py-2 pl-3 pr-3 font-medium w-24'>
+                        Concurso
+                      </th>
+                      <th className='py-2 pr-3 font-medium w-44'>
+                        Conferido em
+                      </th>
                       <th className='py-2 pr-3 font-medium w-24'>Apostas</th>
                       <th className='py-2 pr-3 font-medium w-20'>4</th>
                       <th className='py-2 pr-3 font-medium w-20'>5</th>
@@ -233,14 +294,21 @@ export default function ReportsPanel() {
                   </thead>
                   <tbody className='text-zinc-300/90'>
                     {aggregate.rows.map((r) => (
-                      <tr key={`${r.contestNo}-${r.checkedAt}`} className='border-t border-white/10'>
+                      <tr
+                        key={`${r.contestNo}-${r.checkedAt}`}
+                        className='border-t border-white/10'
+                      >
                         <td className='py-2 pl-3 pr-3'>{r.contestNo}</td>
-                        <td className='py-2 pr-3'>{new Date(r.checkedAt).toLocaleString()}</td>
+                        <td className='py-2 pr-3'>
+                          {new Date(r.checkedAt).toLocaleString()}
+                        </td>
                         <td className='py-2 pr-3'>{r.total}</td>
                         <td className='py-2 pr-3'>{r.c4}</td>
                         <td className='py-2 pr-3'>{r.c5}</td>
                         <td className='py-2 pr-3 text-green-300'>{r.c6}</td>
-                        <td className='py-2 pr-3'>{(r.hitRate * 100).toFixed(1)}%</td>
+                        <td className='py-2 pr-3'>
+                          {(r.hitRate * 100).toFixed(1)}%
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -250,36 +318,50 @@ export default function ReportsPanel() {
           </>
         )
       ) : !report ? (
-        <div className='text-sm text-zinc-400'>Nenhuma conferência encontrada.</div>
+        <div className='text-sm text-zinc-400'>
+          Nenhuma conferência encontrada.
+        </div>
       ) : (
         <>
           {/* KPIs */}
           <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-5'>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Concurso</div>
-              <div className='text-lg font-semibold text-zinc-100'>{report.contestNo}</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.contestNo}
+              </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Total de apostas</div>
-              <div className='text-lg font-semibold text-zinc-100'>{report.kpis.total}</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.total}
+              </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 4</div>
-              <div className='text-lg font-semibold text-zinc-100'>{report.kpis.c4}</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.c4}
+              </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 5</div>
-              <div className='text-lg font-semibold text-zinc-100'>{report.kpis.c5}</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.c5}
+              </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 6</div>
-              <div className='text-lg font-semibold text-green-300'>{report.kpis.c6}</div>
+              <div className='text-lg font-semibold text-green-300'>
+                {report.kpis.c6}
+              </div>
             </div>
           </div>
 
           <div className='mb-2 text-xs text-zinc-400'>
             Sorteio: <span className='text-zinc-200'>{drawStr || '—'}</span> •{' '}
-            <span>Conferido em {new Date(report.checkedAt).toLocaleString()}</span>
+            <span>
+              Conferido em {new Date(report.checkedAt).toLocaleString()}
+            </span>
           </div>
 
           {/* Tabela de detalhes */}
@@ -296,14 +378,20 @@ export default function ReportsPanel() {
                 </thead>
                 <tbody className='text-zinc-300/90'>
                   {report.items.map((it, idx) => (
-                    <tr key={`${it.position}-${idx}`} className='border-t border-white/10'>
+                    <tr
+                      key={`${it.position}-${idx}`}
+                      className='border-t border-white/10'
+                    >
                       <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
                       <td className='py-2 pr-3'>( {it.position} )</td>
                       <td className='py-2 pr-3 font-medium text-zinc-100'>
                         {it.numbers.map((n, i) => {
                           const s = String(n).padStart(2, '0');
                           return (
-                            <span key={`${it.position}-${n}-${i}`} className='inline-flex items-center'>
+                            <span
+                              key={`${it.position}-${n}-${i}`}
+                              className='inline-flex items-center'
+                            >
                               <span>{s}</span>
                               {i < it.numbers.length - 1 ? (
                                 <span className='px-1 text-zinc-500'>•</span>
@@ -325,7 +413,17 @@ export default function ReportsPanel() {
   );
 }
 
-function PieSummary({ c4, c5, c6, total }: { c4: number; c5: number; c6: number; total: number }) {
+function PieSummary({
+  c4,
+  c5,
+  c6,
+  total,
+}: {
+  c4: number;
+  c5: number;
+  c6: number;
+  total: number;
+}) {
   const sum = c4 + c5 + c6;
   if (sum === 0 || total === 0) {
     return (
@@ -344,15 +442,27 @@ function PieSummary({ c4, c5, c6, total }: { c4: number; c5: number; c6: number;
   const s5 = (c5 / sum) * circumference;
   const s6 = (c6 / sum) * circumference;
   const off4 = 0;
-  const off5 = -(s4);
+  const off5 = -s4;
   const off6 = -(s4 + s5);
   const pct = (n: number) => ((n / total) * 100).toFixed(1);
 
   return (
     <div className='mb-4 grid grid-cols-1 gap-4 md:grid-cols-2'>
       <div className='flex items-center justify-center'>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className='-rotate-90'>
-          <circle cx={cx} cy={cy} r={r} fill='none' stroke='rgba(255,255,255,0.08)' strokeWidth={stroke} />
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className='-rotate-90'
+        >
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill='none'
+            stroke='rgba(255,255,255,0.08)'
+            strokeWidth={stroke}
+          />
           <circle
             cx={cx}
             cy={cy}
@@ -384,8 +494,16 @@ function PieSummary({ c4, c5, c6, total }: { c4: number; c5: number; c6: number;
             strokeDashoffset={off6}
           />
           {/* centro */}
-          <g className='rotate-90' transform={`translate(${cx},${cy}) rotate(90)`}>
-            <text x='0' y='5' textAnchor='middle' className='fill-white text-sm'>
+          <g
+            className='rotate-90'
+            transform={`translate(${cx},${cy}) rotate(90)`}
+          >
+            <text
+              x='0'
+              y='5'
+              textAnchor='middle'
+              className='fill-white text-sm'
+            >
               {sum} hits
             </text>
           </g>
@@ -393,19 +511,28 @@ function PieSummary({ c4, c5, c6, total }: { c4: number; c5: number; c6: number;
       </div>
       <div className='flex flex-col justify-center gap-2 text-sm'>
         <div className='inline-flex items-center gap-2'>
-          <span className='inline-block h-3 w-3 rounded-sm' style={{ backgroundColor: '#eab308' }} />
+          <span
+            className='inline-block h-3 w-3 rounded-sm'
+            style={{ backgroundColor: '#eab308' }}
+          />
           <span className='text-zinc-300'>Acertos 4</span>
           <span className='ml-auto font-semibold text-zinc-100'>{c4}</span>
           <span className='text-zinc-400'>({pct(c4)}%)</span>
         </div>
         <div className='inline-flex items-center gap-2'>
-          <span className='inline-block h-3 w-3 rounded-sm' style={{ backgroundColor: '#f97316' }} />
+          <span
+            className='inline-block h-3 w-3 rounded-sm'
+            style={{ backgroundColor: '#f97316' }}
+          />
           <span className='text-zinc-300'>Acertos 5</span>
           <span className='ml-auto font-semibold text-zinc-100'>{c5}</span>
           <span className='text-zinc-400'>({pct(c5)}%)</span>
         </div>
         <div className='inline-flex items-center gap-2'>
-          <span className='inline-block h-3 w-3 rounded-sm' style={{ backgroundColor: '#22c55e' }} />
+          <span
+            className='inline-block h-3 w-3 rounded-sm'
+            style={{ backgroundColor: '#22c55e' }}
+          />
           <span className='text-zinc-300'>Acertos 6</span>
           <span className='ml-auto font-semibold text-green-300'>{c6}</span>
           <span className='text-zinc-400'>({pct(c6)}%)</span>
@@ -417,6 +544,3 @@ function PieSummary({ c4, c5, c6, total }: { c4: number; c5: number; c6: number;
     </div>
   );
 }
-
-
-

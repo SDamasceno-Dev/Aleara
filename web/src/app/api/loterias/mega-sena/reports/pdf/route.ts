@@ -9,7 +9,15 @@ import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 import { existsSync } from 'fs';
 
-type ContestRow = { contestNo: number; checkedAt: string; total: number; c4: number; c5: number; c6: number; hitRate: number };
+type ContestRow = {
+  contestNo: number;
+  checkedAt: string;
+  total: number;
+  c4: number;
+  c5: number;
+  c6: number;
+  hitRate: number;
+};
 
 function formatNumbers(nums: number[]): string {
   return (nums ?? []).map((n) => String(n).padStart(2, '0')).join(', ');
@@ -77,7 +85,13 @@ function renderHtmlAggregate(title: string, kpis: any, rows: ContestRow[]) {
   </html>`;
 }
 
-function renderHtmlContest(title: string, contestNo: number, draw: number[], kpis: any, items: { position: number; numbers: number[]; matches: number }[]) {
+function renderHtmlContest(
+  title: string,
+  contestNo: number,
+  draw: number[],
+  kpis: any,
+  items: { position: number; numbers: number[]; matches: number }[],
+) {
   const itemsHtml = items
     .map(
       (it, idx) => `
@@ -140,10 +154,13 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const url = new URL(request.url);
-  const mode = (url.searchParams.get('mode') || 'aggregate') as 'aggregate' | 'contest';
+  const mode = (url.searchParams.get('mode') || 'aggregate') as
+    | 'aggregate'
+    | 'contest';
   const contestNo = Number(url.searchParams.get('contestNo') || '0');
 
   let html = '';
@@ -156,7 +173,15 @@ export async function GET(request: Request) {
       .order('checked_at', { ascending: false });
     const ids = (checks ?? []).map((c: any) => c.id as string);
     let rows: ContestRow[] = [];
-    let kpis = { totalConferences: 0, totalBets: 0, avgPerCheck: 0, c4: 0, c5: 0, c6: 0, hitRate: 0 };
+    let kpis = {
+      totalConferences: 0,
+      totalBets: 0,
+      avgPerCheck: 0,
+      c4: 0,
+      c5: 0,
+      c6: 0,
+      hitRate: 0,
+    };
     if (ids.length > 0) {
       const map = new Map<string, ContestRow>();
       for (const c of checks ?? []) {
@@ -193,13 +218,18 @@ export async function GET(request: Request) {
       kpis.c4 = rows.reduce((s, r) => s + r.c4, 0);
       kpis.c5 = rows.reduce((s, r) => s + r.c5, 0);
       kpis.c6 = rows.reduce((s, r) => s + r.c6, 0);
-      kpis.avgPerCheck = kpis.totalConferences > 0 ? kpis.totalBets / kpis.totalConferences : 0;
-      kpis.hitRate = kpis.totalBets > 0 ? (kpis.c4 + kpis.c5 + kpis.c6) / kpis.totalBets : 0;
+      kpis.avgPerCheck =
+        kpis.totalConferences > 0 ? kpis.totalBets / kpis.totalConferences : 0;
+      kpis.hitRate =
+        kpis.totalBets > 0 ? (kpis.c4 + kpis.c5 + kpis.c6) / kpis.totalBets : 0;
     }
     html = renderHtmlAggregate('Relatório geral — Mega‑Sena', kpis, rows);
   } else {
     if (!(contestNo > 0)) {
-      return NextResponse.json({ error: 'contestNo required for mode=contest' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'contestNo required for mode=contest' },
+        { status: 400 },
+      );
     }
     const { data: check } = await supabase
       .from('megasena_checks')
@@ -207,13 +237,16 @@ export async function GET(request: Request) {
       .eq('user_id', user.id)
       .eq('contest_no', contestNo)
       .maybeSingle();
-    if (!check) return NextResponse.json({ error: 'No check found' }, { status: 404 });
+    if (!check)
+      return NextResponse.json({ error: 'No check found' }, { status: 404 });
     const { data: items } = await supabase
       .from('megasena_check_items')
       .select('position, numbers, matches')
       .eq('check_id', check.id as string)
       .order('position', { ascending: true });
-    let c4 = 0, c5 = 0, c6 = 0;
+    let c4 = 0,
+      c5 = 0,
+      c6 = 0;
     for (const r of items ?? []) {
       const m = (r.matches as number) ?? 0;
       if (m === 4) c4 += 1;
@@ -249,13 +282,23 @@ export async function GET(request: Request) {
     if (envPath && existsSync(envPath)) return envPath;
     const candidates: string[] = [];
     if (process.platform === 'darwin') {
-      candidates.push('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
+      candidates.push(
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      );
       candidates.push('/Applications/Chromium.app/Contents/MacOS/Chromium');
     } else if (process.platform === 'win32') {
-      candidates.push('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe');
-      candidates.push('C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe');
+      candidates.push(
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      );
+      candidates.push(
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      );
     } else {
-      candidates.push('/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium');
+      candidates.push(
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+      );
     }
     for (const c of candidates) {
       if (existsSync(c)) return c;
@@ -306,5 +349,3 @@ export async function GET(request: Request) {
     await browser.close();
   }
 }
-
-

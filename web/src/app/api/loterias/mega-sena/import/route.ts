@@ -123,8 +123,7 @@ function parseIntSafe(v: string): number | null {
 }
 
 function headerIndexMap(header: string[]): Record<string, number> {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
   const nameToIndex: Record<string, number> = {};
   header.forEach((h, idx) => {
     nameToIndex[normalize(h)] = idx;
@@ -132,7 +131,11 @@ function headerIndexMap(header: string[]): Record<string, number> {
   return nameToIndex;
 }
 
-function mapRow(headerMap: Record<string, number>, cols: string[], line: number): { ok: true; row: DrawRow } | { ok: false; error: string } {
+function mapRow(
+  headerMap: Record<string, number>,
+  cols: string[],
+  line: number,
+): { ok: true; row: DrawRow } | { ok: false; error: string } {
   const get = (key: string) => {
     const idx = headerMap[key];
     return idx != null ? (cols[idx] ?? '') : '';
@@ -155,7 +158,10 @@ function mapRow(headerMap: Record<string, number>, cols: string[], line: number)
     bola5 == null ||
     bola6 == null
   ) {
-    return { ok: false, error: `Linha ${line}: dados obrigatórios ausentes/invalidos` };
+    return {
+      ok: false,
+      error: `Linha ${line}: dados obrigatórios ausentes/invalidos`,
+    };
   }
   const row: DrawRow = {
     concurso,
@@ -167,7 +173,7 @@ function mapRow(headerMap: Record<string, number>, cols: string[], line: number)
     bola5,
     bola6,
     ganhadores_6: parseIntSafe(get('ganhadores 6 acertos')),
-    cidades_uf: (get('cidade / uf').trim() || null),
+    cidades_uf: get('cidade / uf').trim() || null,
     rateio_6: parseCurrencyBR(get('rateio 6 acertos')),
     ganhadores_5: parseIntSafe(get('ganhadores 5 acertos')),
     rateio_5: parseCurrencyBR(get('rateio 5 acertos')),
@@ -176,8 +182,10 @@ function mapRow(headerMap: Record<string, number>, cols: string[], line: number)
     acumulado_6: parseCurrencyBR(get('acumulado 6 acertos')),
     arrecadacao_total: parseCurrencyBR(get('arrecadação total')),
     estimativa_premio: parseCurrencyBR(get('estimativa prêmio')),
-    acumulado_mega_da_virada: parseCurrencyBR(get('acumulado sorteio especial mega da virada')),
-    observacao: (get('observação').trim() || null),
+    acumulado_mega_da_virada: parseCurrencyBR(
+      get('acumulado sorteio especial mega da virada'),
+    ),
+    observacao: get('observação').trim() || null,
   };
   return { ok: true, row };
 }
@@ -207,12 +215,18 @@ export async function POST(request: Request) {
   if (!csv.trim()) {
     return NextResponse.json({ error: 'Missing csv' }, { status: 400 });
   }
-  const reconcileWindow = Math.max(0, Math.min(100, Number(body?.reconcileLastN ?? 20) || 20)); // default 20, cap 100
+  const reconcileWindow = Math.max(
+    0,
+    Math.min(100, Number(body?.reconcileLastN ?? 20) || 20),
+  ); // default 20, cap 100
 
   // Parse CSV
   const table = parseCsv(csv);
   if (table.length < 2) {
-    return NextResponse.json({ error: 'CSV vazio ou sem dados' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'CSV vazio ou sem dados' },
+      { status: 400 },
+    );
   }
   const header = table[0].map((h) => h.trim());
   const hmap = headerIndexMap(header);
@@ -228,7 +242,10 @@ export async function POST(request: Request) {
   ];
   for (const r of required) {
     if (!(r in hmap)) {
-      return NextResponse.json({ error: `Cabeçalho ausente: ${r}` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Cabeçalho ausente: ${r}` },
+        { status: 400 },
+      );
     }
   }
 
@@ -247,7 +264,10 @@ export async function POST(request: Request) {
     rows.push(mapped.row);
   }
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'Nenhuma linha válida encontrada', errors }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Nenhuma linha válida encontrada', errors },
+      { status: 400 },
+    );
   }
 
   // Determine max(concurso) in DB
@@ -267,7 +287,8 @@ export async function POST(request: Request) {
   rows.sort((a, b) => a.concurso - b.concurso);
   const lastN = rows.slice(-reconcileWindow);
   const lastNIds = new Set(lastN.map((r) => r.concurso));
-  const newRows = maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
+  const newRows =
+    maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
 
   // Union set to upsert: lastN union newRows
   const upsertMap = new Map<number, DrawRow>();
@@ -295,7 +316,10 @@ export async function POST(request: Request) {
       .from('megasena_draws')
       .upsert(batch, { onConflict: 'concurso' });
     if (error) {
-      errors.push({ line: 0, reason: `Falha ao salvar lote: ${error.message}` });
+      errors.push({
+        line: 0,
+        reason: `Falha ao salvar lote: ${error.message}`,
+      });
       continue;
     }
     affected += batch.length;
@@ -303,17 +327,22 @@ export async function POST(request: Request) {
 
   const insertedCount = upsertIds.filter((id) => !existingIds.has(id)).length;
   const updatedCount = upsertIds.length - insertedCount;
-  const skippedCount =
-    rows.length - rowsToUpsert.length; // lines valid but not necessary to touch
+  const skippedCount = rows.length - rowsToUpsert.length; // lines valid but not necessary to touch
 
   // Recompute frequency stats (server-side, admin via RLS) + other studies
   let statsUpdated = false;
   let studiesUpdated = false;
   try {
     // Count total draws (also get max concurso)
-    const countRes = await supabase.from('megasena_draws').select('concurso', { count: 'exact' }).order('concurso', { ascending: false }).limit(1);
+    const countRes = await supabase
+      .from('megasena_draws')
+      .select('concurso', { count: 'exact' })
+      .order('concurso', { ascending: false })
+      .limit(1);
     const totalDraws = countRes.count ?? 0;
-    const lastConcursoGlobal = countRes.data?.[0]?.concurso as number | undefined;
+    const lastConcursoGlobal = countRes.data?.[0]?.concurso as
+      | number
+      | undefined;
     // Build aggregates scanning all draws
     const freq = Array.from({ length: 61 }, () => 0); // index 1..60
     const lastSeen = Array.from({ length: 61 }, () => 0);
@@ -332,7 +361,9 @@ export async function POST(request: Request) {
     while (true) {
       const { data, error } = await supabase
         .from('megasena_draws')
-        .select('concurso, bola1, bola2, bola3, bola4, bola5, bola6, acumulado_6')
+        .select(
+          'concurso, bola1, bola2, bola3, bola4, bola5, bola6, acumulado_6',
+        )
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
@@ -340,7 +371,9 @@ export async function POST(request: Request) {
       if (rowsPage.length === 0) break;
       for (const r of rowsPage as any[]) {
         const concursoNum = r.concurso as number;
-        const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6].map((n: any) => Number(n)).sort((a: number, b: number) => a - b);
+        const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6]
+          .map((n: any) => Number(n))
+          .sort((a: number, b: number) => a - b);
         for (const n of arr) {
           if (typeof n === 'number' && n >= 1 && n <= 60) {
             freq[n] += 1;
@@ -377,8 +410,14 @@ export async function POST(request: Request) {
         // collect locally to avoid declaring big maps if not used
         (globalThis as any)._tripleCounts ||= {};
         (globalThis as any)._quadCounts ||= {};
-        const tripleCounts = (globalThis as any)._tripleCounts as Record<string, number>;
-        const quadCounts = (globalThis as any)._quadCounts as Record<string, number>;
+        const tripleCounts = (globalThis as any)._tripleCounts as Record<
+          string,
+          number
+        >;
+        const quadCounts = (globalThis as any)._quadCounts as Record<
+          string,
+          number
+        >;
         // triples
         for (let i = 0; i < arr.length; i += 1) {
           for (let j = i + 1; j < arr.length; j += 1) {
@@ -406,7 +445,10 @@ export async function POST(request: Request) {
         sumRangeCounts[sumKey] = (sumRangeCounts[sumKey] ?? 0) + 1;
         // exact sum (top K later)
         (globalThis as any)._sumExact ||= {};
-        const sumExact = (globalThis as any)._sumExact as Record<string, number>;
+        const sumExact = (globalThis as any)._sumExact as Record<
+          string,
+          number
+        >;
         sumExact[String(sum)] = (sumExact[String(sum)] ?? 0) + 1;
         // parity composition
         const evens = arr.filter((n: number) => n % 2 === 0).length;
@@ -416,7 +458,10 @@ export async function POST(request: Request) {
         const lows = arr.filter((n: number) => n <= 30).length;
         const hlKey = `${lows}b-${6 - lows}a`;
         (globalThis as any)._highLow ||= {};
-        const highLowCounts = (globalThis as any)._highLow as Record<string, number>;
+        const highLowCounts = (globalThis as any)._highLow as Record<
+          string,
+          number
+        >;
         highLowCounts[hlKey] = (highLowCounts[hlKey] ?? 0) + 1;
         // average gap and AC
         const gaps: number[] = [];
@@ -428,10 +473,14 @@ export async function POST(request: Request) {
         gapAvg[gapKey] = (gapAvg[gapKey] ?? 0) + 1;
         const diffSet = new Set<number>();
         for (let i = 0; i < arr.length; i += 1)
-          for (let j = i + 1; j < arr.length; j += 1) diffSet.add(arr[j] - arr[i]);
+          for (let j = i + 1; j < arr.length; j += 1)
+            diffSet.add(arr[j] - arr[i]);
         const acVal = diffSet.size;
         (globalThis as any)._acCounts ||= {};
-        const acCounts = (globalThis as any)._acCounts as Record<string, number>;
+        const acCounts = (globalThis as any)._acCounts as Record<
+          string,
+          number
+        >;
         acCounts[String(acVal)] = (acCounts[String(acVal)] ?? 0) + 1;
         // repeaters vs previous draw
         const currSet = new Set(arr);
@@ -444,7 +493,10 @@ export async function POST(request: Request) {
         // repeaters under accumulation (faixa de prêmio)
         if ((r.acumulado_6 ?? 0) > 0 && prevSet) {
           (globalThis as any)._repeatersAccum ||= {};
-          const repAcc = (globalThis as any)._repeatersAccum as Record<string, number>;
+          const repAcc = (globalThis as any)._repeatersAccum as Record<
+            string,
+            number
+          >;
           let rep = 0;
           for (const n of currSet) if (prevSet.has(n)) rep += 1;
           repAcc[String(rep)] = (repAcc[String(rep)] ?? 0) + 1;
@@ -496,10 +548,15 @@ export async function POST(request: Request) {
       }));
       await supabase
         .from('megasena_stats_catalog')
-        .upsert({ study_key: key, title, params: {} }, { onConflict: 'study_key' });
+        .upsert(
+          { study_key: key, title, params: {} },
+          { onConflict: 'study_key' },
+        );
       await supabase.from('megasena_stats_items').delete().eq('study_key', key);
       for (const batch of chunk(payload, 1000)) {
-        await supabase.from('megasena_stats_items').upsert(batch, { onConflict: 'study_key,item_key' });
+        await supabase
+          .from('megasena_stats_items')
+          .upsert(batch, { onConflict: 'study_key,item_key' });
       }
     }
 
@@ -509,87 +566,180 @@ export async function POST(request: Request) {
     for (let n = 1; n <= 60; n += 1) {
       const last = lastSeen[n] || 0;
       const overdue = last ? lastC - last : lastC;
-      overdueItems.push({ item_key: `dezena:${String(n).padStart(2, '0')}`, value: overdue });
+      overdueItems.push({
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: overdue,
+      });
     }
     await upsertStudy('overdue_dezena', 'Atraso por dezena', overdueItems);
     // Frequency (all time) and hot/cold
     const freqItems = Array.from({ length: 60 }, (_, i) => {
       const n = i + 1;
-      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: freq[n] ?? 0 };
+      return {
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: freq[n] ?? 0,
+      };
     });
-    await upsertStudy('freq_all', 'Frequência por dezena (histórico)', freqItems);
-    const hotTop = [...freqItems].sort((a, b) => b.value - a.value).slice(0, 20);
-    const coldTop = [...freqItems].sort((a, b) => a.value - b.value).slice(0, 20);
+    await upsertStudy(
+      'freq_all',
+      'Frequência por dezena (histórico)',
+      freqItems,
+    );
+    const hotTop = [...freqItems]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 20);
+    const coldTop = [...freqItems]
+      .sort((a, b) => a.value - b.value)
+      .slice(0, 20);
     await upsertStudy('hot_top', 'Quentes (top frequentes)', hotTop);
     await upsertStudy('cold_top', 'Frias (menos frequentes)', coldTop);
 
-    const pairItems = Object.entries(pairCounts).map(([k, v]) => ({ item_key: `par:${k}`, value: v }));
+    const pairItems = Object.entries(pairCounts).map(([k, v]) => ({
+      item_key: `par:${k}`,
+      value: v,
+    }));
     await upsertStudy('pair_freq', 'Pares mais frequentes', pairItems);
 
-    const consecItems = Object.entries(consecutiveCounts).map(([k, v]) => ({ item_key: `consec:${k}`, value: v }));
-    await upsertStudy('consecutive_pair', 'Pares consecutivos mais frequentes', consecItems);
+    const consecItems = Object.entries(consecutiveCounts).map(([k, v]) => ({
+      item_key: `consec:${k}`,
+      value: v,
+    }));
+    await upsertStudy(
+      'consecutive_pair',
+      'Pares consecutivos mais frequentes',
+      consecItems,
+    );
 
-    const sumItems = Object.entries(sumRangeCounts).map(([k, v]) => ({ item_key: `faixa_soma:${k}`, value: v }));
+    const sumItems = Object.entries(sumRangeCounts).map(([k, v]) => ({
+      item_key: `faixa_soma:${k}`,
+      value: v,
+    }));
     await upsertStudy('sum_range_20', 'Faixas de soma (largura 20)', sumItems);
 
-    const parityItems = Object.entries(parityCounts).map(([k, v]) => ({ item_key: `paridade:${k}`, value: v }));
+    const parityItems = Object.entries(parityCounts).map(([k, v]) => ({
+      item_key: `paridade:${k}`,
+      value: v,
+    }));
     await upsertStudy('parity_comp', 'Composições Par/Ímpar', parityItems);
 
-    const repItems = Object.entries(repeatersCounts).map(([k, v]) => ({ item_key: `repetidores:${k}`, value: v }));
-    await upsertStudy('repeaters_prev', 'Repetições vs. sorteio anterior', repItems);
+    const repItems = Object.entries(repeatersCounts).map(([k, v]) => ({
+      item_key: `repetidores:${k}`,
+      value: v,
+    }));
+    await upsertStudy(
+      'repeaters_prev',
+      'Repetições vs. sorteio anterior',
+      repItems,
+    );
 
     const windowHotItems = Array.from({ length: 60 }, (_, i) => {
       const n = i + 1;
-      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: windowFreq[n] ?? 0 };
+      return {
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: windowFreq[n] ?? 0,
+      };
     });
-    await upsertStudy('window200_hot', 'Frequência (últimos 200 concursos)', windowHotItems);
+    await upsertStudy(
+      'window200_hot',
+      'Frequência (últimos 200 concursos)',
+      windowHotItems,
+    );
 
-    const decadeItems = Object.entries(decadeCounts).map(([k, v]) => ({ item_key: `decada:${k}`, value: v }));
+    const decadeItems = Object.entries(decadeCounts).map(([k, v]) => ({
+      item_key: `decada:${k}`,
+      value: v,
+    }));
     await upsertStudy('decade_dist', 'Distribuição por décadas', decadeItems);
 
-    const lastDigitItems = Object.entries(lastDigitCounts).map(([k, v]) => ({ item_key: k, value: v }));
-    await upsertStudy('last_digit', 'Distribuição por finais (0–9)', lastDigitItems);
+    const lastDigitItems = Object.entries(lastDigitCounts).map(([k, v]) => ({
+      item_key: k,
+      value: v,
+    }));
+    await upsertStudy(
+      'last_digit',
+      'Distribuição por finais (0–9)',
+      lastDigitItems,
+    );
 
     // high/low composition
-    const highLowCounts = (globalThis as any)._highLow as Record<string, number> | undefined;
+    const highLowCounts = (globalThis as any)._highLow as
+      | Record<string, number>
+      | undefined;
     if (highLowCounts) {
-      const hlItems = Object.entries(highLowCounts).map(([k, v]) => ({ item_key: `baixas_altas:${k}`, value: v }));
+      const hlItems = Object.entries(highLowCounts).map(([k, v]) => ({
+        item_key: `baixas_altas:${k}`,
+        value: v,
+      }));
       await upsertStudy('high_low_comp', 'Composições Baixas/Altas', hlItems);
     }
     // sum exact (top)
-    const sumExact = (globalThis as any)._sumExact as Record<string, number> | undefined;
+    const sumExact = (globalThis as any)._sumExact as
+      | Record<string, number>
+      | undefined;
     if (sumExact) {
-      const items = Object.entries(sumExact).map(([k, v]) => ({ item_key: `soma:${k}`, value: v }));
+      const items = Object.entries(sumExact).map(([k, v]) => ({
+        item_key: `soma:${k}`,
+        value: v,
+      }));
       await upsertStudy('sum_exact', 'Soma das dezenas (exata)', items);
     }
     // mean gap distribution
-    const gapAvg = (globalThis as any)._gapAvg as Record<string, number> | undefined;
+    const gapAvg = (globalThis as any)._gapAvg as
+      | Record<string, number>
+      | undefined;
     if (gapAvg) {
-      const items = Object.entries(gapAvg).map(([k, v]) => ({ item_key: `gap_medio:${k}`, value: v }));
+      const items = Object.entries(gapAvg).map(([k, v]) => ({
+        item_key: `gap_medio:${k}`,
+        value: v,
+      }));
       await upsertStudy('mean_gap', 'Distância média entre dezenas', items);
     }
     // AC distribution
-    const acCounts = (globalThis as any)._acCounts as Record<string, number> | undefined;
+    const acCounts = (globalThis as any)._acCounts as
+      | Record<string, number>
+      | undefined;
     if (acCounts) {
-      const items = Object.entries(acCounts).map(([k, v]) => ({ item_key: `ac:${k}`, value: v }));
+      const items = Object.entries(acCounts).map(([k, v]) => ({
+        item_key: `ac:${k}`,
+        value: v,
+      }));
       await upsertStudy('ac_value', 'Valor AC (dispersão)', items);
     }
     // triples / quads top-k
-    const tripleCounts = (globalThis as any)._tripleCounts as Record<string, number> | undefined;
+    const tripleCounts = (globalThis as any)._tripleCounts as
+      | Record<string, number>
+      | undefined;
     if (tripleCounts) {
-      const items = Object.entries(tripleCounts).map(([k, v]) => ({ item_key: `trinca:${k}`, value: v }));
+      const items = Object.entries(tripleCounts).map(([k, v]) => ({
+        item_key: `trinca:${k}`,
+        value: v,
+      }));
       await upsertStudy('triple_freq', 'Trincas mais frequentes', items);
     }
-    const quadCounts = (globalThis as any)._quadCounts as Record<string, number> | undefined;
+    const quadCounts = (globalThis as any)._quadCounts as
+      | Record<string, number>
+      | undefined;
     if (quadCounts) {
-      const items = Object.entries(quadCounts).map(([k, v]) => ({ item_key: `quadra:${k}`, value: v }));
+      const items = Object.entries(quadCounts).map(([k, v]) => ({
+        item_key: `quadra:${k}`,
+        value: v,
+      }));
       await upsertStudy('quad_freq', 'Quadras mais frequentes', items);
     }
     // repeaters under accumulation
-    const repAcc = (globalThis as any)._repeatersAccum as Record<string, number> | undefined;
+    const repAcc = (globalThis as any)._repeatersAccum as
+      | Record<string, number>
+      | undefined;
     if (repAcc) {
-      const items = Object.entries(repAcc).map(([k, v]) => ({ item_key: `repetidores_acum:${k}`, value: v }));
-      await upsertStudy('repeaters_accum', 'Repetidores em sorteios com acúmulo', items);
+      const items = Object.entries(repAcc).map(([k, v]) => ({
+        item_key: `repetidores_acum:${k}`,
+        value: v,
+      }));
+      await upsertStudy(
+        'repeaters_accum',
+        'Repetidores em sorteios com acúmulo',
+        items,
+      );
     }
     // Regression to mean for each dezena (lambda=5)
     const regItems = Array.from({ length: 60 }, (_, i) => {
@@ -598,7 +748,10 @@ export async function POST(request: Request) {
       const exp = totalDraws * 0.1;
       const lambda = 5;
       const reg = (obs + lambda * exp) / (1 + lambda);
-      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: Number(reg.toFixed(4)) };
+      return {
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: Number(reg.toFixed(4)),
+      };
     });
     await upsertStudy('regress_mean', 'Regressão à média (dezena)', regItems);
     // Chi-square diagnostic
@@ -637,5 +790,3 @@ export async function POST(request: Request) {
     studiesUpdated,
   });
 }
-
-

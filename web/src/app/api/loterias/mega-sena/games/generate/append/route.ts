@@ -41,7 +41,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: AppendGenerateRequest;
   try {
@@ -51,12 +52,20 @@ export async function POST(request: Request) {
   }
   const { setId, numbers, k, seed } = body || {};
   if (!setId || !Array.isArray(numbers) || !Number.isInteger(k) || k <= 0) {
-    return NextResponse.json({ error: 'Missing setId, numbers or k' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing setId, numbers or k' },
+      { status: 400 },
+    );
   }
 
-  const unique = Array.from(new Set(numbers.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60))).sort((a, b) => a - b);
+  const unique = Array.from(
+    new Set(numbers.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60)),
+  ).sort((a, b) => a - b);
   if (unique.length < 7 || unique.length > 15) {
-    return NextResponse.json({ error: 'numbers must contain 7..15 unique values between 1 and 60' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'numbers must contain 7..15 unique values between 1 and 60' },
+      { status: 400 },
+    );
   }
 
   // Validate ownership by selecting some set data (RLS enforced)
@@ -64,13 +73,21 @@ export async function POST(request: Request) {
     .from('megasena_user_items')
     .select('position, numbers')
     .eq('set_id', setId);
-  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
-  let maxPos = Math.max(-1, ...((existingItems ?? []).map((r) => r.position as number)));
+  if (exErr)
+    return NextResponse.json({ error: exErr.message }, { status: 500 });
+  let maxPos = Math.max(
+    -1,
+    ...(existingItems ?? []).map((r) => r.position as number),
+  );
 
   // Generate all C(N,6)
   const all = combinationsOfSix(unique);
   const total = all.length;
-  if (k > total) return NextResponse.json({ error: `k cannot exceed total combinations (${total})` }, { status: 400 });
+  if (k > total)
+    return NextResponse.json(
+      { error: `k cannot exceed total combinations (${total})` },
+      { status: 400 },
+    );
 
   // Deterministic partial shuffle
   const rnd = seededRandom(seed ?? Math.floor(Date.now() % 2147483647));
@@ -89,8 +106,11 @@ export async function POST(request: Request) {
     matches: null as number | null,
   }));
 
-  const { error: insErr } = await supabase.from('megasena_user_items').insert(rows);
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+  const { error: insErr } = await supabase
+    .from('megasena_user_items')
+    .insert(rows);
+  if (insErr)
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
 
   // Optionally: update sample_size to reflect appended items
   await supabase
@@ -101,8 +121,10 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     setId,
-    items: rows.map((r) => ({ position: r.position, numbers: r.numbers, matches: null })),
+    items: rows.map((r) => ({
+      position: r.position,
+      numbers: r.numbers,
+      matches: null,
+    })),
   });
 }
-
-
