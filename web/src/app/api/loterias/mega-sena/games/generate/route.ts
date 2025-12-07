@@ -56,7 +56,11 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const parsed = (body ?? {}) as { numbers?: unknown; k?: unknown; seed?: unknown };
+  const parsed = (body ?? {}) as {
+    numbers?: unknown;
+    k?: unknown;
+    seed?: unknown;
+  };
   const src: number[] = Array.isArray(parsed.numbers)
     ? (parsed.numbers as unknown[]).map((x) => Number(x))
     : [];

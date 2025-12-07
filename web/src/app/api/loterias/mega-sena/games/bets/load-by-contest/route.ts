@@ -12,7 +12,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {}
-  const parsed = (body ?? {}) as { contestNo?: unknown; mode?: unknown; setId?: unknown };
+  const parsed = (body ?? {}) as {
+    contestNo?: unknown;
+    mode?: unknown;
+    setId?: unknown;
+  };
   const contestNo: number = Number(parsed.contestNo || 0);
   const mode: 'append' | 'replace' =
     parsed.mode === 'append' ? 'append' : 'replace';
@@ -88,7 +92,10 @@ export async function POST(request: Request) {
     maxPos = -1;
   }
 
-  const listItems = (items ?? []) as Array<{ position: number; numbers: number[] }>;
+  const listItems = (items ?? []) as Array<{
+    position: number;
+    numbers: number[];
+  }>;
   const rows = listItems.map((r) => ({
     set_id: setId!,
     position: ++maxPos,
@@ -123,7 +130,9 @@ export async function POST(request: Request) {
     setId,
     loaded: rows.length,
     mode,
-    items: ((allItems ?? []) as Array<{ position: number; numbers: number[] }>).map((r) => ({
+    items: (
+      (allItems ?? []) as Array<{ position: number; numbers: number[] }>
+    ).map((r) => ({
       position: r.position,
       numbers: r.numbers ?? [],
     })),

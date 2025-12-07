@@ -23,11 +23,11 @@ export async function POST(request: Request) {
   }
   const parsed = (body ?? {}) as { setId?: unknown; draw?: unknown };
   const setId = String(parsed.setId ?? '');
-  const drawRaw: number[] = Array.isArray(parsed.draw) ? (parsed.draw as unknown[]).map((n) => Number(n)) : [];
+  const drawRaw: number[] = Array.isArray(parsed.draw)
+    ? (parsed.draw as unknown[]).map((n) => Number(n))
+    : [];
   const draw = Array.from(
-    new Set(
-      drawRaw.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60),
-    ),
+    new Set(drawRaw.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60)),
   ).sort((a, b) => a - b);
   if (!setId)
     return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
@@ -62,7 +62,10 @@ export async function POST(request: Request) {
       .range(offset, offset + page - 1);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
-    const rows = (batch ?? []) as Array<{ position: number; numbers: number[] }>;
+    const rows = (batch ?? []) as Array<{
+      position: number;
+      numbers: number[];
+    }>;
     if (rows.length === 0) break;
     const updates = rows.map((r) => {
       const nums: number[] = Array.isArray(r?.numbers) ? r.numbers : [];

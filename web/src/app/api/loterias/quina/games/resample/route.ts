@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 function binom(n: number, k: number): number {
   if (k < 0 || k > n) return 0;
   if (k === 0 || k === n) return 1;
-  let nn = BigInt(n);
+  const nn = BigInt(n);
   let kk = BigInt(k);
   if (kk > nn - kk) kk = nn - kk;
   let result = BigInt(1);
@@ -102,13 +102,11 @@ export async function POST(request: Request) {
   if (delErr)
     return NextResponse.json({ error: delErr.message }, { status: 500 });
   for (let i = 0; i < items.length; i += 1000) {
-    const batch = items
-      .slice(i, i + 1000)
-      .map((it) => ({
-        set_id: setId,
-        position: it.position,
-        numbers: it.numbers,
-      }));
+    const batch = items.slice(i, i + 1000).map((it) => ({
+      set_id: setId,
+      position: it.position,
+      numbers: it.numbers,
+    }));
     const { error: insErr } = await supabase
       .from('quina_user_items')
       .insert(batch);

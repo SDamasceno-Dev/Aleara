@@ -12,7 +12,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {}
-  const parsed = (body ?? {}) as { setId?: unknown; contestNo?: unknown; title?: unknown };
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    contestNo?: unknown;
+    title?: unknown;
+  };
   const setId: string = String(parsed.setId || '');
   const contestNo: number = Number(parsed.contestNo || 0);
   const title: string | undefined =

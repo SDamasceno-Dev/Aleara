@@ -336,15 +336,20 @@ export async function POST(request: Request) {
     function getGlobalMap(name: string): Record<string, number> {
       const g = globalThis as unknown as Record<string, unknown>;
       const cur = g[name];
-      if (typeof cur === 'object' && cur !== null) return cur as Record<string, number>;
+      if (typeof cur === 'object' && cur !== null)
+        return cur as Record<string, number>;
       const m: Record<string, number> = {};
       g[name] = m;
       return m;
     }
-    function getExistingGlobalMap(name: string): Record<string, number> | undefined {
+    function getExistingGlobalMap(
+      name: string,
+    ): Record<string, number> | undefined {
       const g = globalThis as unknown as Record<string, unknown>;
       const cur = g[name];
-      return typeof cur === 'object' && cur !== null ? (cur as Record<string, number>) : undefined;
+      return typeof cur === 'object' && cur !== null
+        ? (cur as Record<string, number>)
+        : undefined;
     }
     // Count total draws (also get max concurso)
     const countRes = await supabase
@@ -522,7 +527,7 @@ export async function POST(request: Request) {
         .upsert(batch, { onConflict: 'dezena' });
       if (error) {
         // if stats fail, continue; do not fail import
-        // eslint-disable-next-line no-continue
+
         continue;
       }
     }
@@ -532,7 +537,11 @@ export async function POST(request: Request) {
     async function upsertStudy(
       key: string,
       title: string,
-      items: Array<{ item_key: string; value: number; extra?: Record<string, unknown> }>,
+      items: Array<{
+        item_key: string;
+        value: number;
+        extra?: Record<string, unknown>;
+      }>,
     ) {
       const sorted = items.sort((a, b) => b.value - a.value);
       const payload = sorted.map((it, idx) => ({

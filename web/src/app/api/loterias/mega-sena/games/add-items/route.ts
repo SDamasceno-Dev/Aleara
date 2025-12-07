@@ -23,7 +23,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const items = body.items;
-  const maybeSetId: string | undefined = 'setId' in body ? body.setId : undefined;
+  const maybeSetId: string | undefined =
+    'setId' in body ? body.setId : undefined;
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Missing items' }, { status: 400 });
   }

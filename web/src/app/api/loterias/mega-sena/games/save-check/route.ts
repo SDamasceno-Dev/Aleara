@@ -21,10 +21,16 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const parsed = (body ?? {}) as { setId?: unknown; contest?: unknown; draw?: unknown };
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    contest?: unknown;
+    draw?: unknown;
+  };
   const setId = String(parsed.setId ?? '');
   const contestNo = Number(parsed.contest ?? 0);
-  const drawRaw: number[] = Array.isArray(parsed.draw) ? (parsed.draw as unknown[]).map((n) => Number(n)) : [];
+  const drawRaw: number[] = Array.isArray(parsed.draw)
+    ? (parsed.draw as unknown[]).map((n) => Number(n))
+    : [];
   const draw = Array.from(
     new Set(
       drawRaw
@@ -66,7 +72,8 @@ export async function POST(request: Request) {
   if (Array.isArray(existingList) && existingList.length > 0) {
     // Reuse the one with the same draw_numbers if present
     const sameRow = existingList.find((row) => {
-      const prev = ((row as { draw_numbers?: number[] }).draw_numbers ?? []) as number[];
+      const prev = ((row as { draw_numbers?: number[] }).draw_numbers ??
+        []) as number[];
       return (
         prev.length === draw.length &&
         prev.every((v: number, i: number) => v === draw[i])
@@ -118,7 +125,10 @@ export async function POST(request: Request) {
       .range(offset, offset + page - 1);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
-    const rows = (batch ?? []) as Array<{ position: number; numbers: number[] }>;
+    const rows = (batch ?? []) as Array<{
+      position: number;
+      numbers: number[];
+    }>;
     if (rows.length === 0) break;
     const toInsert = rows.map((r) => {
       const nums: number[] = Array.isArray(r?.numbers) ? r.numbers : [];

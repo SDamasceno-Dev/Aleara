@@ -53,7 +53,11 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const parsed = (body ?? {}) as { setId?: unknown; k?: unknown; seed?: unknown };
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    k?: unknown;
+    seed?: unknown;
+  };
   const setId = String(parsed.setId ?? '');
   const newK = parsed.k != null ? Number(parsed.k) : null;
   const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
