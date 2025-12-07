@@ -8,13 +8,14 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: unknown = {};
   try {
     body = await request.json();
   } catch {
     // ignore
   }
-  const setId = body?.setId ? String(body.setId) : null;
+  const parsed = (body ?? {}) as { setId?: unknown };
+  const setId = parsed.setId != null ? String(parsed.setId) : null;
 
   // Always scope deletions to the current user to satisfy "WHERE" requirement
   let builder = supabase

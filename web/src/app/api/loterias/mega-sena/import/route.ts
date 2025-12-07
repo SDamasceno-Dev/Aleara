@@ -99,7 +99,9 @@ function parseDateBR(d: string): string | null {
   if (!t) return null;
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t);
   if (!m) return null;
-  const [_, dd, mm, yyyy] = m;
+  const dd = m[1];
+  const mm = m[2];
+  const yyyy = m[3];
   const iso = `${yyyy}-${mm}-${dd}`;
   return iso;
 }
@@ -205,19 +207,20 @@ export async function POST(request: Request) {
   }
   const supabase = admin.supabase;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const csv = String(body?.csv ?? '');
+  const parsed = (body ?? {}) as { csv?: unknown; reconcileLastN?: unknown };
+  const csv = String(parsed.csv ?? '');
   if (!csv.trim()) {
     return NextResponse.json({ error: 'Missing csv' }, { status: 400 });
   }
   const reconcileWindow = Math.max(
     0,
-    Math.min(100, Number(body?.reconcileLastN ?? 20) || 20),
+    Math.min(100, Number(parsed.reconcileLastN ?? 20) || 20),
   ); // default 20, cap 100
 
   // Parse CSV
@@ -286,7 +289,6 @@ export async function POST(request: Request) {
   // Sort rows by concurso asc to determine last-N
   rows.sort((a, b) => a.concurso - b.concurso);
   const lastN = rows.slice(-reconcileWindow);
-  const lastNIds = new Set(lastN.map((r) => r.concurso));
   const newRows =
     maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
 
@@ -310,7 +312,6 @@ export async function POST(request: Request) {
   }
 
   // Perform upserts in batches
-  let affected = 0;
   for (const batch of chunk(rowsToUpsert, 500)) {
     const { error } = await supabase
       .from('megasena_draws')
@@ -322,7 +323,6 @@ export async function POST(request: Request) {
       });
       continue;
     }
-    affected += batch.length;
   }
 
   const insertedCount = upsertIds.filter((id) => !existingIds.has(id)).length;
@@ -333,6 +333,19 @@ export async function POST(request: Request) {
   let statsUpdated = false;
   let studiesUpdated = false;
   try {
+    function getGlobalMap(name: string): Record<string, number> {
+      const g = globalThis as unknown as Record<string, unknown>;
+      const cur = g[name];
+      if (typeof cur === 'object' && cur !== null) return cur as Record<string, number>;
+      const m: Record<string, number> = {};
+      g[name] = m;
+      return m;
+    }
+    function getExistingGlobalMap(name: string): Record<string, number> | undefined {
+      const g = globalThis as unknown as Record<string, unknown>;
+      const cur = g[name];
+      return typeof cur === 'object' && cur !== null ? (cur as Record<string, number>) : undefined;
+    }
     // Count total draws (also get max concurso)
     const countRes = await supabase
       .from('megasena_draws')
@@ -367,13 +380,22 @@ export async function POST(request: Request) {
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
-      const rowsPage = data ?? [];
+      const rowsPage = (data ?? []) as Array<{
+        concurso: number;
+        bola1: number;
+        bola2: number;
+        bola3: number;
+        bola4: number;
+        bola5: number;
+        bola6: number;
+        acumulado_6?: number | null;
+      }>;
       if (rowsPage.length === 0) break;
-      for (const r of rowsPage as any[]) {
-        const concursoNum = r.concurso as number;
+      for (const r of rowsPage) {
+        const concursoNum = r.concurso;
         const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5, r.bola6]
-          .map((n: any) => Number(n))
-          .sort((a: number, b: number) => a - b);
+          .map((n) => Number(n))
+          .sort((a, b) => a - b);
         for (const n of arr) {
           if (typeof n === 'number' && n >= 1 && n <= 60) {
             freq[n] += 1;
@@ -407,17 +429,8 @@ export async function POST(request: Request) {
           }
         }
         // triples and quads (top-K later)
-        // collect locally to avoid declaring big maps if not used
-        (globalThis as any)._tripleCounts ||= {};
-        (globalThis as any)._quadCounts ||= {};
-        const tripleCounts = (globalThis as any)._tripleCounts as Record<
-          string,
-          number
-        >;
-        const quadCounts = (globalThis as any)._quadCounts as Record<
-          string,
-          number
-        >;
+        const tripleCounts = getGlobalMap('_tripleCounts');
+        const quadCounts = getGlobalMap('_quadCounts');
         // triples
         for (let i = 0; i < arr.length; i += 1) {
           for (let j = i + 1; j < arr.length; j += 1) {
@@ -444,11 +457,7 @@ export async function POST(request: Request) {
         const sumKey = `${start}-${start + 19}`;
         sumRangeCounts[sumKey] = (sumRangeCounts[sumKey] ?? 0) + 1;
         // exact sum (top K later)
-        (globalThis as any)._sumExact ||= {};
-        const sumExact = (globalThis as any)._sumExact as Record<
-          string,
-          number
-        >;
+        const sumExact = getGlobalMap('_sumExact');
         sumExact[String(sum)] = (sumExact[String(sum)] ?? 0) + 1;
         // parity composition
         const evens = arr.filter((n: number) => n % 2 === 0).length;
@@ -457,30 +466,21 @@ export async function POST(request: Request) {
         // high/low composition (<=30 vs >30)
         const lows = arr.filter((n: number) => n <= 30).length;
         const hlKey = `${lows}b-${6 - lows}a`;
-        (globalThis as any)._highLow ||= {};
-        const highLowCounts = (globalThis as any)._highLow as Record<
-          string,
-          number
-        >;
+        const highLowCounts = getGlobalMap('_highLow');
         highLowCounts[hlKey] = (highLowCounts[hlKey] ?? 0) + 1;
         // average gap and AC
         const gaps: number[] = [];
         for (let i = 1; i < arr.length; i += 1) gaps.push(arr[i] - arr[i - 1]);
         const meanGap = gaps.reduce((s, n) => s + n, 0) / gaps.length;
         const gapKey = meanGap.toFixed(1);
-        (globalThis as any)._gapAvg ||= {};
-        const gapAvg = (globalThis as any)._gapAvg as Record<string, number>;
+        const gapAvg = getGlobalMap('_gapAvg');
         gapAvg[gapKey] = (gapAvg[gapKey] ?? 0) + 1;
         const diffSet = new Set<number>();
         for (let i = 0; i < arr.length; i += 1)
           for (let j = i + 1; j < arr.length; j += 1)
             diffSet.add(arr[j] - arr[i]);
         const acVal = diffSet.size;
-        (globalThis as any)._acCounts ||= {};
-        const acCounts = (globalThis as any)._acCounts as Record<
-          string,
-          number
-        >;
+        const acCounts = getGlobalMap('_acCounts');
         acCounts[String(acVal)] = (acCounts[String(acVal)] ?? 0) + 1;
         // repeaters vs previous draw
         const currSet = new Set(arr);
@@ -492,11 +492,7 @@ export async function POST(request: Request) {
         }
         // repeaters under accumulation (faixa de prêmio)
         if ((r.acumulado_6 ?? 0) > 0 && prevSet) {
-          (globalThis as any)._repeatersAccum ||= {};
-          const repAcc = (globalThis as any)._repeatersAccum as Record<
-            string,
-            number
-          >;
+          const repAcc = getGlobalMap('_repeatersAccum');
           let rep = 0;
           for (const n of currSet) if (prevSet.has(n)) rep += 1;
           repAcc[String(rep)] = (repAcc[String(rep)] ?? 0) + 1;
@@ -536,7 +532,7 @@ export async function POST(request: Request) {
     async function upsertStudy(
       key: string,
       title: string,
-      items: Array<{ item_key: string; value: number; extra?: any }>,
+      items: Array<{ item_key: string; value: number; extra?: Record<string, unknown> }>,
     ) {
       const sorted = items.sort((a, b) => b.value - a.value);
       const payload = sorted.map((it, idx) => ({
@@ -662,9 +658,7 @@ export async function POST(request: Request) {
     );
 
     // high/low composition
-    const highLowCounts = (globalThis as any)._highLow as
-      | Record<string, number>
-      | undefined;
+    const highLowCounts = getExistingGlobalMap('_highLow');
     if (highLowCounts) {
       const hlItems = Object.entries(highLowCounts).map(([k, v]) => ({
         item_key: `baixas_altas:${k}`,
@@ -673,9 +667,7 @@ export async function POST(request: Request) {
       await upsertStudy('high_low_comp', 'Composições Baixas/Altas', hlItems);
     }
     // sum exact (top)
-    const sumExact = (globalThis as any)._sumExact as
-      | Record<string, number>
-      | undefined;
+    const sumExact = getExistingGlobalMap('_sumExact');
     if (sumExact) {
       const items = Object.entries(sumExact).map(([k, v]) => ({
         item_key: `soma:${k}`,
@@ -684,9 +676,7 @@ export async function POST(request: Request) {
       await upsertStudy('sum_exact', 'Soma das dezenas (exata)', items);
     }
     // mean gap distribution
-    const gapAvg = (globalThis as any)._gapAvg as
-      | Record<string, number>
-      | undefined;
+    const gapAvg = getExistingGlobalMap('_gapAvg');
     if (gapAvg) {
       const items = Object.entries(gapAvg).map(([k, v]) => ({
         item_key: `gap_medio:${k}`,
@@ -695,9 +685,7 @@ export async function POST(request: Request) {
       await upsertStudy('mean_gap', 'Distância média entre dezenas', items);
     }
     // AC distribution
-    const acCounts = (globalThis as any)._acCounts as
-      | Record<string, number>
-      | undefined;
+    const acCounts = getExistingGlobalMap('_acCounts');
     if (acCounts) {
       const items = Object.entries(acCounts).map(([k, v]) => ({
         item_key: `ac:${k}`,
@@ -706,9 +694,7 @@ export async function POST(request: Request) {
       await upsertStudy('ac_value', 'Valor AC (dispersão)', items);
     }
     // triples / quads top-k
-    const tripleCounts = (globalThis as any)._tripleCounts as
-      | Record<string, number>
-      | undefined;
+    const tripleCounts = getExistingGlobalMap('_tripleCounts');
     if (tripleCounts) {
       const items = Object.entries(tripleCounts).map(([k, v]) => ({
         item_key: `trinca:${k}`,
@@ -716,9 +702,7 @@ export async function POST(request: Request) {
       }));
       await upsertStudy('triple_freq', 'Trincas mais frequentes', items);
     }
-    const quadCounts = (globalThis as any)._quadCounts as
-      | Record<string, number>
-      | undefined;
+    const quadCounts = getExistingGlobalMap('_quadCounts');
     if (quadCounts) {
       const items = Object.entries(quadCounts).map(([k, v]) => ({
         item_key: `quadra:${k}`,
@@ -727,9 +711,7 @@ export async function POST(request: Request) {
       await upsertStudy('quad_freq', 'Quadras mais frequentes', items);
     }
     // repeaters under accumulation
-    const repAcc = (globalThis as any)._repeatersAccum as
-      | Record<string, number>
-      | undefined;
+    const repAcc = getExistingGlobalMap('_repeatersAccum');
     if (repAcc) {
       const items = Object.entries(repAcc).map(([k, v]) => ({
         item_key: `repetidores_acum:${k}`,

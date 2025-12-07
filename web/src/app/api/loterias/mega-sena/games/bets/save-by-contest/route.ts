@@ -8,15 +8,15 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: unknown = {};
   try {
     body = await request.json();
   } catch {}
-  const setId: string = String(body?.setId || '');
-  const contestNo: number = Number(body?.contestNo || 0);
-  const title: string | undefined = body?.title
-    ? String(body.title)
-    : undefined;
+  const parsed = (body ?? {}) as { setId?: unknown; contestNo?: unknown; title?: unknown };
+  const setId: string = String(parsed.setId || '');
+  const contestNo: number = Number(parsed.contestNo || 0);
+  const title: string | undefined =
+    parsed.title != null ? String(parsed.title) : undefined;
 
   if (!setId)
     return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
@@ -75,10 +75,10 @@ export async function POST(request: Request) {
 
   // Replace items in the list (idempotent via unique constraint)
   const rows =
-    (items ?? []).map((r: any, idx: number) => ({
+    ((items ?? []) as Array<{ numbers: number[] }>).map((r, idx: number) => ({
       list_id: listId!,
       position: idx,
-      numbers: r.numbers as number[],
+      numbers: r.numbers,
     })) ?? [];
 
   // Clear existing then insert to keep positions compact

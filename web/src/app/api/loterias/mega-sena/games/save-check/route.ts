@@ -15,15 +15,16 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId = String(body?.setId ?? '');
-  const contestNo = Number(body?.contest ?? 0);
-  const drawRaw: number[] = Array.isArray(body?.draw) ? body.draw : [];
+  const parsed = (body ?? {}) as { setId?: unknown; contest?: unknown; draw?: unknown };
+  const setId = String(parsed.setId ?? '');
+  const contestNo = Number(parsed.contest ?? 0);
+  const drawRaw: number[] = Array.isArray(parsed.draw) ? (parsed.draw as unknown[]).map((n) => Number(n)) : [];
   const draw = Array.from(
     new Set(
       drawRaw
@@ -64,8 +65,8 @@ export async function POST(request: Request) {
   let checkId: string | null = null;
   if (Array.isArray(existingList) && existingList.length > 0) {
     // Reuse the one with the same draw_numbers if present
-    const sameRow = existingList.find((row: any) => {
-      const prev = (row.draw_numbers as number[]) ?? [];
+    const sameRow = existingList.find((row) => {
+      const prev = ((row as { draw_numbers?: number[] }).draw_numbers ?? []) as number[];
       return (
         prev.length === draw.length &&
         prev.every((v: number, i: number) => v === draw[i])
@@ -117,19 +118,17 @@ export async function POST(request: Request) {
       .range(offset, offset + page - 1);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
-    const rows = batch ?? [];
+    const rows = (batch ?? []) as Array<{ position: number; numbers: number[] }>;
     if (rows.length === 0) break;
-    const toInsert = rows.map((r: any) => {
-      const nums: number[] = Array.isArray(r?.numbers)
-        ? (r.numbers as number[])
-        : [];
+    const toInsert = rows.map((r) => {
+      const nums: number[] = Array.isArray(r?.numbers) ? r.numbers : [];
       const matches = countMatches(draw, nums);
       total += 1;
       // ensure numbers are normalized ascending for unique index on (check_id, numbers)
       const norm = [...nums].sort((a, b) => a - b);
       return {
         check_id: checkId as string,
-        position: r.position as number,
+        position: r.position,
         numbers: norm,
         matches,
       };

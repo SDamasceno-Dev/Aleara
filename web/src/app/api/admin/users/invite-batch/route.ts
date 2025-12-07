@@ -51,7 +51,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const parsed = (body ?? {}) as { emails?: unknown; role?: unknown };
-  const emails: string[] = Array.isArray(parsed.emails) ? (parsed.emails as unknown[]).map((e) => String(e)) : [];
+  const emails: string[] = Array.isArray(parsed.emails)
+    ? (parsed.emails as unknown[]).map((e) => String(e))
+    : [];
   const role = (parsed.role as 'USER' | 'ADMIN' | undefined) ?? 'USER';
   if (emails.length === 0) {
     return NextResponse.json({ error: 'No emails provided' }, { status: 400 });

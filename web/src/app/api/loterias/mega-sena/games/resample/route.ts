@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 function binom(n: number, k: number): number {
   if (k < 0 || k > n) return 0;
   if (k === 0 || k === n) return 1;
-  let nn = BigInt(n);
+  const nn = BigInt(n);
   let kk = BigInt(k);
   if (kk > nn - kk) kk = nn - kk;
   let result = BigInt(1);
@@ -47,15 +47,16 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId = String(body?.setId ?? '');
-  const newK = body?.k != null ? Number(body.k) : null;
-  const seedInput = body?.seed != null ? Number(body.seed) : null;
+  const parsed = (body ?? {}) as { setId?: unknown; k?: unknown; seed?: unknown };
+  const setId = String(parsed.setId ?? '');
+  const newK = parsed.k != null ? Number(parsed.k) : null;
+  const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
   const newSeed = Number.isFinite(seedInput as number)
     ? (seedInput as number)
     : Math.floor(Math.random() * 2 ** 31);
@@ -109,13 +110,11 @@ export async function POST(request: Request) {
   if (delErr)
     return NextResponse.json({ error: delErr.message }, { status: 500 });
   for (let i = 0; i < items.length; i += 1000) {
-    const batch = items
-      .slice(i, i + 1000)
-      .map((it) => ({
-        set_id: setId,
-        position: it.position,
-        numbers: it.numbers,
-      }));
+    const batch = items.slice(i, i + 1000).map((it) => ({
+      set_id: setId,
+      position: it.position,
+      numbers: it.numbers,
+    }));
     const { error } = await supabase.from('megasena_user_items').insert(batch);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });

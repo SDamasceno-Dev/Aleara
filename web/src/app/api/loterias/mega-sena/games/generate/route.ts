@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 function binom(n: number, k: number): number {
   if (k < 0 || k > n) return 0;
   if (k === 0 || k === n) return 1;
-  let nn = BigInt(n);
+  const nn = BigInt(n);
   let kk = BigInt(k);
   if (kk > nn - kk) kk = nn - kk;
   let result = BigInt(1);
@@ -50,17 +50,18 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const src: number[] = Array.isArray(body?.numbers)
-    ? body.numbers.map((x: any) => Number(x))
+  const parsed = (body ?? {}) as { numbers?: unknown; k?: unknown; seed?: unknown };
+  const src: number[] = Array.isArray(parsed.numbers)
+    ? (parsed.numbers as unknown[]).map((x) => Number(x))
     : [];
-  const k: number = Number(body?.k ?? 0);
-  const seedInput = body?.seed != null ? Number(body.seed) : null;
+  const k: number = Number(parsed.k ?? 0);
+  const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
   const setSeed = Number.isFinite(seedInput as number)
     ? (seedInput as number)
     : Math.floor(Math.random() * 2 ** 31);

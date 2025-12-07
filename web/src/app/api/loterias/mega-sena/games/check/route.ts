@@ -15,19 +15,18 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId = String(body?.setId ?? '');
-  const drawRaw: number[] = Array.isArray(body?.draw) ? body.draw : [];
+  const parsed = (body ?? {}) as { setId?: unknown; draw?: unknown };
+  const setId = String(parsed.setId ?? '');
+  const drawRaw: number[] = Array.isArray(parsed.draw) ? (parsed.draw as unknown[]).map((n) => Number(n)) : [];
   const draw = Array.from(
     new Set(
-      drawRaw
-        .map((n) => Number(n))
-        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 60),
+      drawRaw.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60),
     ),
   ).sort((a, b) => a - b);
   if (!setId)
@@ -63,22 +62,20 @@ export async function POST(request: Request) {
       .range(offset, offset + page - 1);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
-    const rows = batch ?? [];
+    const rows = (batch ?? []) as Array<{ position: number; numbers: number[] }>;
     if (rows.length === 0) break;
-    const updates = rows.map((r: any) => {
-      const nums: number[] = Array.isArray(r?.numbers)
-        ? (r.numbers as number[])
-        : [];
+    const updates = rows.map((r) => {
+      const nums: number[] = Array.isArray(r?.numbers) ? r.numbers : [];
       const m = countMatches(draw, nums);
       updated.push({
-        position: r.position as number,
+        position: r.position,
         numbers: nums,
         matches: m,
       });
       // include numbers to satisfy NOT NULL even if an insert is attempted by upsert
       return {
         set_id: setId,
-        position: r.position as number,
+        position: r.position,
         numbers: nums,
         matches: m,
       };

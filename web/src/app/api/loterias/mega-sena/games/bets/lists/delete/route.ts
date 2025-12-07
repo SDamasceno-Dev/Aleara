@@ -8,14 +8,15 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: unknown = {};
   try {
     body = await request.json();
   } catch {}
-  const ids: string[] = Array.isArray(body?.listIds)
-    ? body.listIds.map(String)
+  const parsed = (body ?? {}) as { listIds?: unknown; deleteAll?: unknown };
+  const ids: string[] = Array.isArray(parsed.listIds)
+    ? (parsed.listIds as unknown[]).map((v) => String(v))
     : [];
-  const deleteAll: boolean = !!body?.deleteAll;
+  const deleteAll: boolean = Boolean(parsed.deleteAll);
 
   let query = supabase
     .from('megasena_bet_lists')

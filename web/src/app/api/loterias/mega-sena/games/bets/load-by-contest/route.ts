@@ -8,14 +8,15 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: unknown = {};
   try {
     body = await request.json();
   } catch {}
-  const contestNo: number = Number(body?.contestNo || 0);
+  const parsed = (body ?? {}) as { contestNo?: unknown; mode?: unknown; setId?: unknown };
+  const contestNo: number = Number(parsed.contestNo || 0);
   const mode: 'append' | 'replace' =
-    body?.mode === 'append' ? 'append' : 'replace';
-  let setId: string | null = body?.setId ? String(body.setId) : null;
+    parsed.mode === 'append' ? 'append' : 'replace';
+  let setId: string | null = parsed.setId != null ? String(parsed.setId) : null;
   if (!(contestNo > 0))
     return NextResponse.json(
       { error: 'Invalid contest number' },
@@ -87,10 +88,11 @@ export async function POST(request: Request) {
     maxPos = -1;
   }
 
-  const rows = (items ?? []).map((r: any) => ({
+  const listItems = (items ?? []) as Array<{ position: number; numbers: number[] }>;
+  const rows = listItems.map((r) => ({
     set_id: setId!,
     position: ++maxPos,
-    numbers: (r.numbers as number[]).slice().sort((a, b) => a - b),
+    numbers: (r.numbers ?? []).slice().sort((a, b) => a - b),
     matches: null as number | null,
   }));
 
@@ -121,9 +123,9 @@ export async function POST(request: Request) {
     setId,
     loaded: rows.length,
     mode,
-    items: (allItems ?? []).map((r: any) => ({
-      position: r.position as number,
-      numbers: (r.numbers as number[]) ?? [],
+    items: ((allItems ?? []) as Array<{ position: number; numbers: number[] }>).map((r) => ({
+      position: r.position,
+      numbers: r.numbers ?? [],
     })),
   });
 }

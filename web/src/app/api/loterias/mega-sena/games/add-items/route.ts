@@ -9,26 +9,6 @@ function normalizeNumbers(nums: number[]): number[] {
   return [...nums].sort((a, b) => a - b);
 }
 
-function combinationsOfSix(sortedNums: number[]): number[][] {
-  const a = sortedNums;
-  const n = a.length;
-  const out: number[][] = [];
-  for (let i = 0; i < n - 5; i++) {
-    for (let j = i + 1; j < n - 4; j++) {
-      for (let k = j + 1; k < n - 3; k++) {
-        for (let l = k + 1; l < n - 2; l++) {
-          for (let m = l + 1; m < n - 1; m++) {
-            for (let o = m + 1; o < n; o++) {
-              out.push([a[i], a[j], a[k], a[l], a[m], a[o]]);
-            }
-          }
-        }
-      }
-    }
-  }
-  return out;
-}
-
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -42,8 +22,8 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const { items } = body as any;
-  const maybeSetId: string | undefined = (body as any).setId;
+  const items = body.items;
+  const maybeSetId: string | undefined = 'setId' in body ? body.setId : undefined;
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Missing items' }, { status: 400 });
   }
