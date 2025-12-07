@@ -8,7 +8,6 @@ import {
   Font,
   Image,
   Svg,
-  Circle,
   Path,
   type DocumentProps,
 } from '@react-pdf/renderer';
@@ -165,7 +164,7 @@ function HRow({
               ...(aligns?.[i] === 'right' ? [styles.tdRight] : []),
             ]}
           >
-            {c as any}
+            {c}
           </Text>
         </View>
       ))}
@@ -194,7 +193,7 @@ function TRow({
               : { width: widths[i] }
           }
         >
-          <Text style={styles.td}>{c as any}</Text>
+          <Text style={styles.td}>{c}</Text>
         </View>
       ))}
     </View>
@@ -227,8 +226,7 @@ export function buildAggregateDoc(
   const seg4 = r4 * circumference;
   const seg5 = r5 * circumference;
   // Compute last by remainder to avoid rounding gaps
-  let seg6 = Math.max(0, circumference - (seg4 + seg5));
-  const eps = 1.5; // small overlap to close seam visually
+  // (no explicit variable needed; handled via ratios array below)
   // Helpers to draw filled donut segments (avoid seam artefacts from stroke dashes)
   const rOuter = size / 2 - 2;
   const rInner = rOuter - stroke;
@@ -268,6 +266,7 @@ export function buildAggregateDoc(
         <View style={styles.headerBar}>
           <View style={styles.brandBox}>
             {opts?.logoSrc ? (
+              // eslint-disable-next-line jsx-a11y/alt-text
               <Image src={opts.logoSrc} style={styles.logo} />
             ) : null}
             <Text style={styles.brand}>ALEARA</Text>
@@ -460,6 +459,7 @@ export function buildContestDoc(
         <View style={styles.headerBar}>
           <View style={styles.brandBox}>
             {opts?.logoSrc ? (
+              // eslint-disable-next-line jsx-a11y/alt-text
               <Image src={opts.logoSrc} style={styles.logo} />
             ) : null}
             <Text style={styles.brand}>ALEARA</Text>

@@ -51,16 +51,18 @@ export async function GET(request: Request) {
       c6: number;
     }
   >();
-  const ids = checks.map((c: any) => {
-    checkIdToRow.set(c.id as string, {
-      contestNo: c.contest_no as number,
-      checkedAt: c.checked_at as string,
+  type CheckRow = { id: string; contest_no: number; checked_at: string };
+  const checkRows = checks as unknown[] as CheckRow[];
+  const ids = checkRows.map((c) => {
+    checkIdToRow.set(c.id, {
+      contestNo: c.contest_no,
+      checkedAt: c.checked_at,
       total: 0,
       c4: 0,
       c5: 0,
       c6: 0,
     });
-    return c.id as string;
+    return c.id;
   });
 
   // 2) Fetch all items for those checks in one go and aggregate in-memory
@@ -71,19 +73,23 @@ export async function GET(request: Request) {
   if (itemsErr)
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
-  for (const r of items ?? []) {
-    const row = checkIdToRow.get(r.check_id as string);
+  const itemRows = (items ?? []) as Array<{
+    check_id: string;
+    matches: number | null;
+  }>;
+  for (const r of itemRows) {
+    const row = checkIdToRow.get(r.check_id);
     if (!row) continue;
     row.total += 1;
-    const m = (r.matches as number) ?? 0;
+    const m = r.matches ?? 0;
     if (m === 4) row.c4 += 1;
     else if (m === 5) row.c5 += 1;
     else if (m === 6) row.c6 += 1;
   }
 
   // 3) Build rows sorted by date desc (keep original checks order)
-  const rows = checks.map((c: any) => {
-    const agg = checkIdToRow.get(c.id as string)!;
+  const rows = checkRows.map((c) => {
+    const agg = checkIdToRow.get(c.id)!;
     const hitRate = agg.total > 0 ? (agg.c4 + agg.c5 + agg.c6) / agg.total : 0;
     return {
       contestNo: agg.contestNo,

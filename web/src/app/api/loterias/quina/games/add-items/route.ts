@@ -8,14 +8,20 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId: string | null = body?.setId ?? null;
-  const items: number[][] = Array.isArray(body?.items) ? body.items : [];
+  const parsed = (body ?? {}) as { setId?: unknown; items?: unknown };
+  const setId: string | null =
+    parsed.setId != null ? String(parsed.setId) : null;
+  const items: number[][] = Array.isArray(parsed.items)
+    ? (parsed.items as unknown[]).map((arr) =>
+        Array.isArray(arr) ? (arr as unknown[]).map((n) => Number(n)) : [],
+      )
+    : [];
   if (!items.length)
     return NextResponse.json({ error: 'No items' }, { status: 400 });
 
@@ -23,9 +29,7 @@ export async function POST(request: Request) {
   const normItems = items.map((arr) =>
     Array.from(
       new Set(
-        arr
-          .map((n: any) => Number(n))
-          .filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 80),
+        arr.filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 80),
       ),
     ).sort((a, b) => a - b),
   );

@@ -4,10 +4,6 @@ import { renderToStream, type DocumentProps } from '@react-pdf/renderer';
 import React from 'react';
 import { buildAggregateDoc, buildContestDoc, type ContestRow } from './PdfDoc';
 
-function formatNumbers(nums: number[]): string {
-  return (nums ?? []).map((n) => String(n).padStart(2, '0')).join(', ');
-}
-
 export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -32,9 +28,14 @@ export async function GET(request: Request) {
       .select('id, contest_no, checked_at')
       .eq('user_id', user.id)
       .order('checked_at', { ascending: false });
-    const ids = (checks ?? []).map((c: any) => c.id as string);
+    const checkRows = (checks ?? []) as Array<{
+      id: string;
+      contest_no: number;
+      checked_at: string;
+    }>;
+    const ids = checkRows.map((c) => c.id);
     let rows: ContestRow[] = [];
-    let kpis = {
+    const kpis = {
       totalConferences: 0,
       totalBets: 0,
       avgPerCheck: 0,
@@ -45,10 +46,10 @@ export async function GET(request: Request) {
     };
     if (ids.length > 0) {
       const map = new Map<string, ContestRow>();
-      for (const c of checks ?? []) {
-        map.set(c.id as string, {
-          contestNo: c.contest_no as number,
-          checkedAt: c.checked_at as string,
+      for (const c of checkRows) {
+        map.set(c.id, {
+          contestNo: c.contest_no,
+          checkedAt: c.checked_at,
           total: 0,
           c4: 0,
           c5: 0,
@@ -60,17 +61,20 @@ export async function GET(request: Request) {
         .from('megasena_check_items')
         .select('check_id, matches')
         .in('check_id', ids);
-      for (const r of items ?? []) {
-        const row = map.get(r.check_id as string);
+      for (const r of (items ?? []) as Array<{
+        check_id: string;
+        matches: number | null;
+      }>) {
+        const row = map.get(r.check_id);
         if (!row) continue;
         row.total += 1;
-        const m = (r.matches as number) ?? 0;
+        const m = r.matches ?? 0;
         if (m === 4) row.c4 += 1;
         else if (m === 5) row.c5 += 1;
         else if (m === 6) row.c6 += 1;
       }
-      rows = (checks ?? []).map((c: any) => {
-        const r = map.get(c.id as string)!;
+      rows = checkRows.map((c) => {
+        const r = map.get(c.id)!;
         r.hitRate = r.total > 0 ? (r.c4 + r.c5 + r.c6) / r.total : 0;
         return r;
       });

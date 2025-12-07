@@ -7,13 +7,16 @@ export async function POST(request: Request) {
   const user = userData.user;
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const listIds: string[] = Array.isArray(body?.listIds) ? body.listIds : [];
+  const parsed = (body ?? {}) as { listIds?: unknown };
+  const listIds: string[] = Array.isArray(parsed.listIds)
+    ? (parsed.listIds as unknown[]).map((v) => String(v))
+    : [];
   if (!listIds.length)
     return NextResponse.json({ error: 'No listIds' }, { status: 400 });
   const { error } = await supabase
