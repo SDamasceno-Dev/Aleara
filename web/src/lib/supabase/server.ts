@@ -25,7 +25,11 @@ export async function createSupabaseServerClient() {
         return cookieStore.get(name)?.value;
       },
       set(name: string, value: string, options: SupabaseCookieOptions) {
-        cookieStore.set(name, value, options as unknown as NextCookieOptionsLocal);
+        cookieStore.set(
+          name,
+          value,
+          options as unknown as NextCookieOptionsLocal,
+        );
       },
       remove(name: string, options: SupabaseCookieOptions) {
         cookieStore.set(name, '', {
