@@ -47,15 +47,20 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId: string = String(body?.setId ?? '');
-  const kInput = body?.k != null ? Number(body.k) : null;
-  const seedInput = body?.seed != null ? Number(body.seed) : null;
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    k?: unknown;
+    seed?: unknown;
+  };
+  const setId: string = String(parsed.setId ?? '');
+  const kInput = parsed.k != null ? Number(parsed.k) : null;
+  const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
   const reseed = Number.isFinite(seedInput as number)
     ? (seedInput as number)
     : Math.floor(Math.random() * 2 ** 31);

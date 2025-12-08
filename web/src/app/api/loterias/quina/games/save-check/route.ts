@@ -8,17 +8,23 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId: string = String(body?.setId ?? '');
-  const draw: number[] = Array.isArray(body?.draw)
-    ? body.draw.map((x: any) => Number(x))
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    draw?: unknown;
+    contest?: unknown;
+    contestNo?: unknown;
+  };
+  const setId: string = String(parsed.setId ?? '');
+  const draw: number[] = Array.isArray(parsed.draw)
+    ? (parsed.draw as unknown[]).map((x) => Number(x))
     : [];
-  const contestNo: number = Number(body?.contest ?? body?.contestNo ?? 0);
+  const contestNo: number = Number(parsed.contest ?? parsed.contestNo ?? 0);
   if (
     !setId ||
     draw.length !== 5 ||
@@ -54,13 +60,15 @@ export async function POST(request: Request) {
     .order('position', { ascending: true });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  const payload = (items ?? []).map((it: any) => {
-    const nums = (it.numbers as number[]) ?? [];
+  const payload = (
+    (items ?? []) as Array<{ position: number; numbers: number[] }>
+  ).map((it) => {
+    const nums = it.numbers ?? [];
     let m = 0;
     for (const n of nums) if (drawSet.has(n)) m += 1;
     return {
       check_id: checkId,
-      position: it.position as number,
+      position: it.position,
       numbers: nums,
       matches: m,
     };

@@ -13,7 +13,11 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const parsed = (body ?? {}) as { setId?: unknown; contestNo?: unknown; title?: unknown };
+  const parsed = (body ?? {}) as {
+    setId?: unknown;
+    contestNo?: unknown;
+    title?: unknown;
+  };
   const setId: string = String(parsed.setId ?? '');
   const contestNo: number = Number(parsed.contestNo ?? 0);
   const title: string | undefined =
@@ -48,7 +52,9 @@ export async function POST(request: Request) {
     .eq('list_id', listId);
   if (delErr)
     return NextResponse.json({ error: delErr.message }, { status: 500 });
-  const payload = ((items ?? []) as Array<{ position: number; numbers: number[] }>).map((it) => ({
+  const payload = (
+    (items ?? []) as Array<{ position: number; numbers: number[] }>
+  ).map((it) => ({
     list_id: listId,
     position: it.position,
     numbers: it.numbers ?? [],

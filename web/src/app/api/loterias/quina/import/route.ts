@@ -240,18 +240,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: admin.status });
   const supabase = admin.supabase;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const csv = String(body?.csv ?? '');
+  const parsed = (body ?? {}) as { csv?: unknown; reconcileLastN?: unknown };
+  const csv = String(parsed.csv ?? '');
   if (!csv.trim())
     return NextResponse.json({ error: 'Missing csv' }, { status: 400 });
   const reconcileWindow = Math.max(
     0,
-    Math.min(100, Number(body?.reconcileLastN ?? 20) || 20),
+    Math.min(100, Number(parsed.reconcileLastN ?? 20) || 20),
   );
 
   const table = parseCsv(csv);
@@ -313,7 +314,6 @@ export async function POST(request: Request) {
 
   rows.sort((a, b) => a.concurso - b.concurso);
   const lastN = rows.slice(-reconcileWindow);
-  const lastNIds = new Set(lastN.map((r) => r.concurso));
   const newRows =
     maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
   const upsertMap = new Map<number, DrawRow>();
@@ -373,7 +373,7 @@ export async function POST(request: Request) {
     const windowFreq = Array.from({ length: 81 }, () => 0);
     const pageSize = 1000;
     let fetched = 0;
-    let prevSet: Set<number> | null = null;
+    // scan all draws
     while (true) {
       const { data, error } = await supabase
         .from('quina_draws')
@@ -381,13 +381,20 @@ export async function POST(request: Request) {
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
-      const rowsPage = data ?? [];
+      const rowsPage = (data ?? []) as Array<{
+        concurso: number;
+        bola1: number;
+        bola2: number;
+        bola3: number;
+        bola4: number;
+        bola5: number;
+      }>;
       if (rowsPage.length === 0) break;
-      for (const r of rowsPage as any[]) {
-        const concursoNum = r.concurso as number;
+      for (const r of rowsPage) {
+        const concursoNum = r.concurso;
         const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5]
-          .map((n: any) => Number(n))
-          .sort((a: number, b: number) => a - b);
+          .map((n) => Number(n))
+          .sort((a, b) => a - b);
         for (const n of arr) {
           if (n >= 1 && n <= 80) {
             freq[n] += 1;
@@ -425,9 +432,7 @@ export async function POST(request: Request) {
         const evens = arr.filter((n: number) => n % 2 === 0).length;
         const parKey = `${evens}p-${5 - evens}i`;
         parityCounts[parKey] = (parityCounts[parKey] ?? 0) + 1;
-        // previous draw repeaters
-        const currSet = new Set(arr);
-        prevSet = currSet;
+        // previous draw repeaters (not used for Quina base here)
       }
       fetched += rowsPage.length;
       if (rowsPage.length < pageSize) break;
@@ -455,7 +460,11 @@ export async function POST(request: Request) {
     async function upsertStudy(
       key: string,
       title: string,
-      items: Array<{ item_key: string; value: number; extra?: any }>,
+      items: Array<{
+        item_key: string;
+        value: number;
+        extra?: Record<string, unknown>;
+      }>,
     ) {
       const sorted = items.sort((a, b) => b.value - a.value);
       const payload = sorted.map((it, idx) => ({

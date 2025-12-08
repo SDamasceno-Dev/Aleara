@@ -13,14 +13,22 @@ export async function GET() {
     .select('role, display_name')
     .eq('user_id', user.id)
     .maybeSingle();
-  const provider = (user.app_metadata as any)?.provider ?? null;
+  const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
+  const userMeta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const identities = Array.isArray(user.identities) ? user.identities : [];
+  const firstIdentity =
+    (identities[0] as unknown as {
+      identity_data?: { name?: string; picture?: string } | null;
+    }) ?? {};
+  const provider =
+    (typeof appMeta.provider === 'string' && appMeta.provider) || null;
   const fullNameFromMeta =
-    (user.user_metadata as any)?.full_name ??
-    (user.identities?.[0]?.identity_data as any)?.name ??
+    (typeof userMeta.full_name === 'string' && userMeta.full_name) ||
+    firstIdentity.identity_data?.name ||
     null;
   const avatarFromMeta =
-    (user.user_metadata as any)?.avatar_url ??
-    (user.identities?.[0]?.identity_data as any)?.picture ??
+    (typeof userMeta.avatar_url === 'string' && userMeta.avatar_url) ||
+    firstIdentity.identity_data?.picture ||
     null;
   return NextResponse.json({
     authenticated: true,
