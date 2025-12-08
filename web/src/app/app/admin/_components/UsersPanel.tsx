@@ -6,62 +6,14 @@ import { Button } from '@/components/button';
 import { useDialog } from '@/components/dialog';
 import { ImportCsvModal } from './ImportCsvModal';
 
-type UsersPanelProps = {
-  initialUsers?: string[];
-};
-
-export function UsersPanel({ initialUsers }: UsersPanelProps) {
+export function UsersPanel() {
   const dialog = useDialog();
   const [emailValid, setEmailValid] = useState(false);
   const [forceValidate, setForceValidate] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const liveRef = useRef<HTMLDivElement | null>(null);
 
-  const [users, setUsers] = useState<string[]>(
-    initialUsers && initialUsers.length > 0
-      ? initialUsers
-      : [
-          'ana.silva@example.com',
-          'joao.souza@example.com',
-          'maria.oliveira@example.com',
-          'carlos.santos@example.com',
-          'patricia.gomes@example.com',
-          'rodrigo.melo@example.com',
-          'fernanda.alves@example.com',
-          'juliana.costa@example.com',
-          'marcos.lima@example.com',
-          'bianca.rocha@example.com',
-          'eduardo.pereira@example.com',
-          'aline.souza@example.com',
-          'rafael.oliveira@example.com',
-          'camila.silva@example.com',
-          'lucas.ferreira@example.com',
-          'leticia.martins@example.com',
-          'vinicius.andrade@example.com',
-          'renata.ramos@example.com',
-          'daniel.cardoso@example.com',
-          'sabrina.araujo@example.com',
-          'thiago.barbosa@example.com',
-          'sofia.teixeira@example.com',
-          'arthur.pinto@example.com',
-          'isabela.monteiro@example.com',
-          'gustavo.moreira@example.com',
-          'amanda.freitas@example.com',
-          'ricardo.nunes@example.com',
-          'carla.ribeiro@example.com',
-          'felipe.duarte@example.com',
-          'vanessa.cunha@example.com',
-        ],
-  );
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const allSelected = useMemo(
-    () => users.length > 0 && users.every((u) => selected[u]),
-    [users, selected],
-  );
-  const selectedCount = useMemo(
-    () => users.filter((u) => selected[u]).length,
-    [users, selected],
-  );
+  const [, setSelected] = useState<Record<string, boolean>>({});
   return (
     <div className='space-y-6'>
       {/* Adicionar usuário */}
@@ -254,10 +206,6 @@ function RemovalModalContent({
   const [confirming, setConfirming] = useState(false);
   const canSearch = term.trim().length >= 3;
   const hasSearched = searchTerm != null;
-  const allSelected = useMemo(
-    () => results.length > 0 && results.every((u) => selected[u]),
-    [results, selected],
-  );
   const selectedCount = useMemo(
     () => results.filter((u) => selected[u]).length,
     [results, selected],
@@ -281,7 +229,9 @@ function RemovalModalContent({
       if (!res.ok) {
         setError(data?.error ?? 'Falha ao buscar.');
       } else {
-        const emails = (data?.items ?? []).map((i: any) => i.email as string);
+        const emails = ((data?.items ?? []) as Array<{ email: string }>).map(
+          (i) => i.email,
+        );
         setResults((prev) => (reset ? emails : [...prev, ...emails]));
         setNextCursor(data?.nextCursor ?? null);
         setSearchTerm(term);
@@ -455,11 +405,15 @@ function RemovalModalContent({
                           const deletedUsers = Number(data?.deletedUsers ?? 0);
                           // remove da lista os removidos ou deletados
                           const removedSet = new Set(
-                            (data?.results ?? [])
-                              .filter(
-                                (r: any) => r.removedAllowed || r.deletedUser,
-                              )
-                              .map((r: any) => r.email as string),
+                            (
+                              (data?.results ?? []) as Array<{
+                                email: string;
+                                removedAllowed?: boolean;
+                                deletedUser?: boolean;
+                              }>
+                            )
+                              .filter((r) => r.removedAllowed || r.deletedUser)
+                              .map((r) => r.email),
                           );
                           setResults((prev) =>
                             prev.filter((e) => !removedSet.has(e)),

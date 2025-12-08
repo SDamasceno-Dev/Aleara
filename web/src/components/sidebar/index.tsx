@@ -8,21 +8,22 @@ import { usePathname, useRouter } from 'next/navigation';
 const itemBase =
   'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-zinc-300/90 hover:text-white hover:bg-white/10 transition-colors';
 
+const lotterySlugs = [
+  { slug: 'mega-sena', label: 'Mega-Sena' },
+  { slug: 'quina', label: 'Quina' },
+  { slug: 'dupla-sena', label: 'Dupla Sena' },
+  { slug: 'lotofacil', label: 'Lotofácil' },
+  { slug: 'lotomania', label: 'Lotomania' },
+  { slug: 'dia-de-sorte', label: 'Dia de Sorte' },
+  { slug: 'super-sete', label: 'Super Sete' },
+  { slug: 'timemania', label: 'Timemania' },
+  { slug: 'federal', label: 'Federal' },
+  { slug: 'mais-milionaria', label: '+Milionária' },
+];
+
 export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const lotterySlugs = [
-    { slug: 'mega-sena', label: 'Mega-Sena' },
-    { slug: 'quina', label: 'Quina' },
-    { slug: 'dupla-sena', label: 'Dupla Sena' },
-    { slug: 'lotofacil', label: 'Lotofácil' },
-    { slug: 'lotomania', label: 'Lotomania' },
-    { slug: 'dia-de-sorte', label: 'Dia de Sorte' },
-    { slug: 'super-sete', label: 'Super Sete' },
-    { slug: 'timemania', label: 'Timemania' },
-    { slug: 'federal', label: 'Federal' },
-    { slug: 'mais-milionaria', label: '+Milionária' },
-  ];
   const currentLottery = (() => {
     const m = pathname?.match(/^\/app\/([^/]+)/);
     return m ? m[1] : '';
@@ -30,15 +31,23 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const [selectedLottery, setSelectedLottery] = useState<string>('');
 
   useEffect(() => {
+    let timer: number | null = null;
     try {
       const isLotteryRoute = lotterySlugs.some(
         (l) => l.slug === currentLottery,
       );
-      // When outside lottery routes, reset selection to placeholder
-      setSelectedLottery(isLotteryRoute ? currentLottery : '');
+      const next = isLotteryRoute ? currentLottery : '';
+      timer = window.setTimeout(() => {
+        setSelectedLottery(next);
+      }, 0);
     } catch {
-      setSelectedLottery(currentLottery);
+      timer = window.setTimeout(() => {
+        setSelectedLottery(currentLottery);
+      }, 0);
     }
+    return () => {
+      if (timer != null) window.clearTimeout(timer);
+    };
   }, [currentLottery]);
 
   return (

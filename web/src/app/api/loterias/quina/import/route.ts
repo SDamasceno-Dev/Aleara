@@ -129,7 +129,10 @@ function parseDateBR(v: string): string | null {
 function parseCurrencyBR(v: string): number | null {
   const t = (v ?? '').trim();
   if (!t) return null;
-  const cleaned = t.replace(/^R\$\s*/i, '').replace(/\./g, '').replace(',', '.');
+  const cleaned = t
+    .replace(/^R\$\s*/i, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
   const num = Number(cleaned);
   return Number.isFinite(num) ? num : null;
 }
@@ -152,9 +155,11 @@ function headerIndexMap(header: string[]): Record<string, number> {
   header.forEach((h, idx) => (map[normalizeKey(h)] = idx));
   return map;
 }
-function mapRow(hm: Record<string, number>, cols: string[], line: number):
-  | { ok: true; row: DrawRow }
-  | { ok: false; error: string } {
+function mapRow(
+  hm: Record<string, number>,
+  cols: string[],
+  line: number,
+): { ok: true; row: DrawRow } | { ok: false; error: string } {
   const get = (key: string) => {
     const idx = hm[normalizeKey(key)];
     return idx != null ? (cols[idx] ?? '') : '';
@@ -173,8 +178,19 @@ function mapRow(hm: Record<string, number>, cols: string[], line: number):
   const b3 = parseIntSafe(get('bola3'));
   const b4 = parseIntSafe(get('bola4'));
   const b5 = parseIntSafe(get('bola5'));
-  if (concurso == null || !dataISO || b1 == null || b2 == null || b3 == null || b4 == null || b5 == null) {
-    return { ok: false, error: `Linha ${line}: dados obrigatórios ausentes/invalidos` };
+  if (
+    concurso == null ||
+    !dataISO ||
+    b1 == null ||
+    b2 == null ||
+    b3 == null ||
+    b4 == null ||
+    b5 == null
+  ) {
+    return {
+      ok: false,
+      error: `Linha ${line}: dados obrigatórios ausentes/invalidos`,
+    };
   }
   const row: DrawRow = {
     concurso,
@@ -185,7 +201,9 @@ function mapRow(hm: Record<string, number>, cols: string[], line: number):
     bola4: b4,
     bola5: b5,
     ganhadores_5: parseIntSafe(get('ganhadores 5 acertos')),
-    cidades_uf: (getAny('cidade / uf', 'cidade/uf', 'cidades / uf', 'cidades/uf').trim() || null),
+    cidades_uf:
+      getAny('cidade / uf', 'cidade/uf', 'cidades / uf', 'cidades/uf').trim() ||
+      null,
     rateio_5: parseCurrencyBR(get('rateio 5 acertos')),
     ganhadores_4: parseIntSafe(get('ganhadores 4 acertos')),
     rateio_4: parseCurrencyBR(get('rateio 4 acertos')),
@@ -194,10 +212,19 @@ function mapRow(hm: Record<string, number>, cols: string[], line: number):
     ganhadores_2: parseIntSafe(get('ganhadores 2 acertos')),
     rateio_2: parseCurrencyBR(get('rateio 2 acertos')),
     acumulado_5: parseCurrencyBR(get('acumulado 5 acertos')),
-    arrecadacao_total: parseCurrencyBR(getAny('arrecadacao total', 'arrecadação total')),
-    estimativa_premio: parseCurrencyBR(getAny('estimativa premio', 'estimativa prêmio')),
-    acumulado_quina_sao_joao: parseCurrencyBR(getAny('acumulado sorteio especial quina de sao joao', 'acumulado sorteio especial quina de são joão')),
-    observacao: (getAny('observacao', 'observação').trim() || null),
+    arrecadacao_total: parseCurrencyBR(
+      getAny('arrecadacao total', 'arrecadação total'),
+    ),
+    estimativa_premio: parseCurrencyBR(
+      getAny('estimativa premio', 'estimativa prêmio'),
+    ),
+    acumulado_quina_sao_joao: parseCurrencyBR(
+      getAny(
+        'acumulado sorteio especial quina de sao joao',
+        'acumulado sorteio especial quina de são joão',
+      ),
+    ),
+    observacao: getAny('observacao', 'observação').trim() || null,
   };
   return { ok: true, row };
 }
@@ -209,27 +236,38 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 export async function POST(request: Request) {
   const admin = await assertAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Forbidden' }, { status: admin.status });
+  if (!admin.ok)
+    return NextResponse.json({ error: 'Forbidden' }, { status: admin.status });
   const supabase = admin.supabase;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const csv = String(body?.csv ?? '');
-  if (!csv.trim()) return NextResponse.json({ error: 'Missing csv' }, { status: 400 });
-  const reconcileWindow = Math.max(0, Math.min(100, Number(body?.reconcileLastN ?? 20) || 20));
+  const parsed = (body ?? {}) as { csv?: unknown; reconcileLastN?: unknown };
+  const csv = String(parsed.csv ?? '');
+  if (!csv.trim())
+    return NextResponse.json({ error: 'Missing csv' }, { status: 400 });
+  const reconcileWindow = Math.max(
+    0,
+    Math.min(100, Number(parsed.reconcileLastN ?? 20) || 20),
+  );
 
   const table = parseCsv(csv);
-  if (table.length < 2) return NextResponse.json({ error: 'CSV vazio ou sem dados' }, { status: 400 });
+  if (table.length < 2)
+    return NextResponse.json(
+      { error: 'CSV vazio ou sem dados' },
+      { status: 400 },
+    );
   const header = table[0].map((h) => h.trim());
   const hmap = headerIndexMap(header);
   const missing: string[] = [];
   const has = (k: string) => normalizeKey(k) in hmap;
   if (!has('concurso')) missing.push('Concurso');
-  if (!(has('data sorteio') || has('data do sorteio'))) missing.push('Data Sorteio');
+  if (!(has('data sorteio') || has('data do sorteio')))
+    missing.push('Data Sorteio');
   for (const b of ['bola1', 'bola2', 'bola3', 'bola4', 'bola5']) {
     if (!has(b)) missing.push(b);
   }
@@ -257,7 +295,11 @@ export async function POST(request: Request) {
     }
     rows.push(mapped.row);
   }
-  if (rows.length === 0) return NextResponse.json({ error: 'Nenhuma linha válida encontrada', errors }, { status: 400 });
+  if (rows.length === 0)
+    return NextResponse.json(
+      { error: 'Nenhuma linha válida encontrada', errors },
+      { status: 400 },
+    );
 
   // Determine max concurso in DB
   let maxConcurso: number | null = null;
@@ -272,8 +314,8 @@ export async function POST(request: Request) {
 
   rows.sort((a, b) => a.concurso - b.concurso);
   const lastN = rows.slice(-reconcileWindow);
-  const lastNIds = new Set(lastN.map((r) => r.concurso));
-  const newRows = maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
+  const newRows =
+    maxConcurso == null ? rows : rows.filter((r) => r.concurso > maxConcurso!);
   const upsertMap = new Map<number, DrawRow>();
   for (const r of lastN) upsertMap.set(r.concurso, r);
   for (const r of newRows) upsertMap.set(r.concurso, r);
@@ -283,14 +325,24 @@ export async function POST(request: Request) {
   // existing ids
   const existingIds = new Set<number>();
   for (const batch of chunk(upsertIds, 1000)) {
-    const { data, error } = await supabase.from('quina_draws').select('concurso').in('concurso', batch);
-    if (!error && data) for (const r of data) existingIds.add(r.concurso as number);
+    const { data, error } = await supabase
+      .from('quina_draws')
+      .select('concurso')
+      .in('concurso', batch);
+    if (!error && data)
+      for (const r of data) existingIds.add(r.concurso as number);
   }
 
   // upsert
   for (const batch of chunk(rowsToUpsert, 500)) {
-    const { error } = await supabase.from('quina_draws').upsert(batch, { onConflict: 'concurso' });
-    if (error) errors.push({ line: 0, reason: `Falha ao salvar lote: ${error.message}` });
+    const { error } = await supabase
+      .from('quina_draws')
+      .upsert(batch, { onConflict: 'concurso' });
+    if (error)
+      errors.push({
+        line: 0,
+        reason: `Falha ao salvar lote: ${error.message}`,
+      });
   }
   const insertedCount = upsertIds.filter((id) => !existingIds.has(id)).length;
   const updatedCount = upsertIds.length - insertedCount;
@@ -306,7 +358,9 @@ export async function POST(request: Request) {
       .order('concurso', { ascending: false })
       .limit(1);
     const totalDraws = countRes.count ?? 0;
-    const lastConcursoGlobal = countRes.data?.[0]?.concurso as number | undefined;
+    const lastConcursoGlobal = countRes.data?.[0]?.concurso as
+      | number
+      | undefined;
     const freq = Array.from({ length: 81 }, () => 0); // 1..80
     const lastSeen = Array.from({ length: 81 }, () => 0);
     const pairCounts: Record<string, number> = {};
@@ -319,7 +373,7 @@ export async function POST(request: Request) {
     const windowFreq = Array.from({ length: 81 }, () => 0);
     const pageSize = 1000;
     let fetched = 0;
-    let prevSet: Set<number> | null = null;
+    // scan all draws
     while (true) {
       const { data, error } = await supabase
         .from('quina_draws')
@@ -327,13 +381,20 @@ export async function POST(request: Request) {
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
-      const rowsPage = data ?? [];
+      const rowsPage = (data ?? []) as Array<{
+        concurso: number;
+        bola1: number;
+        bola2: number;
+        bola3: number;
+        bola4: number;
+        bola5: number;
+      }>;
       if (rowsPage.length === 0) break;
-      for (const r of rowsPage as any[]) {
-        const concursoNum = r.concurso as number;
+      for (const r of rowsPage) {
+        const concursoNum = r.concurso;
         const arr = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5]
-          .map((n: any) => Number(n))
-          .sort((a: number, b: number) => a - b);
+          .map((n) => Number(n))
+          .sort((a, b) => a - b);
         for (const n of arr) {
           if (n >= 1 && n <= 80) {
             freq[n] += 1;
@@ -358,7 +419,8 @@ export async function POST(request: Request) {
             const b = arr[j];
             const key = `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}`;
             pairCounts[key] = (pairCounts[key] ?? 0) + 1;
-            if (b === a + 1) consecutiveCounts[key] = (consecutiveCounts[key] ?? 0) + 1;
+            if (b === a + 1)
+              consecutiveCounts[key] = (consecutiveCounts[key] ?? 0) + 1;
           }
         }
         // sum ranges (bins of 20)
@@ -370,9 +432,7 @@ export async function POST(request: Request) {
         const evens = arr.filter((n: number) => n % 2 === 0).length;
         const parKey = `${evens}p-${5 - evens}i`;
         parityCounts[parKey] = (parityCounts[parKey] ?? 0) + 1;
-        // previous draw repeaters
-        const currSet = new Set(arr);
-        prevSet = currSet;
+        // previous draw repeaters (not used for Quina base here)
       }
       fetched += rowsPage.length;
       if (rowsPage.length < pageSize) break;
@@ -383,17 +443,28 @@ export async function POST(request: Request) {
     for (let n = 1; n <= 80; n += 1) {
       const vezes = freq[n] ?? 0;
       const pct = totalDraws > 0 ? Number((vezes / totalDraws).toFixed(6)) : 0;
-      statsRows.push({ dezena: n, vezes_sorteada: vezes, pct_sorteios: pct, total_sorteios: totalDraws });
+      statsRows.push({
+        dezena: n,
+        vezes_sorteada: vezes,
+        pct_sorteios: pct,
+        total_sorteios: totalDraws,
+      });
     }
     for (const batch of chunk(statsRows, 80)) {
-      await supabase.from('quina_stats_dezenas').upsert(batch, { onConflict: 'dezena' });
+      await supabase
+        .from('quina_stats_dezenas')
+        .upsert(batch, { onConflict: 'dezena' });
     }
     statsUpdated = true;
 
     async function upsertStudy(
       key: string,
       title: string,
-      items: Array<{ item_key: string; value: number; extra?: any }>,
+      items: Array<{
+        item_key: string;
+        value: number;
+        extra?: Record<string, unknown>;
+      }>,
     ) {
       const sorted = items.sort((a, b) => b.value - a.value);
       const payload = sorted.map((it, idx) => ({
@@ -405,10 +476,15 @@ export async function POST(request: Request) {
       }));
       await supabase
         .from('quina_stats_catalog')
-        .upsert({ study_key: key, title, params: {} }, { onConflict: 'study_key' });
+        .upsert(
+          { study_key: key, title, params: {} },
+          { onConflict: 'study_key' },
+        );
       await supabase.from('quina_stats_items').delete().eq('study_key', key);
       for (const batch of chunk(payload, 1000)) {
-        await supabase.from('quina_stats_items').upsert(batch, { onConflict: 'study_key,item_key' });
+        await supabase
+          .from('quina_stats_items')
+          .upsert(batch, { onConflict: 'study_key,item_key' });
       }
     }
     // Overdue
@@ -417,36 +493,99 @@ export async function POST(request: Request) {
     for (let n = 1; n <= 80; n += 1) {
       const last = lastSeen[n] || 0;
       const overdue = last ? lastC - last : lastC;
-      overdueItems.push({ item_key: `dezena:${String(n).padStart(2, '0')}`, value: overdue });
+      overdueItems.push({
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: overdue,
+      });
     }
     await upsertStudy('overdue_dezena', 'Atraso por dezena', overdueItems);
     // Frequência (histórico)
     const freqItems = Array.from({ length: 80 }, (_, i) => {
       const n = i + 1;
-      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: freq[n] ?? 0 };
+      return {
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: freq[n] ?? 0,
+      };
     });
-    await upsertStudy('freq_all', 'Frequência por dezena (histórico)', freqItems);
+    await upsertStudy(
+      'freq_all',
+      'Frequência por dezena (histórico)',
+      freqItems,
+    );
     // Quentes e frias (top 20)
-    const hotTop = [...freqItems].sort((a, b) => b.value - a.value).slice(0, 20);
-    const coldTop = [...freqItems].sort((a, b) => a.value - b.value).slice(0, 20);
+    const hotTop = [...freqItems]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 20);
+    const coldTop = [...freqItems]
+      .sort((a, b) => a.value - b.value)
+      .slice(0, 20);
     await upsertStudy('hot_top', 'Quentes (top frequentes)', hotTop);
     await upsertStudy('cold_top', 'Frias (menos frequentes)', coldTop);
     // Pares e consecutivos
-    await upsertStudy('pair_freq', 'Pares mais frequentes', Object.entries(pairCounts).map(([k, v]) => ({ item_key: `par:${k}`, value: v })));
-    await upsertStudy('consecutive_pair', 'Pares consecutivos mais frequentes', Object.entries(consecutiveCounts).map(([k, v]) => ({ item_key: `consec:${k}`, value: v })));
+    await upsertStudy(
+      'pair_freq',
+      'Pares mais frequentes',
+      Object.entries(pairCounts).map(([k, v]) => ({
+        item_key: `par:${k}`,
+        value: v,
+      })),
+    );
+    await upsertStudy(
+      'consecutive_pair',
+      'Pares consecutivos mais frequentes',
+      Object.entries(consecutiveCounts).map(([k, v]) => ({
+        item_key: `consec:${k}`,
+        value: v,
+      })),
+    );
     // Faixas de soma (20)
-    await upsertStudy('sum_range_20', 'Faixas de soma (largura 20)', Object.entries(sumRangeCounts).map(([k, v]) => ({ item_key: `faixa_soma:${k}`, value: v })));
+    await upsertStudy(
+      'sum_range_20',
+      'Faixas de soma (largura 20)',
+      Object.entries(sumRangeCounts).map(([k, v]) => ({
+        item_key: `faixa_soma:${k}`,
+        value: v,
+      })),
+    );
     // Paridade
-    await upsertStudy('parity_comp', 'Composições Par/Ímpar', Object.entries(parityCounts).map(([k, v]) => ({ item_key: `paridade:${k}`, value: v })));
+    await upsertStudy(
+      'parity_comp',
+      'Composições Par/Ímpar',
+      Object.entries(parityCounts).map(([k, v]) => ({
+        item_key: `paridade:${k}`,
+        value: v,
+      })),
+    );
     // Décadas e finais
-    await upsertStudy('decade_dist', 'Distribuição por décadas', Object.entries(decadeCounts).map(([k, v]) => ({ item_key: `decada:${k}`, value: v })));
-    await upsertStudy('last_digit', 'Distribuição por finais (0–9)', Object.entries(lastDigitCounts).map(([k, v]) => ({ item_key: k, value: v })));
+    await upsertStudy(
+      'decade_dist',
+      'Distribuição por décadas',
+      Object.entries(decadeCounts).map(([k, v]) => ({
+        item_key: `decada:${k}`,
+        value: v,
+      })),
+    );
+    await upsertStudy(
+      'last_digit',
+      'Distribuição por finais (0–9)',
+      Object.entries(lastDigitCounts).map(([k, v]) => ({
+        item_key: k,
+        value: v,
+      })),
+    );
     // Janela (últ. 200 concursos)
     const windowHotItems = Array.from({ length: 80 }, (_, i) => {
       const n = i + 1;
-      return { item_key: `dezena:${String(n).padStart(2, '0')}`, value: windowFreq[n] ?? 0 };
+      return {
+        item_key: `dezena:${String(n).padStart(2, '0')}`,
+        value: windowFreq[n] ?? 0,
+      };
     });
-    await upsertStudy('window200_hot', 'Frequência (últimos 200 concursos)', windowHotItems);
+    await upsertStudy(
+      'window200_hot',
+      'Frequência (últimos 200 concursos)',
+      windowHotItems,
+    );
     studiesUpdated = true;
   } catch {
     statsUpdated = false;
@@ -465,5 +604,3 @@ export async function POST(request: Request) {
     studiesUpdated,
   });
 }
-
-

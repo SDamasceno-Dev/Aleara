@@ -32,18 +32,21 @@ export function TextInput({
 
   useEffect(() => {
     if (forceValidate) {
-      setTouched(true);
-      if (onValidChange)
-        onValidChange(validate(value.trim(), validatable) == null);
+      const timer = window.setTimeout(() => {
+        setTouched(true);
+        if (onValidChange)
+          onValidChange(validate(value.trim(), validatable) == null);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
-  }, [forceValidate]);
+  }, [forceValidate, onValidChange, validatable, value]);
 
   const error = useMemo(() => {
     if (!touched) return null;
     return validatable === 'none' ? null : validate(value.trim(), validatable);
   }, [touched, value, validatable]);
 
-  const valid = !error;
+  // const valid = !error;
 
   return (
     <div className={className}>

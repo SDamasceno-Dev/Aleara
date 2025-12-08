@@ -57,7 +57,7 @@ export default function Home() {
                 return;
               }
               router.push('/app');
-            } catch (e) {
+            } catch {
               setErrorMsg('Não foi possível autenticar. Tente novamente.');
               setLoading(false);
             }

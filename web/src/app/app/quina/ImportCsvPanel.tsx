@@ -34,7 +34,14 @@ export function ImportCsvPanel() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ csv: text }),
       });
-      let data: any = {};
+      let data: {
+        error?: string;
+        processed?: number;
+        errors?: unknown[];
+        imported?: number;
+        updated?: number;
+        skipped?: number;
+      } = {};
       try {
         data = await res.json();
       } catch {
@@ -55,7 +62,6 @@ export function ImportCsvPanel() {
         setStatus(`${data?.error ?? 'Falha ao importar.'}${meta}${errCount}`);
         if (Array.isArray(data?.errors) && data.errors.length) {
           // Log primeiras ocorrências para depuração
-          // eslint-disable-next-line no-console
           console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
         }
       } else {
@@ -65,12 +71,11 @@ export function ImportCsvPanel() {
           }.${meta}${errCount}`,
         );
         if (Array.isArray(data?.errors) && data.errors.length) {
-          // eslint-disable-next-line no-console
           console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
         }
         router.refresh();
       }
-    } catch (e) {
+    } catch {
       setStatus('Erro ao ler/enviar o arquivo.');
     } finally {
       setBusy(false);
@@ -80,18 +85,24 @@ export function ImportCsvPanel() {
   async function clearAll() {
     if (confirmClear === 0) {
       setConfirmClear(1);
-      setStatus('Confirma limpar toda a base da Quina? Clique novamente para confirmar.');
+      setStatus(
+        'Confirma limpar toda a base da Quina? Clique novamente para confirmar.',
+      );
       return;
     }
     if (confirmClear === 1) {
       setConfirmClear(2);
-      setStatus('Última confirmação: esta ação é permanente. Clique mais uma vez para prosseguir.');
+      setStatus(
+        'Última confirmação: esta ação é permanente. Clique mais uma vez para prosseguir.',
+      );
       return;
     }
     setBusyMsg('Limpando base da Quina…');
     setBusy(true);
     try {
-      const res = await fetch('/api/loterias/quina/clear', { method: 'DELETE' });
+      const res = await fetch('/api/loterias/quina/clear', {
+        method: 'DELETE',
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setStatus(data?.error ?? 'Falha ao limpar a base.');
@@ -111,11 +122,17 @@ export function ImportCsvPanel() {
 
   return (
     <section className='rounded-lg border border-[var(--black-30)] bg-[var(--black-20)] p-4 space-y-3'>
-      <LoadingOverlay show={busy} message={busyMsg} subtitle='Isso pode levar alguns instantes.' />
-      <div className='text-sm text-zinc-200'>Importação da base de sorteios — Quina</div>
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Isso pode levar alguns instantes.'
+      />
+      <div className='text-sm text-zinc-200'>
+        Importação da base de sorteios — Quina
+      </div>
       <p className='text-xs text-zinc-400'>
-        Envie o CSV da Quina com o cabeçalho fornecido. A validação completa e a importação em lotes serão
-        realizadas no servidor.
+        Envie o CSV da Quina com o cabeçalho fornecido. A validação completa e a
+        importação em lotes serão realizadas no servidor.
       </p>
       <div className='flex items-center gap-2 flex-wrap'>
         <input
@@ -129,7 +146,13 @@ export function ImportCsvPanel() {
           }}
           className='text-sm border border-[var(--black-30)] p-1 rounded-md cursor-pointer bg-[var(--white-10)]'
         />
-        <Button type='button' intent='primary' size='sm' disabled={busy} onClick={runImport}>
+        <Button
+          type='button'
+          intent='primary'
+          size='sm'
+          disabled={busy}
+          onClick={runImport}
+        >
           {busy ? 'Enviando…' : 'Iniciar importação'}
         </Button>
         <Button
@@ -140,11 +163,17 @@ export function ImportCsvPanel() {
           disabled={busy}
           onClick={clearAll}
         >
-          {confirmClear === 0 ? 'Limpar base' : confirmClear === 1 ? 'Confirmar limpeza' : 'Confirmar (final)'}
+          {confirmClear === 0
+            ? 'Limpar base'
+            : confirmClear === 1
+              ? 'Confirmar limpeza'
+              : 'Confirmar (final)'}
         </Button>
       </div>
       <div className='text-xs text-zinc-500'>
-        {fileName ? `Arquivo selecionado: ${fileName}` : 'Nenhum arquivo selecionado'}
+        {fileName
+          ? `Arquivo selecionado: ${fileName}`
+          : 'Nenhum arquivo selecionado'}
       </div>
       <div role='status' aria-live='polite' className='text-xs text-zinc-300'>
         {status}
@@ -152,5 +181,3 @@ export function ImportCsvPanel() {
     </section>
   );
 }
-
-

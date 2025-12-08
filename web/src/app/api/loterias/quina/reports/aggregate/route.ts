@@ -5,7 +5,8 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const url = new URL(request.url);
   const from = url.searchParams.get('from') || undefined;
@@ -19,42 +20,79 @@ export async function GET(request: Request) {
   if (from) checksQuery = checksQuery.gte('checked_at', from);
   if (to) checksQuery = checksQuery.lte('checked_at', to);
   const { data: checks, error: chkErr } = await checksQuery;
-  if (chkErr) return NextResponse.json({ error: chkErr.message }, { status: 500 });
+  if (chkErr)
+    return NextResponse.json({ error: chkErr.message }, { status: 500 });
   if (!checks || checks.length === 0) {
     return NextResponse.json({
       ok: true,
       empty: true,
-      kpis: { totalConferences: 0, totalBets: 0, avgPerCheck: 0, c2: 0, c3: 0, c4: 0, c5: 0, hitRate: 0 },
+      kpis: {
+        totalConferences: 0,
+        totalBets: 0,
+        avgPerCheck: 0,
+        c2: 0,
+        c3: 0,
+        c4: 0,
+        c5: 0,
+        hitRate: 0,
+      },
       rows: [],
     });
   }
 
-  const checkIdToRow = new Map<string, { contestNo: number; checkedAt: string; total: number; c2: number; c3: number; c4: number; c5: number }>();
-  const ids = checks.map((c: any) => {
-    checkIdToRow.set(c.id as string, { contestNo: c.contest_no as number, checkedAt: c.checked_at as string, total: 0, c2: 0, c3: 0, c4: 0, c5: 0 });
-    return c.id as string;
+  const checkIdToRow = new Map<
+    string,
+    {
+      contestNo: number;
+      checkedAt: string;
+      total: number;
+      c2: number;
+      c3: number;
+      c4: number;
+      c5: number;
+    }
+  >();
+  type CheckRow = { id: string; contest_no: number; checked_at: string };
+  const checkRows = checks as unknown[] as CheckRow[];
+  const ids = checkRows.map((c) => {
+    checkIdToRow.set(c.id, {
+      contestNo: c.contest_no,
+      checkedAt: c.checked_at,
+      total: 0,
+      c2: 0,
+      c3: 0,
+      c4: 0,
+      c5: 0,
+    });
+    return c.id;
   });
 
   const { data: items, error: itemsErr } = await supabase
     .from('quina_check_items')
     .select('check_id, matches')
     .in('check_id', ids);
-  if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+  if (itemsErr)
+    return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
-  for (const r of items ?? []) {
-    const row = checkIdToRow.get(r.check_id as string);
+  const itemRows = (items ?? []) as Array<{
+    check_id: string;
+    matches: number | null;
+  }>;
+  for (const r of itemRows) {
+    const row = checkIdToRow.get(r.check_id);
     if (!row) continue;
     row.total += 1;
-    const m = (r.matches as number) ?? 0;
+    const m = r.matches ?? 0;
     if (m === 2) row.c2 += 1;
     else if (m === 3) row.c3 += 1;
     else if (m === 4) row.c4 += 1;
     else if (m === 5) row.c5 += 1;
   }
 
-  const rows = checks.map((c: any) => {
-    const agg = checkIdToRow.get(c.id as string)!;
-    const hitRate = agg.total > 0 ? (agg.c2 + agg.c3 + agg.c4 + agg.c5) / agg.total : 0;
+  const rows = checkRows.map((c) => {
+    const agg = checkIdToRow.get(c.id)!;
+    const hitRate =
+      agg.total > 0 ? (agg.c2 + agg.c3 + agg.c4 + agg.c5) / agg.total : 0;
     return { ...agg, hitRate };
   });
 
@@ -73,5 +111,3 @@ export async function GET(request: Request) {
     rows,
   });
 }
-
-

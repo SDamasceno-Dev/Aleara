@@ -49,7 +49,7 @@ export function ImportCsvPanel() {
         // Refresh to update server-rendered DataPanel when user switches tabs
         router.refresh();
       }
-    } catch (e) {
+    } catch {
       setStatus('Erro ao ler/enviar o arquivo.');
     } finally {
       setBusy(false);
@@ -97,7 +97,11 @@ export function ImportCsvPanel() {
 
   return (
     <section className='rounded-lg border border-[var(--black-30)] bg-[var(--black-20)] p-4 space-y-3'>
-      <LoadingOverlay show={busy} message={busyMsg} subtitle='Isso pode levar alguns instantes.' />
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Isso pode levar alguns instantes.'
+      />
       <div className='text-sm text-zinc-200'>
         Importação da base de sorteios
       </div>

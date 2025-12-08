@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useCallback,
   useRef,
   useState,
 } from 'react';
@@ -42,13 +43,18 @@ export function DialogProvider({
     intent: 'message',
   });
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef<(() => void) | undefined>(undefined);
 
-  function close() {
+  useEffect(() => {
+    onCloseRef.current = state.onClose;
+  }, [state.onClose]);
+
+  const close = useCallback(() => {
     setState((s) => ({ ...s, open: false }));
-    state.onClose?.();
-  }
+    onCloseRef.current?.();
+  }, []);
 
-  function open(input: DialogOpenInput) {
+  const open = useCallback((input: DialogOpenInput) => {
     setState({
       open: true,
       intent: input.intent,
@@ -58,7 +64,7 @@ export function DialogProvider({
       onClose: input.onClose,
       size: input.size,
     });
-  }
+  }, []);
 
   useEffect(() => {
     if (state.open) {

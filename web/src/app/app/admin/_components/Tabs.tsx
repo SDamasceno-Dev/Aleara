@@ -17,18 +17,30 @@ type TabsProps = {
 export function Tabs({ tabs, initialTabId, className }: TabsProps) {
   const baseId = useId();
   const [activeId, setActiveId] = useState<string>(() => {
-    if (initialTabId && tabs.some((t) => t.id === initialTabId)) return initialTabId;
+    if (initialTabId && tabs.some((t) => t.id === initialTabId))
+      return initialTabId;
     return tabs[0]?.id ?? '';
   });
 
   useEffect(() => {
-    if (initialTabId && tabs.some((t) => t.id === initialTabId)) {
-      setActiveId(initialTabId);
+    if (
+      initialTabId &&
+      initialTabId !== activeId &&
+      tabs.some((t) => t.id === initialTabId)
+    ) {
+      const id = initialTabId;
+      const h = setTimeout(() => setActiveId(id), 0);
+      return () => clearTimeout(h);
     }
-  }, [initialTabId, tabs]);
+    return;
+  }, [initialTabId, tabs, activeId]);
 
   const activeIndex = useMemo(
-    () => Math.max(0, tabs.findIndex((t) => t.id === activeId)),
+    () =>
+      Math.max(
+        0,
+        tabs.findIndex((t) => t.id === activeId),
+      ),
     [activeId, tabs],
   );
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -38,9 +50,9 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
   return (
     <div className={className}>
       <div
-        role="tablist"
-        aria-label="Ferramentas administrativas"
-        className="flex items-center gap-2 border-b border-white/10"
+        role='tablist'
+        aria-label='Ferramentas administrativas'
+        className='flex items-center gap-2 border-b border-white/10'
       >
         {tabs.map((tab, idx) => {
           const isActive = tab.id === activeId;
@@ -53,20 +65,23 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
                 tabRefs.current[idx] = el;
               }}
               id={tabId}
-              role="tab"
+              role='tab'
               aria-selected={isActive}
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
               className={[
                 'px-3 py-2 text-sm rounded-t-md outline-none transition-colors',
-                isActive ? 'text-zinc-100 bg-white/5' : 'text-zinc-400 hover:text-zinc-200',
+                isActive
+                  ? 'text-zinc-100 bg-white/5'
+                  : 'text-zinc-400 hover:text-zinc-200',
               ].join(' ')}
               onClick={() => setActiveId(tab.id)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
                   e.preventDefault();
                   const dir = e.key === 'ArrowRight' ? 1 : -1;
-                  const nextIndex = (activeIndex + dir + tabs.length) % tabs.length;
+                  const nextIndex =
+                    (activeIndex + dir + tabs.length) % tabs.length;
                   setActiveId(tabs[nextIndex].id);
                   requestAnimationFrame(() => {
                     tabRefs.current[nextIndex]?.focus();
@@ -101,10 +116,10 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
           <div
             key={tab.id}
             id={panelId}
-            role="tabpanel"
+            role='tabpanel'
             aria-labelledby={tabId}
             hidden={!isActive}
-            className="pt-4"
+            className='pt-4'
           >
             {isActive ? tab.content : null}
           </div>
@@ -113,5 +128,3 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
     </div>
   );
 }
-
-

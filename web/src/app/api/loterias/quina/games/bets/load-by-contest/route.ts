@@ -5,17 +5,26 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: any;
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const contestNo: number = Number(body?.contestNo ?? 0);
-  const mode: 'append' | 'replace' = body?.mode === 'replace' ? 'replace' : 'append';
-  const setId: string | undefined = body?.setId;
-  if (!Number.isInteger(contestNo) || contestNo <= 0) return NextResponse.json({ error: 'Invalid contestNo' }, { status: 400 });
+  const parsed = (body ?? {}) as {
+    contestNo?: unknown;
+    mode?: unknown;
+    setId?: unknown;
+  };
+  const contestNo: number = Number(parsed.contestNo ?? 0);
+  const mode: 'append' | 'replace' =
+    parsed.mode === 'replace' ? 'replace' : 'append';
+  const setId: string | undefined =
+    parsed.setId != null ? String(parsed.setId) : undefined;
+  if (!Number.isInteger(contestNo) || contestNo <= 0)
+    return NextResponse.json({ error: 'Invalid contestNo' }, { status: 400 });
 
   const { data: list } = await supabase
     .from('quina_bet_lists')
@@ -23,14 +32,17 @@ export async function POST(request: Request) {
     .eq('user_id', user.id)
     .eq('contest_no', contestNo)
     .maybeSingle();
-  if (!list) return NextResponse.json({ error: 'List not found' }, { status: 404 });
+  if (!list)
+    return NextResponse.json({ error: 'List not found' }, { status: 404 });
   const listId = list.id as string;
   const { data: items } = await supabase
     .from('quina_bet_list_items')
     .select('position, numbers')
     .eq('list_id', listId)
     .order('position', { ascending: true });
-  const toLoad = (items ?? []).map((it: any) => ({ numbers: (it.numbers as number[]) ?? [] }));
+  const toLoad = ((items ?? []) as Array<{ numbers: number[] }>).map((it) => ({
+    numbers: it.numbers ?? [],
+  }));
   if (!toLoad.length) return NextResponse.json({ loaded: 0, items: [] });
 
   let targetSetId = setId;
@@ -47,7 +59,8 @@ export async function POST(request: Request) {
       })
       .select('id')
       .single();
-    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    if (cErr)
+      return NextResponse.json({ error: cErr.message }, { status: 500 });
     targetSetId = created.id as string;
   } else if (mode === 'replace') {
     await supabase.from('quina_user_items').delete().eq('set_id', targetSetId);
@@ -71,14 +84,19 @@ export async function POST(request: Request) {
   }));
   for (let i = 0; i < payload.length; i += 1000) {
     const batch = payload.slice(i, i + 1000);
-    const { error: insErr } = await supabase.from('quina_user_items').insert(batch);
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    const { error: insErr } = await supabase
+      .from('quina_user_items')
+      .insert(batch);
+    if (insErr)
+      return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
   await supabase
     .from('quina_user_sets')
     .update({ sample_size: payload.length })
     .eq('id', targetSetId!);
-  return NextResponse.json({ setId: targetSetId, loaded: payload.length, items: payload.map(p => ({ position: p.position, numbers: p.numbers })) });
+  return NextResponse.json({
+    setId: targetSetId,
+    loaded: payload.length,
+    items: payload.map((p) => ({ position: p.position, numbers: p.numbers })),
+  });
 }
-
-

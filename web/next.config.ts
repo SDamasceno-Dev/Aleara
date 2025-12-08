@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
         return '';
       }
     })();
+    // teste
     const csp = [
       `default-src 'self'`,
       `base-uri 'self'`,

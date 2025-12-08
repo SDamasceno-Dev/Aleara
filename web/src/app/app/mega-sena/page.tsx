@@ -16,9 +16,7 @@ export default async function MegaSenaPage({
 
   const overview = <DataPanel />;
 
-  const importPanel = (
-    <ImportCsvPanel />
-  );
+  const importPanel = <ImportCsvPanel />;
 
   const commonTabs = [
     { id: 'overview', label: 'Dados', content: overview },
@@ -26,7 +24,10 @@ export default async function MegaSenaPage({
     { id: 'reports', label: 'Relatórios', content: <ReportsPanel /> },
   ] as const;
   const tabs = isAdmin
-    ? [...commonTabs, { id: 'import', label: 'Importação', content: importPanel }]
+    ? [
+        ...commonTabs,
+        { id: 'import', label: 'Importação', content: importPanel },
+      ]
     : [...commonTabs];
 
   const sp = (await searchParams) ?? undefined;
@@ -34,9 +35,7 @@ export default async function MegaSenaPage({
     sp && typeof sp.tab === 'string' ? (sp.tab as string) : null;
   const allowedIds = new Set(tabs.map((t) => t.id));
   const initialId =
-    requestedTab && allowedIds.has(requestedTab)
-      ? requestedTab
-      : 'overview';
+    requestedTab && allowedIds.has(requestedTab) ? requestedTab : 'overview';
 
   return (
     <div className='flex-1 min-h-0 flex flex-col space-y-4'>

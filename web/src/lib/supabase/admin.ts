@@ -6,7 +6,9 @@ export function createSupabaseAdminClient() {
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
-    throw new Error('Supabase admin client misconfigured: missing URL or service role key');
+    throw new Error(
+      'Supabase admin client misconfigured: missing URL or service role key',
+    );
   }
   return createClient(url, serviceKey, {
     auth: {
@@ -15,5 +17,3 @@ export function createSupabaseAdminClient() {
     },
   });
 }
-
-

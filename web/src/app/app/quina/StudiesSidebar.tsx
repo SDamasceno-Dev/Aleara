@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react';
 
 type CatalogItem = { study_key: string; title: string };
-type StudyItem = { rank: number; item_key: string; value: number; extra?: any };
+type StudyItem = {
+  rank: number;
+  item_key: string;
+  value: number;
+  extra?: Record<string, unknown>;
+};
 
 export function StudiesSidebar() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -24,7 +29,9 @@ export function StudiesSidebar() {
   async function loadStudy(key: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/loterias/quina/studies?study_key=${encodeURIComponent(key)}&limit=60`);
+      const res = await fetch(
+        `/api/loterias/quina/studies?study_key=${encodeURIComponent(key)}&limit=60`,
+      );
       const data = await res.json();
       setStudyTitle(data?.study?.title ?? key);
       setItems(data?.items ?? []);
@@ -62,7 +69,9 @@ export function StudiesSidebar() {
           />
           <div className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'>
             <div className='px-5 py-3 border-b border-black/10 bg-white sticky top-0 z-10'>
-              <h2 className='text-sm font-semibold tracking-wider'>{studyTitle}</h2>
+              <h2 className='text-sm font-semibold tracking-wider'>
+                {studyTitle}
+              </h2>
             </div>
             <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
               {loading ? (
@@ -81,10 +90,19 @@ export function StudiesSidebar() {
                     </thead>
                     <tbody className='text-zinc-900'>
                       {items.map((it) => (
-                        <tr key={it.item_key} className='border-t border-black/10 hover:bg-[var(--black-10)] cursor-pointer'>
-                          <td className='py-2 pl-3 pr-3 text-zinc-600'>{it.rank}</td>
-                          <td className='py-2 pr-3 font-medium'>{String(it.item_key).replace(/^.*?:/, '')}</td>
-                          <td className='py-2 pr-3 text-right text-zinc-700'>{it.value}</td>
+                        <tr
+                          key={it.item_key}
+                          className='border-t border-black/10 hover:bg-[var(--black-10)] cursor-pointer'
+                        >
+                          <td className='py-2 pl-3 pr-3 text-zinc-600'>
+                            {it.rank}
+                          </td>
+                          <td className='py-2 pr-3 font-medium'>
+                            {String(it.item_key).replace(/^.*?:/, '')}
+                          </td>
+                          <td className='py-2 pr-3 text-right text-zinc-700'>
+                            {it.value}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -107,5 +125,3 @@ export function StudiesSidebar() {
     </aside>
   );
 }
-
-
