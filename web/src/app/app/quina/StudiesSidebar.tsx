@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react';
 
 type CatalogItem = { study_key: string; title: string };
-type StudyItem = { rank: number; item_key: string; value: number; extra?: any };
+type StudyItem = {
+  rank: number;
+  item_key: string;
+  value: number;
+  extra?: Record<string, unknown>;
+};
 
 export function StudiesSidebar() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);

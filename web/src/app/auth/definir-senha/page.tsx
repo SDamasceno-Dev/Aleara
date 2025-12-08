@@ -18,7 +18,6 @@ export default function DefinirSenhaPage() {
       try {
         // Debug: log initial URL context
         try {
-          // eslint-disable-next-line no-console
           console.log(
             '[definir-senha] mount href=',
             typeof window !== 'undefined'
@@ -53,7 +52,6 @@ export default function DefinirSenhaPage() {
           const tokenHash = qsParams.get('token') || params.get('token'); // from verify?token=...&type=...
           const tokenType = qsParams.get('type') || params.get('type');
           try {
-            // eslint-disable-next-line no-console
             console.log('[definir-senha] params', {
               hasHash: !!hash,
               hasSearch: !!search,
@@ -74,7 +72,6 @@ export default function DefinirSenhaPage() {
             if (error && !cancelled) {
               setStatus(error.message);
               try {
-                // eslint-disable-next-line no-console
                 console.log('[definir-senha] setSession error', error.message);
               } catch {}
             } else {
@@ -85,7 +82,6 @@ export default function DefinirSenhaPage() {
                   window.history.replaceState({}, '', window.location.pathname);
                 } catch {}
                 try {
-                  // eslint-disable-next-line no-console
                   console.log('[definir-senha] setSession OK -> authed');
                 } catch {}
               }
@@ -98,7 +94,6 @@ export default function DefinirSenhaPage() {
             const { data } = await supabase.auth.getUser();
             if (!cancelled) setAuthed(!!data.user);
             try {
-              // eslint-disable-next-line no-console
               console.log('[definir-senha] exchangeCodeForSession', {
                 error: error?.message,
                 authed: !!data.user,
@@ -106,17 +101,30 @@ export default function DefinirSenhaPage() {
             } catch {}
           } else if (tokenHash) {
             // Handle verify links that redirect with token (& optional type)
-            const candidates =
-              tokenType && tokenType.length > 0
-                ? [tokenType]
-                : ['signup', 'invite', 'magiclink', 'recovery', 'email_change'];
+            type EmailVerifyType =
+              | 'signup'
+              | 'invite'
+              | 'magiclink'
+              | 'recovery'
+              | 'email_change';
+            const allowed: EmailVerifyType[] = [
+              'signup',
+              'invite',
+              'magiclink',
+              'recovery',
+              'email_change',
+            ];
+            const candidates: EmailVerifyType[] =
+              tokenType && allowed.includes(tokenType as EmailVerifyType)
+                ? [tokenType as EmailVerifyType]
+                : allowed;
             let lastErr: string | null = null;
             for (const t of candidates) {
               // Try token_hash first (email link), then token+email (OTP format)
               let attemptErr: string | null = null;
               const byHash = await supabase.auth.verifyOtp({
                 token_hash: tokenHash,
-                type: t as any,
+                type: t,
               });
               if (!byHash.error) {
                 lastErr = null;
@@ -131,9 +139,13 @@ export default function DefinirSenhaPage() {
               } else {
                 attemptErr = byHash.error.message;
                 // Try with token + email
-                const tokenPayload: any = {
+                const tokenPayload: {
+                  token: string;
+                  type: EmailVerifyType;
+                  email?: string;
+                } = {
                   token: tokenHash,
-                  type: t as any,
+                  type: t,
                 };
                 if (emailParam) tokenPayload.email = emailParam;
                 const byToken = await supabase.auth.verifyOtp(tokenPayload);
@@ -153,7 +165,6 @@ export default function DefinirSenhaPage() {
               }
               lastErr = attemptErr;
               try {
-                // eslint-disable-next-line no-console
                 console.log('[definir-senha] verifyOtp failed', t, attemptErr);
               } catch {}
             }
@@ -161,7 +172,6 @@ export default function DefinirSenhaPage() {
             const { data } = await supabase.auth.getUser();
             if (!cancelled) setAuthed(!!data.user);
             try {
-              // eslint-disable-next-line no-console
               console.log(
                 '[definir-senha] after verifyOtp authed=',
                 !!data.user,
@@ -174,13 +184,15 @@ export default function DefinirSenhaPage() {
         const { data } = await supabase.auth.getUser();
         if (!cancelled) setAuthed(!!data.user);
         try {
-          // eslint-disable-next-line no-console
           console.log('[definir-senha] final authed=', !!data.user);
         } catch {}
-      } catch (e: any) {
-        if (!cancelled) setStatus(String(e?.message ?? e));
+      } catch (e: unknown) {
+        const message =
+          typeof e === 'object' && e && 'message' in e
+            ? String((e as { message?: unknown }).message)
+            : String(e);
+        if (!cancelled) setStatus(message);
         try {
-          // eslint-disable-next-line no-console
           console.log('[definir-senha] error', e);
         } catch {}
       } finally {

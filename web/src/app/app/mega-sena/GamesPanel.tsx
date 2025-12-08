@@ -66,7 +66,6 @@ export default function GamesPanel() {
     });
   }, [regCountInput]);
 
-  const [numbersInput, setNumbersInput] = useState('');
   const [countInput, setCountInput] = useState('7');
   const [otpValues, setOtpValues] = useState<string[]>(
     Array.from({ length: 7 }, () => ''),
@@ -266,7 +265,7 @@ export default function GamesPanel() {
     setResampleLoading(true);
     try {
       const k = Number(kInput || '0');
-      const payload: any = { setId };
+      const payload: { setId: string; k?: number; seed?: number } = { setId };
       if (Number.isInteger(k) && k > 0) payload.k = k;
       if (seedInput) payload.seed = Number(seedInput);
       const res = await fetch('/api/loterias/mega-sena/games/resample', {
@@ -281,9 +280,11 @@ export default function GamesPanel() {
       }
       // Substitui itens pela nova amostra
       setItems(
-        (data.items ?? []).map((it: any) => ({
-          position: it.position as number,
-          numbers: (it.numbers as number[]) ?? [],
+        (
+          (data.items ?? []) as Array<{ position: number; numbers: number[] }>
+        ).map((it) => ({
+          position: it.position,
+          numbers: it.numbers ?? [],
           matches: null as number | null,
         })),
       );
@@ -497,9 +498,9 @@ export default function GamesPanel() {
                     }
                     setItems((prev) => [...prev, ...(data.items ?? [])]);
                     // marcar como manual os positions retornados
-                    const newPositions = (data.items ?? []).map(
-                      (it: any) => it.position as number,
-                    );
+                    const newPositions = (
+                      (data.items ?? []) as Array<{ position: number }>
+                    ).map((it) => it.position);
                     setManualPositions((prev) => {
                       const next = new Set(prev);
                       for (const p of newPositions) next.add(p);
@@ -1060,9 +1061,14 @@ export default function GamesPanel() {
               );
               setCheckedDraw([]);
               setManualPositions(new Set());
-              const fetched = (data.items ?? []).map((it: any) => ({
-                position: it.position as number,
-                numbers: (it.numbers as number[]) ?? [],
+              const fetched = (
+                (data.items ?? []) as Array<{
+                  position: number;
+                  numbers: number[];
+                }>
+              ).map((it) => ({
+                position: it.position,
+                numbers: it.numbers ?? [],
                 matches: null as number | null,
               }));
               if (fetched.length > 0) setItems(fetched);
@@ -1382,13 +1388,16 @@ export default function GamesPanel() {
                               return;
                             }
                             if (!setId && data.setId) setSetId(data.setId);
-                            const fetched = (data.items ?? []).map(
-                              (it: any) => ({
-                                position: it.position as number,
-                                numbers: (it.numbers as number[]) ?? [],
-                                matches: null as number | null,
-                              }),
-                            );
+                            const fetched = (
+                              (data.items ?? []) as Array<{
+                                position: number;
+                                numbers: number[];
+                              }>
+                            ).map((it) => ({
+                              position: it.position,
+                              numbers: it.numbers ?? [],
+                              matches: null as number | null,
+                            }));
                             setItems(fetched);
                             setCheckedDraw([]);
                             setManualPositions(new Set());

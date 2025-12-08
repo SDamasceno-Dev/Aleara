@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
 // NOTE:
 // We removed cookie-based auth gating here because Supabase client-side auth

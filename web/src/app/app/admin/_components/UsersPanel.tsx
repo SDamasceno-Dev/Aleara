@@ -17,43 +17,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
   const [status, setStatus] = useState<string | null>(null);
   const liveRef = useRef<HTMLDivElement | null>(null);
 
-  const [users] = useState<string[]>(
-    initialUsers && initialUsers.length > 0
-      ? initialUsers
-      : [
-          'ana.silva@example.com',
-          'joao.souza@example.com',
-          'maria.oliveira@example.com',
-          'carlos.santos@example.com',
-          'patricia.gomes@example.com',
-          'rodrigo.melo@example.com',
-          'fernanda.alves@example.com',
-          'juliana.costa@example.com',
-          'marcos.lima@example.com',
-          'bianca.rocha@example.com',
-          'eduardo.pereira@example.com',
-          'aline.souza@example.com',
-          'rafael.oliveira@example.com',
-          'camila.silva@example.com',
-          'lucas.ferreira@example.com',
-          'leticia.martins@example.com',
-          'vinicius.andrade@example.com',
-          'renata.ramos@example.com',
-          'daniel.cardoso@example.com',
-          'sabrina.araujo@example.com',
-          'thiago.barbosa@example.com',
-          'sofia.teixeira@example.com',
-          'arthur.pinto@example.com',
-          'isabela.monteiro@example.com',
-          'gustavo.moreira@example.com',
-          'amanda.freitas@example.com',
-          'ricardo.nunes@example.com',
-          'carla.ribeiro@example.com',
-          'felipe.duarte@example.com',
-          'vanessa.cunha@example.com',
-        ],
-  );
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [, setSelected] = useState<Record<string, boolean>>({});
   return (
     <div className='space-y-6'>
       {/* Adicionar usuário */}

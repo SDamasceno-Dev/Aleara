@@ -1,6 +1,24 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { StudiesSidebar } from './StudiesSidebar';
 
+type DrawRow = {
+  concurso: number;
+  data_sorteio: string;
+  bola1: number;
+  bola2: number;
+  bola3: number;
+  bola4: number;
+  bola5: number;
+  estimativa_premio: number | null;
+};
+
+type StatRow = {
+  dezena: number;
+  vezes_sorteada: number;
+  pct_sorteios: number;
+  total_sorteios: number;
+};
+
 function formatDateBR(iso: string): string {
   const d = new Date(iso + 'T00:00:00Z');
   if (Number.isNaN(d.getTime())) return iso;
@@ -31,8 +49,8 @@ export async function DataPanel() {
       .order('vezes_sorteada', { ascending: false })
       .order('dezena', { ascending: true }),
   ]);
-  const rows = drawsRes.data ?? [];
-  const stats = statsRes.data ?? [];
+  const rows = (drawsRes.data as DrawRow[]) ?? [];
+  const stats = (statsRes.data as StatRow[]) ?? [];
   return (
     <section className='space-y-4'>
       <div className='rounded-lg border border-border/60 bg-card/90 p-4'>
@@ -50,9 +68,9 @@ export async function DataPanel() {
               </tr>
             </thead>
             <tbody className='text-zinc-300/90'>
-              {rows.map((r: any) => {
+              {rows.map((r) => {
                 const dezenas = [r.bola1, r.bola2, r.bola3, r.bola4, r.bola5]
-                  .map((n: number) => String(n).padStart(2, '0'))
+                  .map((n) => String(n).padStart(2, '0'))
                   .join(' • ');
                 return (
                   <tr key={r.concurso} className='border-t border-white/10'>
@@ -90,7 +108,7 @@ export async function DataPanel() {
                   </tr>
                 </thead>
                 <tbody className='text-zinc-300/90'>
-                  {stats.map((s: any) => (
+                  {stats.map((s) => (
                     <tr key={s.dezena} className='border-t border-white/10'>
                       <td className='py-2 pr-3 font-medium text-zinc-100'>
                         {String(s.dezena).padStart(2, '0')}

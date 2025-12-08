@@ -49,7 +49,7 @@ export function ImportCsvPanel() {
         // Refresh to update server-rendered DataPanel when user switches tabs
         router.refresh();
       }
-    } catch (e) {
+    } catch {
       setStatus('Erro ao ler/enviar o arquivo.');
     } finally {
       setBusy(false);

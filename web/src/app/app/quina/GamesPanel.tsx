@@ -123,7 +123,9 @@ export function GamesPanel() {
         appendOnGenerate && setId
           ? '/api/loterias/quina/games/generate/append'
           : '/api/loterias/quina/games/generate';
-      const payload: any =
+      const payload:
+        | { setId: string; numbers: number[]; k: number; seed?: number }
+        | { numbers: number[]; k: number; seed?: number } =
         appendOnGenerate && setId
           ? { setId, numbers: parsedNumbers, k }
           : { numbers: parsedNumbers, k };
@@ -265,9 +267,14 @@ export function GamesPanel() {
               return;
             }
             if (!setId && data.setId) setSetId(data.setId);
-            const fetched = (data.items ?? []).map((it: any) => ({
-              position: it.position as number,
-              numbers: (it.numbers as number[]) ?? [],
+            const fetched = (
+              (data.items ?? []) as Array<{
+                position: number;
+                numbers: number[];
+              }>
+            ).map((it) => ({
+              position: it.position,
+              numbers: it.numbers ?? [],
               matches: null as number | null,
             }));
             if (fetched.length > 0) setItems(fetched);
@@ -493,9 +500,14 @@ export function GamesPanel() {
                 return;
               }
               setItems(
-                (data.items ?? []).map((it: any) => ({
-                  position: it.position as number,
-                  numbers: (it.numbers as number[]) ?? [],
+                (
+                  (data.items ?? []) as Array<{
+                    position: number;
+                    numbers: number[];
+                  }>
+                ).map((it) => ({
+                  position: it.position,
+                  numbers: it.numbers ?? [],
                   matches: null,
                 })),
               );
@@ -833,16 +845,16 @@ function ManageLists({
                               );
                               return;
                             }
-                            if (!setId && data.setId) {
-                              // eslint-disable-next-line no-self-assign
-                            }
-                            const fetched = (data.items ?? []).map(
-                              (it: any) => ({
-                                position: it.position as number,
-                                numbers: (it.numbers as number[]) ?? [],
-                                matches: null as number | null,
-                              }),
-                            );
+                            const fetched = (
+                              (data.items ?? []) as Array<{
+                                position: number;
+                                numbers: number[];
+                              }>
+                            ).map((it) => ({
+                              position: it.position,
+                              numbers: it.numbers ?? [],
+                              matches: null as number | null,
+                            }));
                             setItems(fetched);
                             setCheckedDraw([]);
                             setOpen(false);

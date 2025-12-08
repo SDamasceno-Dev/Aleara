@@ -16,15 +16,21 @@ export default async function AdminPage() {
 
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
-  let profile: { display_name: string | null; role: 'ADMIN' | 'USER' | null } | null =
-    null;
+  let profile: {
+    display_name: string | null;
+    role: 'ADMIN' | 'USER' | null;
+  } | null = null;
   if (userId) {
     const { data } = await supabase
       .from('profiles')
       .select('display_name, role')
       .eq('user_id', userId)
       .maybeSingle();
-    profile = (data as { display_name: string | null; role: 'ADMIN' | 'USER' | null } | null) ?? null;
+    profile =
+      (data as {
+        display_name: string | null;
+        role: 'ADMIN' | 'USER' | null;
+      } | null) ?? null;
   }
 
   return (

@@ -502,8 +502,8 @@ function Legend({
 }: {
   color: string;
   label: string;
-  value: any;
-  pct?: any;
+  value: number | string;
+  pct?: string;
 }) {
   if (label === '' && value === '') return <div style={{ height: 0 }} />;
   return (

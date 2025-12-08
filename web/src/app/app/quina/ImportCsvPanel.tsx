@@ -34,7 +34,14 @@ export function ImportCsvPanel() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ csv: text }),
       });
-      let data: any = {};
+      let data: {
+        error?: string;
+        processed?: number;
+        errors?: unknown[];
+        imported?: number;
+        updated?: number;
+        skipped?: number;
+      } = {};
       try {
         data = await res.json();
       } catch {
@@ -55,7 +62,6 @@ export function ImportCsvPanel() {
         setStatus(`${data?.error ?? 'Falha ao importar.'}${meta}${errCount}`);
         if (Array.isArray(data?.errors) && data.errors.length) {
           // Log primeiras ocorrências para depuração
-          // eslint-disable-next-line no-console
           console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
         }
       } else {
@@ -65,12 +71,11 @@ export function ImportCsvPanel() {
           }.${meta}${errCount}`,
         );
         if (Array.isArray(data?.errors) && data.errors.length) {
-          // eslint-disable-next-line no-console
           console.warn('Erros de parse (amostra):', data.errors.slice(0, 5));
         }
         router.refresh();
       }
-    } catch (e) {
+    } catch {
       setStatus('Erro ao ler/enviar o arquivo.');
     } finally {
       setBusy(false);

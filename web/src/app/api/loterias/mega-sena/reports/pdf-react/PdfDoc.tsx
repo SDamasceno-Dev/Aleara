@@ -219,7 +219,6 @@ export function buildAggregateDoc(
   const r = (size - stroke) / 2;
   const cx = size / 2;
   const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
   // Segments computed to cover exactly 100% (avoid gaps from floating rounding)
   const r4 = sumHits ? kpis.c4 / sumHits : 0;
   const r5 = sumHits ? kpis.c5 / sumHits : 0;
