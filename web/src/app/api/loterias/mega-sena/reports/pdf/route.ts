@@ -41,7 +41,11 @@ function formatNumbers(nums: number[]): string {
   return (nums ?? []).map((n) => String(n).padStart(2, '0')).join(', ');
 }
 
-function renderHtmlAggregate(title: string, kpis: AggregateKpis, rows: ContestRow[]) {
+function renderHtmlAggregate(
+  title: string,
+  kpis: AggregateKpis,
+  rows: ContestRow[],
+) {
   const rowsHtml = rows
     .map(
       (r) => `
@@ -189,7 +193,11 @@ export async function GET(request: Request) {
       .select('id, contest_no, checked_at')
       .eq('user_id', user.id)
       .order('checked_at', { ascending: false });
-    const checkRows = (checks ?? []) as Array<{ id: string; contest_no: number; checked_at: string }>;
+    const checkRows = (checks ?? []) as Array<{
+      id: string;
+      contest_no: number;
+      checked_at: string;
+    }>;
     const ids = checkRows.map((c) => c.id);
     let rows: ContestRow[] = [];
     const kpis: AggregateKpis = {
@@ -218,7 +226,10 @@ export async function GET(request: Request) {
         .from('megasena_check_items')
         .select('check_id, matches')
         .in('check_id', ids);
-      for (const r of (items ?? []) as Array<{ check_id: string; matches: number | null }>) {
+      for (const r of (items ?? []) as Array<{
+        check_id: string;
+        matches: number | null;
+      }>) {
         const row = map.get(r.check_id);
         if (!row) continue;
         row.total += 1;
@@ -335,7 +346,9 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-  const launchOpts: puppeteer.LaunchOptions & puppeteer.BrowserLaunchArgumentOptions & puppeteer.BrowserConnectOptions = {
+  const launchOpts: puppeteer.LaunchOptions &
+    puppeteer.BrowserLaunchArgumentOptions &
+    puppeteer.BrowserConnectOptions = {
     executablePath: execPath,
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],

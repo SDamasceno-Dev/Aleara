@@ -7,17 +7,17 @@ export async function POST(request: Request) {
   const user = userData.user;
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const setId: string = String(body?.setId ?? '');
-  const contestNo: number = Number(body?.contestNo ?? 0);
-  const title: string | undefined = body?.title
-    ? String(body.title)
-    : undefined;
+  const parsed = (body ?? {}) as { setId?: unknown; contestNo?: unknown; title?: unknown };
+  const setId: string = String(parsed.setId ?? '');
+  const contestNo: number = Number(parsed.contestNo ?? 0);
+  const title: string | undefined =
+    parsed.title != null ? String(parsed.title) : undefined;
   if (!setId || !Number.isInteger(contestNo) || contestNo <= 0) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
     .eq('list_id', listId);
   if (delErr)
     return NextResponse.json({ error: delErr.message }, { status: 500 });
-  const payload = (items ?? []).map((it: any) => ({
+  const payload = ((items ?? []) as Array<{ position: number; numbers: number[] }>).map((it) => ({
     list_id: listId,
-    position: it.position as number,
-    numbers: (it.numbers as number[]) ?? [],
+    position: it.position,
+    numbers: it.numbers ?? [],
   }));
   for (let i = 0; i < payload.length; i += 1000) {
     const batch = payload.slice(i, i + 1000);

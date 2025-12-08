@@ -7,16 +7,22 @@ export async function POST(request: Request) {
   const user = userData.user;
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const contestNo: number = Number(body?.contestNo ?? 0);
+  const parsed = (body ?? {}) as {
+    contestNo?: unknown;
+    mode?: unknown;
+    setId?: unknown;
+  };
+  const contestNo: number = Number(parsed.contestNo ?? 0);
   const mode: 'append' | 'replace' =
-    body?.mode === 'replace' ? 'replace' : 'append';
-  const setId: string | undefined = body?.setId;
+    parsed.mode === 'replace' ? 'replace' : 'append';
+  const setId: string | undefined =
+    parsed.setId != null ? String(parsed.setId) : undefined;
   if (!Number.isInteger(contestNo) || contestNo <= 0)
     return NextResponse.json({ error: 'Invalid contestNo' }, { status: 400 });
 
@@ -34,8 +40,8 @@ export async function POST(request: Request) {
     .select('position, numbers')
     .eq('list_id', listId)
     .order('position', { ascending: true });
-  const toLoad = (items ?? []).map((it: any) => ({
-    numbers: (it.numbers as number[]) ?? [],
+  const toLoad = ((items ?? []) as Array<{ numbers: number[] }>).map((it) => ({
+    numbers: it.numbers ?? [],
   }));
   if (!toLoad.length) return NextResponse.json({ loaded: 0, items: [] });
 
