@@ -6,9 +6,7 @@ import { Button } from '@/components/button';
 import { useDialog } from '@/components/dialog';
 import { ImportCsvModal } from './ImportCsvModal';
 
-type UsersPanelProps = {};
-
-export function UsersPanel({}: UsersPanelProps) {
+export function UsersPanel() {
   const dialog = useDialog();
   const [emailValid, setEmailValid] = useState(false);
   const [forceValidate, setForceValidate] = useState(false);

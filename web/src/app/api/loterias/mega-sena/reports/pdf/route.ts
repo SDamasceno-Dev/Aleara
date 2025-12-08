@@ -7,11 +7,6 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 // Install in the web project to enable PDF generation.
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
-import type {
-  LaunchOptions,
-  BrowserLaunchArgumentOptions,
-  BrowserConnectOptions,
-} from 'puppeteer-core';
 import { existsSync } from 'fs';
 
 type ContestRow = {
@@ -351,9 +346,8 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-  const launchOpts: LaunchOptions &
-    BrowserLaunchArgumentOptions &
-    BrowserConnectOptions = {
+  type LaunchOpts = Parameters<typeof puppeteer.launch>[0];
+  const launchOpts: LaunchOpts = {
     executablePath: execPath,
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
