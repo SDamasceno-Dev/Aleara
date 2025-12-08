@@ -91,15 +91,31 @@ export async function DataPanel() {
 
   const rows = (drawsRes.data as DrawRow[]) ?? [];
   const stats = (statsRes.data as StatRow[]) ?? [];
-  const allStudies = ((studiesCatalogRes.data as any[]) ?? []).map((c) => ({
-    study_key: c.study_key as string,
-    title: c.title as string,
+  const allStudies = (
+    (studiesCatalogRes.data ?? []) as Array<{
+      study_key: string;
+      title: string;
+    }>
+  ).map((c) => ({
+    study_key: c.study_key,
+    title: c.title,
   }));
   const previewsMap = new Map<
     string,
-    Array<{ item_key: string; rank: number; value: number; extra?: any }>
+    Array<{
+      item_key: string;
+      rank: number;
+      value: number;
+      extra?: Record<string, unknown>;
+    }>
   >();
-  for (const it of (studiesItemsRes.data as any[]) ?? []) {
+  for (const it of (studiesItemsRes.data ?? []) as Array<{
+    study_key: string;
+    item_key: string;
+    rank: number;
+    value: number | string;
+    extra?: Record<string, unknown>;
+  }>) {
     const arr = previewsMap.get(it.study_key) ?? [];
     arr.push({
       item_key: it.item_key,

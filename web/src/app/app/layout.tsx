@@ -22,7 +22,10 @@ export default async function AppLayout({
   const role = (profile?.role as 'ADMIN' | 'USER' | null) ?? null;
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const identities = Array.isArray(user.identities) ? user.identities : [];
-  const firstIdentity = (identities[0] as any) ?? {};
+  const firstIdentity =
+    (identities[0] as unknown as {
+      identity_data?: { name?: string; picture?: string } | null;
+    }) ?? {};
   const displayName =
     (typeof meta.full_name === 'string' && (meta.full_name as string)) ||
     (firstIdentity?.identity_data?.name as string | undefined) ||

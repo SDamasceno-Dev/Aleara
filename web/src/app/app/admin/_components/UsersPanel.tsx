@@ -17,7 +17,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
   const [status, setStatus] = useState<string | null>(null);
   const liveRef = useRef<HTMLDivElement | null>(null);
 
-  const [users, setUsers] = useState<string[]>(
+  const [users] = useState<string[]>(
     initialUsers && initialUsers.length > 0
       ? initialUsers
       : [
@@ -54,14 +54,6 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
         ],
   );
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const allSelected = useMemo(
-    () => users.length > 0 && users.every((u) => selected[u]),
-    [users, selected],
-  );
-  const selectedCount = useMemo(
-    () => users.filter((u) => selected[u]).length,
-    [users, selected],
-  );
   return (
     <div className='space-y-6'>
       {/* Adicionar usuário */}
@@ -281,7 +273,9 @@ function RemovalModalContent({
       if (!res.ok) {
         setError(data?.error ?? 'Falha ao buscar.');
       } else {
-        const emails = (data?.items ?? []).map((i: any) => i.email as string);
+        const emails = ((data?.items ?? []) as Array<{ email: string }>).map(
+          (i) => i.email,
+        );
         setResults((prev) => (reset ? emails : [...prev, ...emails]));
         setNextCursor(data?.nextCursor ?? null);
         setSearchTerm(term);
@@ -455,11 +449,15 @@ function RemovalModalContent({
                           const deletedUsers = Number(data?.deletedUsers ?? 0);
                           // remove da lista os removidos ou deletados
                           const removedSet = new Set(
-                            (data?.results ?? [])
-                              .filter(
-                                (r: any) => r.removedAllowed || r.deletedUser,
-                              )
-                              .map((r: any) => r.email as string),
+                            (
+                              (data?.results ?? []) as Array<{
+                                email: string;
+                                removedAllowed?: boolean;
+                                deletedUser?: boolean;
+                              }>
+                            )
+                              .filter((r) => r.removedAllowed || r.deletedUser)
+                              .map((r) => r.email),
                           );
                           setResults((prev) =>
                             prev.filter((e) => !removedSet.has(e)),

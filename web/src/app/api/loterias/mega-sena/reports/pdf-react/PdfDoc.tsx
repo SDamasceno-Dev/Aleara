@@ -223,8 +223,6 @@ export function buildAggregateDoc(
   // Segments computed to cover exactly 100% (avoid gaps from floating rounding)
   const r4 = sumHits ? kpis.c4 / sumHits : 0;
   const r5 = sumHits ? kpis.c5 / sumHits : 0;
-  const seg4 = r4 * circumference;
-  const seg5 = r5 * circumference;
   // Compute last by remainder to avoid rounding gaps
   // (no explicit variable needed; handled via ratios array below)
   // Helpers to draw filled donut segments (avoid seam artefacts from stroke dashes)

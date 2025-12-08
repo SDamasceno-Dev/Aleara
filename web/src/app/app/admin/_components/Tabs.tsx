@@ -23,10 +23,17 @@ export function Tabs({ tabs, initialTabId, className }: TabsProps) {
   });
 
   useEffect(() => {
-    if (initialTabId && tabs.some((t) => t.id === initialTabId)) {
-      setActiveId(initialTabId);
+    if (
+      initialTabId &&
+      initialTabId !== activeId &&
+      tabs.some((t) => t.id === initialTabId)
+    ) {
+      const id = initialTabId;
+      const h = setTimeout(() => setActiveId(id), 0);
+      return () => clearTimeout(h);
     }
-  }, [initialTabId, tabs]);
+    return;
+  }, [initialTabId, tabs, activeId]);
 
   const activeIndex = useMemo(
     () =>
