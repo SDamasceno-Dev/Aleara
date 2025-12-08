@@ -41,7 +41,10 @@ export function Tabs({
 
   useEffect(() => {
     if (initialTabId && tabs.some((t) => t.id === initialTabId)) {
-      setActiveId(initialTabId);
+      const timer = window.setTimeout(() => {
+        setActiveId(initialTabId);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [initialTabId, tabs]);
 

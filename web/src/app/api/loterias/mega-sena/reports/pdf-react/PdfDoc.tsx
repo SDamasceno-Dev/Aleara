@@ -216,7 +216,6 @@ export function buildAggregateDoc(
   const sumHits = kpis.c4 + kpis.c5 + kpis.c6;
   const size = 120;
   const stroke = 16;
-  const r = (size - stroke) / 2;
   const cx = size / 2;
   const cy = size / 2;
   // Segments computed to cover exactly 100% (avoid gaps from floating rounding)

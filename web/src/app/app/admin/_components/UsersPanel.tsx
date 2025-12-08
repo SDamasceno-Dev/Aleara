@@ -6,11 +6,9 @@ import { Button } from '@/components/button';
 import { useDialog } from '@/components/dialog';
 import { ImportCsvModal } from './ImportCsvModal';
 
-type UsersPanelProps = {
-  initialUsers?: string[];
-};
+type UsersPanelProps = {};
 
-export function UsersPanel({ initialUsers }: UsersPanelProps) {
+export function UsersPanel({}: UsersPanelProps) {
   const dialog = useDialog();
   const [emailValid, setEmailValid] = useState(false);
   const [forceValidate, setForceValidate] = useState(false);
@@ -210,10 +208,6 @@ function RemovalModalContent({
   const [confirming, setConfirming] = useState(false);
   const canSearch = term.trim().length >= 3;
   const hasSearched = searchTerm != null;
-  const allSelected = useMemo(
-    () => results.length > 0 && results.every((u) => selected[u]),
-    [results, selected],
-  );
   const selectedCount = useMemo(
     () => results.filter((u) => selected[u]).length,
     [results, selected],

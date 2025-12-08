@@ -10,7 +10,6 @@ function validateSupabaseUrl(raw: string): string {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(msg);
     } else {
-      // eslint-disable-next-line no-console
       console.error(msg);
     }
     return raw;
@@ -24,7 +23,6 @@ export const publicEnv = {
       const msg =
         'Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL';
       if (process.env.NODE_ENV === 'production') throw new Error(msg);
-      // eslint-disable-next-line no-console
       console.error(msg);
       return '';
     }
@@ -36,7 +34,6 @@ export const publicEnv = {
       const msg =
         'Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY';
       if (process.env.NODE_ENV === 'production') throw new Error(msg);
-      // eslint-disable-next-line no-console
       console.error(msg);
       return '';
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { createPortal } from 'react-dom';
 
 type LoadingOverlayProps = {
@@ -40,11 +41,14 @@ export function LoadingOverlay({
           <div className='absolute inset-0 rounded-full border-2 border-[var(--wine)]/60 animate-pulse-slow' />
           {/* breathing logo */}
           <div className='translate-y-[-5px]'>
-            <img
+            <Image
               src='/assets/Logo_Aleara.svg'
               alt='Carregando'
+              width={48}
+              height={48}
               className='h-12 w-12 animate-breathe select-none'
               draggable={false}
+              priority
             />
           </div>
         </div>

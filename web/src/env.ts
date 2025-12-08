@@ -12,7 +12,6 @@ function validateSupabaseUrl(raw: string): string {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(msg);
     } else {
-      // eslint-disable-next-line no-console
       console.error(msg);
     }
     return raw;
@@ -27,7 +26,6 @@ export const env = {
       const msg =
         'Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL';
       if (process.env.NODE_ENV === 'production') throw new Error(msg);
-      // eslint-disable-next-line no-console
       console.error(msg);
       return '';
     }
@@ -39,7 +37,6 @@ export const env = {
       const msg =
         'Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY';
       if (process.env.NODE_ENV === 'production') throw new Error(msg);
-      // eslint-disable-next-line no-console
       console.error(msg);
       return '';
     }
@@ -54,7 +51,6 @@ export const env = {
       if (process.env.NODE_ENV === 'production') {
         throw new Error(msg);
       }
-      // eslint-disable-next-line no-console
       console.warn(msg);
       return '';
     }
@@ -69,7 +65,6 @@ export const env = {
     ).trim();
     if (!raw) {
       // optional; warn only
-      // eslint-disable-next-line no-console
       console.warn(
         'Optional SITE_URL/NEXT_PUBLIC_SITE_URL not set. Falling back to request origin at runtime.',
       );
@@ -82,10 +77,8 @@ export const env = {
     } catch (e) {
       const msg = `Invalid SITE_URL/NEXT_PUBLIC_SITE_URL: ${String(e)}`;
       if (process.env.NODE_ENV === 'production') {
-        // eslint-disable-next-line no-console
         console.warn(msg);
       } else {
-        // eslint-disable-next-line no-console
         console.error(msg);
       }
       return '';
