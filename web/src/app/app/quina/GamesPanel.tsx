@@ -62,8 +62,8 @@ export function GamesPanel() {
   const [kInput, setKInput] = useState('05');
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [busyMsg, setBusyMsg] = useState('');
+  const [, setBusy] = useState(false);
+  const [, setBusyMsg] = useState('');
   const [setId, setSetId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [markedIdx, setMarkedIdx] = useState<number | null>(null);
@@ -448,15 +448,20 @@ export function GamesPanel() {
                         );
                         const data = await res.json();
                         if (res.ok) {
+                          const rows = (data.items ?? []) as Array<{
+                            id: string;
+                            title: string | null;
+                            source_numbers: number[];
+                            sample_size: number;
+                            marked_idx: number | null;
+                          }>;
                           setSavedSets(
-                            (data.items ?? []).map((it: any) => ({
-                              id: it.id as string,
+                            rows.map((it) => ({
+                              id: it.id,
                               title: String(it.title ?? ''),
-                              source_numbers:
-                                (it.source_numbers as number[]) ?? [],
+                              source_numbers: it.source_numbers ?? [],
                               sample_size: Number(it.sample_size ?? 0),
-                              marked_idx:
-                                (it.marked_idx as number | null) ?? null,
+                              marked_idx: it.marked_idx ?? null,
                             })),
                           );
                         }
@@ -499,13 +504,18 @@ export function GamesPanel() {
                         setCurrentSource(set.source_numbers ?? []);
                         setTitleInput(set.title ?? '');
                         setMarkedIdx(set.marked_idx ?? null);
-                        setItems(
-                          (data.items ?? []).map((it: any) => ({
-                            position: it.position as number,
-                            numbers: (it.numbers as number[]) ?? [],
-                            matches: it.matches ?? null,
-                          })),
-                        );
+                        const fetchedItems = (
+                          (data.items ?? []) as Array<{
+                            position: number;
+                            numbers: number[];
+                            matches?: number | null;
+                          }>
+                        ).map((it) => ({
+                          position: it.position,
+                          numbers: it.numbers ?? [],
+                          matches: it.matches ?? null,
+                        }));
+                        setItems(fetchedItems);
                       } catch {}
                     }}
                   >

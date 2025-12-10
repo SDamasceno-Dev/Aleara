@@ -571,14 +571,13 @@ export default function GamesPanel() {
                         );
                         const data = await res.json();
                         if (res.ok) {
-                          const rows =
-                            (data.items ?? []) as Array<{
-                              id: string;
-                              title: string | null;
-                              source_numbers: number[];
-                              sample_size: number;
-                              marked_idx: number | null;
-                            }>;
+                          const rows = (data.items ?? []) as Array<{
+                            id: string;
+                            title: string | null;
+                            source_numbers: number[];
+                            sample_size: number;
+                            marked_idx: number | null;
+                          }>;
                           setSavedSets(
                             rows.map((it) => ({
                               id: it.id,
