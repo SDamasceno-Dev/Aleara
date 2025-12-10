@@ -62,6 +62,8 @@ export function GamesPanel() {
   const [kInput, setKInput] = useState('05');
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState('');
   const [setId, setSetId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [markedIdx, setMarkedIdx] = useState<number | null>(null);
