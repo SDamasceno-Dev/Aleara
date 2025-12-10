@@ -58,9 +58,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const unique = Array.from(
-    new Set(numbers.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60)),
-  ).sort((a, b) => a - b);
+  const unique: number[] = [];
+  {
+    const seen = new Set<number>();
+    for (const nRaw of numbers) {
+      const n = Number(nRaw);
+      if (!Number.isInteger(n) || n < 1 || n > 60) continue;
+      if (seen.has(n)) continue;
+      seen.add(n);
+      unique.push(n);
+    }
+  }
   if (unique.length < 7 || unique.length > 15) {
     return NextResponse.json(
       { error: 'numbers must contain 7..15 unique values between 1 and 60' },
@@ -102,7 +110,7 @@ export async function POST(request: Request) {
   const rows = sample.map((nums) => ({
     set_id: setId,
     position: ++maxPos,
-    numbers: nums,
+    numbers: [...nums].sort((a, b) => a - b),
     matches: null as number | null,
   }));
 

@@ -11,10 +11,8 @@ function binom(n: number, k: number): number {
   for (let i = BigInt(1); i <= kk; i = i + BigInt(1)) {
     result = (result * (nn - kk + i)) / i;
   }
-  const num = Number(result);
-  return num;
+  return Number(result);
 }
-
 function mulberry32(seed: number): () => number {
   let t = seed >>> 0;
   return function () {
@@ -24,7 +22,6 @@ function mulberry32(seed: number): () => number {
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
 }
-
 function generateAllCombIndices(m: number, k: number): number[][] {
   const res: number[][] = [];
   const cur: number[] = [];
@@ -57,30 +54,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const parsed = (body ?? {}) as {
+    setId?: unknown;
     numbers?: unknown;
     k?: unknown;
     seed?: unknown;
   };
+  const setId = String(parsed.setId ?? '');
   const src: number[] = Array.isArray(parsed.numbers)
     ? (parsed.numbers as unknown[]).map((x) => Number(x))
     : [];
   const k: number = Number(parsed.k ?? 0);
   const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
-  const setSeed = Number.isFinite(seedInput as number)
+  const newSeed = Number.isFinite(seedInput as number)
     ? (seedInput as number)
     : Math.floor(Math.random() * 2 ** 31);
+  if (!setId)
+    return NextResponse.json({ error: 'Missing setId' }, { status: 400 });
 
-  const uniq: number[] = [];
-  {
-    const seen = new Set<number>();
-    for (const nRaw of src) {
-      const n = Number(nRaw);
-      if (!Number.isInteger(n) || n < 1 || n > 60) continue;
-      if (seen.has(n)) continue;
-      seen.add(n);
-      uniq.push(n);
-    }
-  }
+  const uniq = Array.from(
+    new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 60)),
+  ).sort((a, b) => a - b);
   if (uniq.length < 7 || uniq.length > 15) {
     return NextResponse.json(
       { error: 'Provide 7 to 15 unique numbers between 1 and 60' },
@@ -94,58 +87,30 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (!Number.isInteger(k) || k <= 0 || k > total) {
-    return NextResponse.json(
-      { error: `k must be between 1 and ${total}` },
-      { status: 400 },
-    );
-  }
-  // cap k for safety
-  const cap = Math.min(k, 5000);
+  const kk = Number.isInteger(k) && k > 0 ? Math.min(k, total) : total;
 
-  // generate all combinations (<= 5005 for n<=15) and sample k deterministically
-  const allIdxComb = generateAllCombIndices(uniq.length, 6); // lexicographic by construction
-  const totalCheck = allIdxComb.length;
-  if (totalCheck !== total) {
-    // Fallback in case of mismatch (should not happen)
-    return NextResponse.json(
-      { error: 'Internal combination generation mismatch' },
-      { status: 500 },
-    );
-  }
-  // Fisher–Yates shuffle partially to pick first cap elements deterministically by seed
-  const rnd = mulberry32(setSeed);
-  const indices = Array.from({ length: totalCheck }, (_, i) => i);
-  for (let i = indices.length - 1; i > indices.length - 1 - cap; i--) {
+  const allIdx = generateAllCombIndices(uniq.length, 6);
+  const rnd = mulberry32(newSeed);
+  const idxArr = Array.from({ length: allIdx.length }, (_, i) => i);
+  for (let i = idxArr.length - 1; i > idxArr.length - 1 - kk; i--) {
     const j = Math.floor(rnd() * (i + 1));
-    const tmp = indices[i];
-    indices[i] = indices[j];
-    indices[j] = tmp;
+    const tmp = idxArr[i];
+    idxArr[i] = idxArr[j];
+    idxArr[j] = tmp;
   }
-  const chosen = indices.slice(indices.length - cap).sort((a, b) => a - b);
+  const chosen = idxArr.slice(idxArr.length - kk).sort((a, b) => a - b);
   const items = chosen.map((pos) => {
-    const idxs = allIdxComb[pos];
-    const nums = idxs.map((ii) => uniq[ii]).sort((a, b) => a - b);
-    return { position: pos, numbers: nums };
+    const comb = allIdx[pos].map((ii) => uniq[ii]).sort((a, b) => a - b);
+    return { position: pos, numbers: comb };
   });
 
-  // insert set
-  const { data: setInsert, error: setErr } = await supabase
-    .from('megasena_user_sets')
-    .insert({
-      user_id: user.id,
-      source_numbers: uniq,
-      total_combinations: total,
-      sample_size: cap,
-      seed: setSeed,
-    })
-    .select('id')
-    .single();
-  if (setErr)
-    return NextResponse.json({ error: setErr.message }, { status: 500 });
-  const setId = setInsert.id as string;
-
-  // insert items in batches
+  // Replace items and update set metadata (source_numbers, totals, sample_size, seed)
+  const { error: delErr } = await supabase
+    .from('megasena_user_items')
+    .delete()
+    .eq('set_id', setId);
+  if (delErr)
+    return NextResponse.json({ error: delErr.message }, { status: 500 });
   for (let i = 0; i < items.length; i += 1000) {
     const batch = items.slice(i, i + 1000).map((it) => ({
       set_id: setId,
@@ -156,6 +121,16 @@ export async function POST(request: Request) {
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ setId, seed: setSeed, total, items });
+  const { error: updErr } = await supabase
+    .from('megasena_user_sets')
+    .update({
+      source_numbers: uniq,
+      total_combinations: total,
+      sample_size: kk,
+      seed: newSeed,
+    })
+    .eq('id', setId);
+  if (updErr)
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
+  return NextResponse.json({ ok: true, setId, seed: newSeed, items, total });
 }
