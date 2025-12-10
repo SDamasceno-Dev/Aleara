@@ -5,7 +5,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: unknown;
   try {
     body = await request.json();
@@ -23,14 +24,16 @@ export async function POST(request: Request) {
   const markedIdx =
     parsed.markedIdx == null ? null : Number(parsed.markedIdx as number);
   if (!setId || !title)
-    return NextResponse.json({ error: 'setId and title are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'setId and title are required' },
+      { status: 400 },
+    );
 
   const { error } = await supabase
     .from('megasena_user_sets')
     .update({ title, marked_idx: markedIdx })
     .eq('id', setId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-
-

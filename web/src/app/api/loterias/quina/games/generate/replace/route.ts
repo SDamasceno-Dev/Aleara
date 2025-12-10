@@ -134,5 +134,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
   return NextResponse.json({ ok: true, setId, seed: newSeed, items, total });
 }
-
-
