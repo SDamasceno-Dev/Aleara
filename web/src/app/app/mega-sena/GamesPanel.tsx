@@ -78,6 +78,18 @@ export default function GamesPanel() {
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [setId, setSetId] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState('');
+  const [markedIdx, setMarkedIdx] = useState<number | null>(null);
+  const [currentSource, setCurrentSource] = useState<number[] | null>(null);
+  const [savedSets, setSavedSets] = useState<
+    Array<{
+      id: string;
+      title: string;
+      source_numbers: number[];
+      sample_size: number;
+      marked_idx: number | null;
+    }>
+  >([]);
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [drawOtp, setDrawOtp] = useState<string[]>(
     Array.from({ length: 6 }, () => ''),
@@ -160,7 +172,7 @@ export default function GamesPanel() {
           .map((v) => Number(v))
           .filter((n) => Number.isInteger(n) && n >= 1 && n <= 60),
       ),
-    ).sort((a, b) => a - b);
+    );
     return nums;
   }, [otpValues]);
 
@@ -216,23 +228,38 @@ export default function GamesPanel() {
     setLoading(true);
     try {
       const k = Number(kInput || '0');
-      const endpoint =
-        appendOnGenerate && setId
-          ? '/api/loterias/mega-sena/games/generate/append'
-          : '/api/loterias/mega-sena/games/generate';
+      let endpoint = '/api/loterias/mega-sena/games/generate';
+      if (appendOnGenerate && setId) {
+        endpoint = '/api/loterias/mega-sena/games/generate/append';
+      } else if (setId) {
+        // If editing existing set and source numbers changed, replace in place
+        const changed =
+          !!currentSource &&
+          (currentSource.length !== parsedNumbers.length ||
+            currentSource.some((v, i) => v !== parsedNumbers[i]));
+        if (changed)
+          endpoint = '/api/loterias/mega-sena/games/generate/replace';
+      }
       const payload =
-        appendOnGenerate && setId
+        endpoint.endsWith('/append') && setId
           ? {
               setId,
               numbers: parsedNumbers,
               k,
               seed: seedInput ? Number(seedInput) : undefined,
             }
-          : {
-              numbers: parsedNumbers,
-              k,
-              seed: seedInput ? Number(seedInput) : undefined,
-            };
+          : endpoint.endsWith('/replace') && setId
+            ? {
+                setId,
+                numbers: parsedNumbers,
+                k,
+                seed: seedInput ? Number(seedInput) : undefined,
+              }
+            : {
+                numbers: parsedNumbers,
+                k,
+                seed: seedInput ? Number(seedInput) : undefined,
+              };
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -243,7 +270,7 @@ export default function GamesPanel() {
         alert(data?.error || 'Falha ao gerar combinações.');
         return;
       }
-      if (appendOnGenerate && setId) {
+      if (endpoint.endsWith('/append') && setId) {
         // append to existing list
         setItems((prev) => [...prev, ...(data.items ?? [])]);
       } else {
@@ -251,6 +278,8 @@ export default function GamesPanel() {
         setItems(data.items ?? []);
         setManualPositions(new Set());
       }
+      // Snapshot current source numbers after a generation/replace
+      setCurrentSource(parsedNumbers);
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setLoading(false);
@@ -527,9 +556,200 @@ export default function GamesPanel() {
             <div className='h-px bg-white/10 my-2' />
             <div className='text-sm text-zinc-300'>Gerar combinações</div>
           </div>
-          <div className='space-y-2'>
+          <div>
             <div className='grid grid-cols-1 gap-2'>
-              <div className='flex items-center gap-2'>
+              <div>
+                <label className='text-xs text-zinc-400'>
+                  Combinações salvas
+                  <select
+                    className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                    onFocus={async () => {
+                      try {
+                        const res = await fetch(
+                          '/api/loterias/mega-sena/games/sets/list',
+                          { cache: 'no-store' },
+                        );
+                        const data = await res.json();
+                        if (res.ok) {
+                          setSavedSets(
+                            (data.items ?? []).map((it: any) => ({
+                              id: it.id as string,
+                              title: String(it.title ?? ''),
+                              source_numbers:
+                                (it.source_numbers as number[]) ?? [],
+                              sample_size: Number(it.sample_size ?? 0),
+                              marked_idx:
+                                (it.marked_idx as number | null) ?? null,
+                            })),
+                          );
+                        }
+                      } catch {}
+                    }}
+                    onChange={async (e) => {
+                      const id = e.target.value;
+                      if (!id) return;
+                      setBusy(true);
+                      setBusyMsg('Carregando combinação…');
+                      try {
+                        const res = await fetch(
+                          `/api/loterias/mega-sena/games/${id}?size=1000`,
+                          { cache: 'no-store' },
+                        );
+                        const data = await res.json();
+                        if (!res.ok) {
+                          alert(data?.error || 'Falha ao carregar set.');
+                          return;
+                        }
+                        const set = data.set as {
+                          id: string;
+                          source_numbers: number[];
+                          sample_size: number;
+                          title?: string | null;
+                          marked_idx?: number | null;
+                        };
+                        const src = (set.source_numbers ?? []).map((n) =>
+                          String(n).padStart(2, '0'),
+                        );
+                        setCountInput(
+                          String(Math.max(7, Math.min(15, src.length))),
+                        );
+                        setOtpValues(
+                          src.slice(0, Math.max(7, Math.min(15, src.length))),
+                        );
+                        setOtpInvalid(
+                          Array.from({ length: src.length }, () => false),
+                        );
+                        setKInput(String(set.sample_size).padStart(2, '0'));
+                        setSetId(set.id);
+                        setCurrentSource(set.source_numbers ?? []);
+                        setTitleInput(set.title ?? '');
+                        setMarkedIdx(set.marked_idx ?? null);
+                        setItems(
+                          (data.items ?? []).map((it: any) => ({
+                            position: it.position as number,
+                            numbers: (it.numbers as number[]) ?? [],
+                            matches: it.matches ?? null,
+                          })),
+                        );
+                        setManualPositions(new Set());
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    <option value=''>Selecione…</option>
+                    {savedSets.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div>
+                <label className='text-xs text-zinc-400'>
+                  Nome da combinação
+                  <input
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                    placeholder='Ex.: Universo 01'
+                  />
+                </label>
+              </div>
+
+              {setId ? (
+                <div className='flex justify-between gap-2'>
+                  <button
+                    type='button'
+                    className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                    disabled={!setId || !titleInput.trim()}
+                    onClick={async () => {
+                      if (!setId || !titleInput.trim()) return;
+                      setBusy(true);
+                      setBusyMsg('Salvando meta…');
+                      try {
+                        const res = await fetch(
+                          '/api/loterias/mega-sena/games/sets/save-meta',
+                          {
+                            method: 'POST',
+                            headers: { 'content-type': 'application/json' },
+                            body: JSON.stringify({
+                              setId,
+                              title: titleInput.trim(),
+                              markedIdx,
+                            }),
+                          },
+                        );
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          alert(data?.error || 'Falha ao salvar meta.');
+                        } else {
+                          alert('Salvo com sucesso.');
+                        }
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {setId ? 'Salvar/Update' : 'Salvar'}
+                  </button>
+
+                  <button
+                    type='button'
+                    className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                    onClick={async () => {
+                      if (!setId) return;
+                      if (
+                        !window.confirm(
+                          'Excluir permanentemente esta combinação salva?',
+                        )
+                      )
+                        return;
+                      if (
+                        !window.confirm(
+                          'Confirma a exclusão? Esta ação não pode ser desfeita.',
+                        )
+                      )
+                        return;
+                      setBusy(true);
+                      setBusyMsg('Excluindo combinação…');
+                      try {
+                        const res = await fetch(
+                          '/api/loterias/mega-sena/games/sets/delete',
+                          {
+                            method: 'POST',
+                            headers: { 'content-type': 'application/json' },
+                            body: JSON.stringify({ setId }),
+                          },
+                        );
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          alert(data?.error || 'Falha ao excluir combinação.');
+                          return;
+                        }
+                        // reset UI
+                        setItems([]);
+                        setSetId(null);
+                        setCheckedDraw([]);
+                        setManualPositions(new Set());
+                        setTitleInput('');
+                        setMarkedIdx(null);
+                        setCurrentSource(null);
+                        setCountInput('7');
+                        setOtpValues(Array.from({ length: 7 }, () => ''));
+                        setOtpInvalid(Array.from({ length: 7 }, () => false));
+                        alert('Combinação excluída.');
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Excluir combinação (BD)
+                  </button>
+                </div>
+              ) : null}
+              <div className='flex justify-between'>
                 <label className='block text-xs text-zinc-400'>
                   Quantidade de dezenas a combinar (7 a 15)
                   <input
@@ -544,7 +764,7 @@ export default function GamesPanel() {
                   <input
                     value={kInput}
                     onChange={(e) => setKInput(e.target.value)}
-                    className='ml-2 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                    className='mt-1 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
                     placeholder='07'
                   />
                 </label>
@@ -553,121 +773,131 @@ export default function GamesPanel() {
                 Informe {countInput || '7'} dezenas abaixo. Cada “caixinha”
                 aceita 2 algarismos e avança automaticamente.
               </div>
+
               <div className='flex flex-wrap gap-2'>
                 {otpValues.map((val, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => {
-                      otpRefs.current[idx] = el;
-                    }}
-                    value={val}
-                    inputMode='numeric'
-                    maxLength={2}
-                    onChange={(e) => {
-                      const raw = e.target.value
-                        .replace(/\D+/g, '')
-                        .slice(0, 2);
-                      setOtpValues((prev) => {
-                        const next = [...prev];
-                        next[idx] = raw;
-                        return next;
-                      });
-                      // validate and possibly advance
-                      if (raw.length === 2) {
-                        const num = Number(raw);
-                        const isValid =
-                          Number.isInteger(num) && num >= 1 && num <= 60;
-                        setOtpInvalid((prev) => {
+                  <div key={idx} className='flex flex-col items-center'>
+                    <input
+                      ref={(el) => {
+                        otpRefs.current[idx] = el;
+                      }}
+                      value={val}
+                      inputMode='numeric'
+                      maxLength={2}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                          .replace(/\D+/g, '')
+                          .slice(0, 2);
+                        setOtpValues((prev) => {
                           const next = [...prev];
-                          next[idx] = !isValid;
+                          next[idx] = raw;
                           return next;
                         });
-                        if (isValid && idx + 1 < otpValues.length) {
-                          otpRefs.current[idx + 1]?.focus();
-                        }
-                      } else {
-                        // incomplete -> clear invalid
-                        setOtpInvalid((prev) => {
-                          const next = [...prev];
-                          next[idx] = false;
-                          return next;
-                        });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        e.key === 'Backspace' &&
-                        otpValues[idx].length === 0 &&
-                        idx > 0
-                      ) {
-                        otpRefs.current[idx - 1]?.focus();
-                      }
-                      // Block tab forward when current value is invalid
-                      if (e.key === 'Tab' && !e.shiftKey && otpInvalid[idx]) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onPaste={(e) => {
-                      const text = e.clipboardData.getData('text');
-                      const digits = text.replace(/\D+/g, '');
-                      if (!digits) return;
-                      e.preventDefault();
-                      const pairs: string[] = [];
-                      for (let i = 0; i < digits.length; i += 2) {
-                        pairs.push(digits.slice(i, i + 2));
-                      }
-                      setOtpValues((prev) => {
-                        const next = [...prev];
-                        let j = idx;
-                        for (const p of pairs) {
-                          if (j >= next.length) break;
-                          next[j] = p.slice(0, 2);
-                          j += 1;
-                        }
-                        // validate filled and focus first invalid or last
-                        setOtpInvalid((invPrev) => {
-                          const invNext = [...invPrev];
-                          for (
-                            let t = idx;
-                            t < Math.min(idx + pairs.length, next.length);
-                            t += 1
-                          ) {
-                            const num = Number(next[t]);
-                            invNext[t] = !(
-                              Number.isInteger(num) &&
-                              num >= 1 &&
-                              num <= 60
-                            );
+                        // validate and possibly advance
+                        if (raw.length === 2) {
+                          const num = Number(raw);
+                          const isValid =
+                            Number.isInteger(num) && num >= 1 && num <= 60;
+                          setOtpInvalid((prev) => {
+                            const next = [...prev];
+                            next[idx] = !isValid;
+                            return next;
+                          });
+                          if (isValid && idx + 1 < otpValues.length) {
+                            otpRefs.current[idx + 1]?.focus();
                           }
-                          const firstInvalid = invNext.findIndex(
-                            (v, t) => v && t >= idx,
-                          );
-                          const last = Math.min(j, next.length - 1);
-                          requestAnimationFrame(() =>
-                            otpRefs.current[
-                              firstInvalid !== -1 ? firstInvalid : last
-                            ]?.focus(),
-                          );
-                          return invNext;
+                        } else {
+                          // incomplete -> clear invalid
+                          setOtpInvalid((prev) => {
+                            const next = [...prev];
+                            next[idx] = false;
+                            return next;
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === 'Backspace' &&
+                          otpValues[idx].length === 0 &&
+                          idx > 0
+                        ) {
+                          otpRefs.current[idx - 1]?.focus();
+                        }
+                        // Block tab forward when current value is invalid
+                        if (e.key === 'Tab' && !e.shiftKey && otpInvalid[idx]) {
+                          e.preventDefault();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        const text = e.clipboardData.getData('text');
+                        const digits = text.replace(/\D+/g, '');
+                        if (!digits) return;
+                        e.preventDefault();
+                        const pairs: string[] = [];
+                        for (let i = 0; i < digits.length; i += 2) {
+                          pairs.push(digits.slice(i, i + 2));
+                        }
+                        setOtpValues((prev) => {
+                          const next = [...prev];
+                          let j = idx;
+                          for (const p of pairs) {
+                            if (j >= next.length) break;
+                            next[j] = p.slice(0, 2);
+                            j += 1;
+                          }
+                          // validate filled and focus first invalid or last
+                          setOtpInvalid((invPrev) => {
+                            const invNext = [...invPrev];
+                            for (
+                              let t = idx;
+                              t < Math.min(idx + pairs.length, next.length);
+                              t += 1
+                            ) {
+                              const num = Number(next[t]);
+                              invNext[t] = !(
+                                Number.isInteger(num) &&
+                                num >= 1 &&
+                                num <= 60
+                              );
+                            }
+                            const firstInvalid = invNext.findIndex(
+                              (v, t) => v && t >= idx,
+                            );
+                            const last = Math.min(j, next.length - 1);
+                            requestAnimationFrame(() =>
+                              otpRefs.current[
+                                firstInvalid !== -1 ? firstInvalid : last
+                              ]?.focus(),
+                            );
+                            return invNext;
+                          });
+                          return next;
                         });
-                        return next;
-                      });
-                    }}
-                    className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
-                      otpInvalid[idx]
-                        ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                        : duplicateFlags[idx]
-                          ? 'bg-red-70 border-black-30 text-white font-bold'
-                          : 'bg-white border-black-30 text-zinc-900'
-                    }`}
-                    aria-invalid={otpInvalid[idx] ? 'true' : 'false'}
-                    title={
-                      otpInvalid[idx]
-                        ? 'Digite um número entre 01 e 60'
-                        : undefined
-                    }
-                    placeholder='00'
-                  />
+                      }}
+                      className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                        otpInvalid[idx]
+                          ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
+                          : duplicateFlags[idx]
+                            ? 'bg-red-70 border-black-30 text-white font-bold'
+                            : 'bg-white border-black-30 text-zinc-900'
+                      }`}
+                      aria-invalid={otpInvalid[idx] ? 'true' : 'false'}
+                      title={
+                        otpInvalid[idx]
+                          ? 'Digite um número entre 01 e 60'
+                          : undefined
+                      }
+                      placeholder='00'
+                    />
+                    <input
+                      type='radio'
+                      name='markedIdx'
+                      className='mt-1'
+                      checked={markedIdx === idx}
+                      onChange={() => setMarkedIdx(idx)}
+                      aria-label={`Marcar posição ${idx + 1}`}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -719,6 +949,15 @@ export default function GamesPanel() {
             </div>
             <div className='text-xs text-zinc-500'>
               Dezenas válidas: {parsedNumbers.join(', ') || '—'}
+              {setId &&
+              currentSource &&
+              (currentSource.length !== parsedNumbers.length ||
+                currentSource.some((v, i) => v !== parsedNumbers[i])) ? (
+                <span className='ml-2 text-(--alertWarning)'>
+                  Você alterou as dezenas base; gere novamente para atualizar as
+                  combinações.
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

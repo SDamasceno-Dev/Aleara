@@ -63,6 +63,18 @@ export function GamesPanel() {
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [setId, setSetId] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState('');
+  const [markedIdx, setMarkedIdx] = useState<number | null>(null);
+  const [currentSource, setCurrentSource] = useState<number[] | null>(null);
+  const [savedSets, setSavedSets] = useState<
+    Array<{
+      id: string;
+      title: string;
+      source_numbers: number[];
+      sample_size: number;
+      marked_idx: number | null;
+    }>
+  >([]);
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [appendOnGenerate, setAppendOnGenerate] = useState(false);
   useEffect(() => {
@@ -91,7 +103,7 @@ export function GamesPanel() {
           .map((v) => Number(v))
           .filter((n) => Number.isInteger(n) && n >= 1 && n <= 80),
       ),
-    ).sort((a, b) => a - b);
+    );
     return nums;
   }, [otpValues]);
 
@@ -119,16 +131,24 @@ export function GamesPanel() {
     setLoading(true);
     try {
       const k = Number(kInput || '0');
-      const endpoint =
-        appendOnGenerate && setId
-          ? '/api/loterias/quina/games/generate/append'
-          : '/api/loterias/quina/games/generate';
+      let endpoint = '/api/loterias/quina/games/generate';
+      if (appendOnGenerate && setId) {
+        endpoint = '/api/loterias/quina/games/generate/append';
+      } else if (setId) {
+        const changed =
+          !!currentSource &&
+          (currentSource.length !== parsedNumbers.length ||
+            currentSource.some((v, i) => v !== parsedNumbers[i]));
+        if (changed) endpoint = '/api/loterias/quina/games/generate/replace';
+      }
       const payload:
         | { setId: string; numbers: number[]; k: number; seed?: number }
         | { numbers: number[]; k: number; seed?: number } =
-        appendOnGenerate && setId
+        endpoint.endsWith('/append') && setId
           ? { setId, numbers: parsedNumbers, k }
-          : { numbers: parsedNumbers, k };
+          : endpoint.endsWith('/replace') && setId
+            ? { setId, numbers: parsedNumbers, k }
+            : { numbers: parsedNumbers, k };
       if (seedInput) payload.seed = Number(seedInput);
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -140,12 +160,13 @@ export function GamesPanel() {
         alert(data?.error || 'Falha ao gerar combinações.');
         return;
       }
-      if (appendOnGenerate && setId) {
+      if (endpoint.endsWith('/append') && setId) {
         setItems((prev) => [...prev, ...(data.items ?? [])]);
       } else {
         setSetId(data.setId);
         setItems(data.items ?? []);
       }
+      setCurrentSource(parsedNumbers);
       requestAnimationFrame(() => liveRef.current?.focus());
     } finally {
       setLoading(false);
@@ -421,49 +442,226 @@ export function GamesPanel() {
         </div>
         <div className='mt-2 flex flex-wrap gap-2'>
           {otpValues.map((val, idx) => (
-            <input
-              key={idx}
-              ref={(el) => {
-                otpRefs.current[idx] = el;
-              }}
-              value={val}
-              inputMode='numeric'
-              maxLength={2}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
-                setOtpValues((prev) => {
-                  const next = [...prev];
-                  next[idx] = raw;
-                  return next;
-                });
-                if (raw.length === 2) {
-                  const num = Number(raw);
-                  const isValid =
-                    Number.isInteger(num) && num >= 1 && num <= 80;
-                  setOtpInvalid((prev) => {
+            <div key={idx} className='flex flex-col items-center'>
+              <input
+                ref={(el) => {
+                  otpRefs.current[idx] = el;
+                }}
+                value={val}
+                inputMode='numeric'
+                maxLength={2}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D+/g, '').slice(0, 2);
+                  setOtpValues((prev) => {
                     const next = [...prev];
-                    next[idx] = !isValid;
+                    next[idx] = raw;
                     return next;
                   });
-                  if (isValid && idx + 1 < otpValues.length)
-                    otpRefs.current[idx + 1]?.focus();
-                } else {
-                  setOtpInvalid((prev) => {
-                    const next = [...prev];
-                    next[idx] = false;
-                    return next;
-                  });
-                }
-              }}
-              className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
-                otpInvalid[idx]
-                  ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                  : 'bg-white border-black-30 text-zinc-900'
-              }`}
-              placeholder='00'
-            />
+                  if (raw.length === 2) {
+                    const num = Number(raw);
+                    const isValid =
+                      Number.isInteger(num) && num >= 1 && num <= 80;
+                    setOtpInvalid((prev) => {
+                      const next = [...prev];
+                      next[idx] = !isValid;
+                      return next;
+                    });
+                    if (isValid && idx + 1 < otpValues.length)
+                      otpRefs.current[idx + 1]?.focus();
+                  } else {
+                    setOtpInvalid((prev) => {
+                      const next = [...prev];
+                      next[idx] = false;
+                      return next;
+                    });
+                  }
+                }}
+                className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                  otpInvalid[idx]
+                    ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
+                    : 'bg-white border-black-30 text-zinc-900'
+                }`}
+                placeholder='00'
+              />
+              <input
+                type='radio'
+                name='markedIdx'
+                className='mt-1'
+                checked={markedIdx === idx}
+                onChange={() => setMarkedIdx(idx)}
+                aria-label={`Marcar posição ${idx + 1}`}
+              />
+            </div>
           ))}
         </div>
+        <div className='mt-2 flex items-center gap-2'>
+          <label className='text-xs text-zinc-400'>
+            Nome da combinação
+            <input
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              className='ml-2 w-56 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+              placeholder='Ex.: Universo 01'
+            />
+          </label>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={!setId || !titleInput.trim()}
+            onClick={async () => {
+              if (!setId || !titleInput.trim()) return;
+              try {
+                const res = await fetch(
+                  '/api/loterias/quina/games/sets/save-meta',
+                  {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                      setId,
+                      title: titleInput.trim(),
+                      markedIdx,
+                    }),
+                  },
+                );
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) alert(data?.error || 'Falha ao salvar meta.');
+                else alert('Salvo com sucesso.');
+              } catch {}
+            }}
+          >
+            {setId ? 'Salvar/Update' : 'Salvar'}
+          </button>
+          <label className='text-xs text-zinc-400'>
+            Combinações salvas
+            <select
+              className='ml-2 w-64 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+              onFocus={async () => {
+                try {
+                  const res = await fetch(
+                    '/api/loterias/quina/games/sets/list',
+                    { cache: 'no-store' },
+                  );
+                  const data = await res.json();
+                  if (res.ok) {
+                    setSavedSets(
+                      (data.items ?? []).map((it: any) => ({
+                        id: it.id as string,
+                        title: String(it.title ?? ''),
+                        source_numbers: (it.source_numbers as number[]) ?? [],
+                        sample_size: Number(it.sample_size ?? 0),
+                        marked_idx: (it.marked_idx as number | null) ?? null,
+                      })),
+                    );
+                  }
+                } catch {}
+              }}
+              onChange={async (e) => {
+                const id = e.target.value;
+                if (!id) return;
+                try {
+                  const res = await fetch(
+                    `/api/loterias/quina/games/${id}?size=1000`,
+                    { cache: 'no-store' },
+                  );
+                  const data = await res.json();
+                  if (!res.ok) {
+                    alert(data?.error || 'Falha ao carregar set.');
+                    return;
+                  }
+                  const set = data.set as {
+                    id: string;
+                    source_numbers: number[];
+                    sample_size: number;
+                    title?: string | null;
+                    marked_idx?: number | null;
+                  };
+                  const src = (set.source_numbers ?? []).map((n) =>
+                    String(n).padStart(2, '0'),
+                  );
+                  setCountInput(String(Math.max(5, Math.min(15, src.length))));
+                  setOtpValues(
+                    src.slice(0, Math.max(5, Math.min(15, src.length))),
+                  );
+                  setOtpInvalid(
+                    Array.from({ length: src.length }, () => false),
+                  );
+                  setKInput(String(set.sample_size).padStart(2, '0'));
+                  setSetId(set.id);
+                  setCurrentSource(set.source_numbers ?? []);
+                  setTitleInput(set.title ?? '');
+                  setMarkedIdx(set.marked_idx ?? null);
+                  setItems(
+                    (data.items ?? []).map((it: any) => ({
+                      position: it.position as number,
+                      numbers: (it.numbers as number[]) ?? [],
+                      matches: it.matches ?? null,
+                    })),
+                  );
+                } catch {}
+              }}
+            >
+              <option value=''>Selecione…</option>
+              {savedSets.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className='text-xs text-zinc-500'>
+          Dezenas válidas: {parsedNumbers.join(', ') || '—'}
+          {setId &&
+          currentSource &&
+          (currentSource.length !== parsedNumbers.length ||
+            currentSource.some((v, i) => v !== parsedNumbers[i])) ? (
+            <span className='ml-2 text-(--alertWarning)'>
+              Você alterou as dezenas base; gere novamente para atualizar as
+              combinações.
+            </span>
+          ) : null}
+        </div>
+        {setId ? (
+          <div className='mt-2'>
+            <button
+              type='button'
+              className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+              onClick={async () => {
+                if (!setId) return;
+                if (!window.confirm('Excluir permanentemente esta combinação salva?')) return;
+                if (!window.confirm('Confirma a exclusão? Esta ação não pode ser desfeita.')) return;
+                setBusy(true);
+                setBusyMsg('Excluindo combinação…');
+                try {
+                  const res = await fetch('/api/loterias/quina/games/sets/delete', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ setId })
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    alert(data?.error || 'Falha ao excluir combinação.');
+                    return;
+                  }
+                  setItems([]);
+                  setSetId(null);
+                  setCheckedDraw([]);
+                  setTitleInput('');
+                  setMarkedIdx(null);
+                  setCurrentSource(null);
+                  setCountInput('5');
+                  setOtpValues(Array.from({ length: 5 }, () => ''));
+                  setOtpInvalid(Array.from({ length: 5 }, () => false));
+                  alert('Combinação excluída.');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Excluir combinação (BD)
+            </button>
+          </div>
+        ) : null}
         <div className='mt-2 flex gap-2'>
           <button
             type='button'

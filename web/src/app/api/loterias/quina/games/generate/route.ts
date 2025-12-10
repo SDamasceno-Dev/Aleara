@@ -67,9 +67,17 @@ export async function POST(request: Request) {
     ? (seedInput as number)
     : Math.floor(Math.random() * 2 ** 31);
 
-  const uniq = Array.from(
-    new Set(src.filter((n) => Number.isInteger(n) && n >= 1 && n <= 80)),
-  ).sort((a, b) => a - b);
+  const uniq: number[] = [];
+  {
+    const seen = new Set<number>();
+    for (const nRaw of src) {
+      const n = Number(nRaw);
+      if (!Number.isInteger(n) || n < 1 || n > 80) continue;
+      if (seen.has(n)) continue;
+      seen.add(n);
+      uniq.push(n);
+    }
+  }
   if (uniq.length < 5 || uniq.length > 15) {
     return NextResponse.json(
       { error: 'Provide 5 to 15 unique numbers between 1 and 80' },
@@ -108,7 +116,7 @@ export async function POST(request: Request) {
   const chosen = indices.slice(indices.length - cap).sort((a, b) => a - b);
   const items = chosen.map((pos) => {
     const idxs = allIdxComb[pos];
-    const nums = idxs.map((ii) => uniq[ii]);
+    const nums = idxs.map((ii) => uniq[ii]).sort((a, b) => a - b);
     return { position: pos, numbers: nums };
   });
   // insert set

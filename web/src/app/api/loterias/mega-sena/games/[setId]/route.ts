@@ -24,7 +24,7 @@ export async function GET(
   const { data: setRow } = await supabase
     .from('megasena_user_sets')
     .select(
-      'id, source_numbers, total_combinations, sample_size, seed, created_at',
+      'id, source_numbers, total_combinations, sample_size, seed, created_at, title, marked_idx',
     )
     .eq('id', setId)
     .maybeSingle();

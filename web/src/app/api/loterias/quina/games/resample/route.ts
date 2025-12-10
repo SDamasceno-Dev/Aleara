@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   const chosen = idxArr.slice(idxArr.length - k).sort((a, b) => a - b);
   const items = chosen.map((pos) => ({
     position: pos,
-    numbers: allIdx[pos].map((ii) => src[ii]),
+    numbers: allIdx[pos].map((ii) => src[ii]).sort((a, b) => a - b),
   }));
   // Replace items
   const { error: delErr } = await supabase
