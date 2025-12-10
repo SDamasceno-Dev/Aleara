@@ -102,7 +102,7 @@ export async function POST(request: Request) {
   }
   const chosen = idxArr.slice(idxArr.length - k).sort((a, b) => a - b);
   const items = chosen.map((pos) => {
-    const comb = allIdx[pos].map((ii) => uniq[ii]);
+    const comb = allIdx[pos].map((ii) => uniq[ii]).sort((a, b) => a - b);
     return { position: pos, numbers: comb };
   });
 
