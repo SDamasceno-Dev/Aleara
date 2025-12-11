@@ -423,3 +423,26 @@ button:disabled,
   animation: breathe 2.7s ease-in-out infinite;
   will-change: transform, opacity;
 }
+
+/* ---------- Force dark native form controls across browsers ---------- */
+html {
+  color-scheme: dark;
+}
+select,
+input,
+textarea,
+button {
+  color-scheme: inherit;
+}
+/* Closed control background and text (many UAs respect this even if the popup stays UA-styled) */
+select {
+  background-color: #0f0f0f;
+  color: #e5e5e5;
+  border-color: var(--black-30);
+}
+/* Some Chromium/WebKit builds honor option background in open menus */
+select option,
+select optgroup {
+  background-color: #0f0f0f;
+  color: #e5e5e5;
+}
