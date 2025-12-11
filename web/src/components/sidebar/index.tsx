@@ -72,9 +72,10 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
               <label htmlFor='lottery' className='sr-only'>
                 Selecionar loteria
               </label>
-              <div className='glass-dark rounded-md border px-2 py-1.5'>
+              <div className='glass-dark border px-2 py-1.5'>
                 <select
                   id='lottery'
+                  className='text-sm w-full outline-none'
                   value={selectedLottery}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -86,7 +87,6 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                       if (pathname !== `/app/${v}`) router.push(`/app/${v}`);
                     }
                   }}
-                  className='bg-transparent text-sm text-zinc-100 outline-none w-full'
                 >
                   <option value='' disabled>
                     Escolha a loteria
