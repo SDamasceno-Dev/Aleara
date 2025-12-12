@@ -435,17 +435,25 @@ export function GamesPanel() {
             {/* Seleção e nome da combinação */}
             <div className='grid grid-cols-1 gap-2 mt-2'>
               <div>
-                <label className='text-xs text-zinc-400'>Combinações salvas</label>
+                <label className='text-xs text-zinc-400'>
+                  Combinações salvas
+                </label>
                 <Select
                   theme='light'
-                  items={savedSets.map((s) => ({ value: s.id, label: s.title }))}
+                  items={savedSets.map((s) => ({
+                    value: s.id,
+                    label: s.title,
+                  }))}
                   value={''}
                   placeholder='Selecione…'
                   onOpen={async () => {
                     try {
-                      const res = await fetch('/api/loterias/quina/games/sets/list', {
-                        cache: 'no-store',
-                      });
+                      const res = await fetch(
+                        '/api/loterias/quina/games/sets/list',
+                        {
+                          cache: 'no-store',
+                        },
+                      );
                       const data = await res.json();
                       if (res.ok) {
                         const rows = (data.items ?? []) as Array<{
@@ -470,9 +478,12 @@ export function GamesPanel() {
                   onChange={async (id) => {
                     if (!id) return;
                     try {
-                      const res = await fetch(`/api/loterias/quina/games/${id}?size=1000`, {
-                        cache: 'no-store',
-                      });
+                      const res = await fetch(
+                        `/api/loterias/quina/games/${id}?size=1000`,
+                        {
+                          cache: 'no-store',
+                        },
+                      );
                       const data = await res.json();
                       if (!res.ok) {
                         alert(data?.error || 'Falha ao carregar set.');
@@ -488,19 +499,27 @@ export function GamesPanel() {
                       const src = (set.source_numbers ?? []).map((n) =>
                         String(n).padStart(2, '0'),
                       );
-                      setCountInput(String(Math.max(5, Math.min(15, src.length))));
-                      setOtpValues(src.slice(0, Math.max(5, Math.min(15, src.length))));
-                      setOtpInvalid(Array.from({ length: src.length }, () => false));
+                      setCountInput(
+                        String(Math.max(5, Math.min(15, src.length))),
+                      );
+                      setOtpValues(
+                        src.slice(0, Math.max(5, Math.min(15, src.length))),
+                      );
+                      setOtpInvalid(
+                        Array.from({ length: src.length }, () => false),
+                      );
                       setKInput(String(set.sample_size).padStart(2, '0'));
                       setSetId(set.id);
                       setCurrentSource(set.source_numbers ?? []);
                       setTitleInput(set.title ?? '');
                       setMarkedIdx(set.marked_idx ?? null);
-                      const fetchedItems = (data.items ?? []).map((it: any) => ({
-                        position: it.position as number,
-                        numbers: (it.numbers as number[]) ?? [],
-                        matches: it.matches ?? null,
-                      }));
+                      const fetchedItems = (data.items ?? []).map(
+                        (it: any) => ({
+                          position: it.position as number,
+                          numbers: (it.numbers as number[]) ?? [],
+                          matches: it.matches ?? null,
+                        }),
+                      );
                       setItems(fetchedItems);
                     } catch {}
                   }}

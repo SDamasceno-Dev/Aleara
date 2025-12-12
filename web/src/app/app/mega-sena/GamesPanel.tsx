@@ -560,19 +560,25 @@ export default function GamesPanel() {
           <div>
             <div className='grid grid-cols-1 gap-2'>
               <div>
-                <label className='text-xs text-zinc-400'>Combinações salvas</label>
+                <label className='text-xs text-zinc-400'>
+                  Combinações salvas
+                </label>
                 <Select
+                  theme='light'
                   items={savedSets.map((s) => ({
                     value: s.id,
-                    label: s.readonly ?? s.title,
+                    label: s.title,
                   }))}
                   value={''}
                   placeholder='Selecione…'
                   onOpen={async () => {
                     try {
-                      const res = await fetch('/api/loterias/mega-sena/games/sets/list', {
-                        cache: 'no-store',
-                      });
+                      const res = await fetch(
+                        '/api/loterias/mega-sena/games/sets/list',
+                        {
+                          cache: 'no-store',
+                        },
+                      );
                       const data = await res.json();
                       if (res.ok) {
                         const rows = (data.items ?? []) as Array<{
@@ -599,9 +605,12 @@ export default function GamesPanel() {
                     setBusy(true);
                     setBusyMsg('Carregando combinação…');
                     try {
-                      const res = await fetch(`/api/loterias/mega-sena/games/${id}?size=1000`, {
-                        cache: 'no-store',
-                      });
+                      const res = await fetch(
+                        `/api/loterias/mega-sena/games/${id}?size=1000`,
+                        {
+                          cache: 'no-store',
+                        },
+                      );
                       const data = await res.json();
                       if (!res.ok) {
                         alert(data?.error || 'Falha ao carregar set.');
@@ -617,21 +626,27 @@ export default function GamesPanel() {
                       const src = (set.source_numbers ?? []).map((n) =>
                         String(n).padStart(2, '0'),
                       );
-                      setCountInput(String(Math.max(7, Math.min(15, src.length))));
+                      setCountInput(
+                        String(Math.max(7, Math.min(15, src.length))),
+                      );
                       setOtpValues(
                         src.slice(0, Math.max(7, Math.min(15, src.length))),
                       );
-                      setOtpInvalid(Array.from({ length: src.length }, () => false));
+                      setOtpInvalid(
+                        Array.from({ length: src.length }, () => false),
+                      );
                       setKInput(String(set.sample_size).padStart(2, '0'));
                       setSetId(set.id);
                       setCurrentSource(set.source_numbers ?? []);
                       setTitleInput(set.title ?? '');
                       setMarkedIdx(set.marked_idx ?? null);
-                      const fetchedItems = (data.items ?? []).map((it: any) => ({
-                        position: it.position as number,
-                        numbers: (it.numbers as number[]) ?? [],
-                        matches: it.matches ?? null,
-                      }));
+                      const fetchedItems = (data.items ?? []).map(
+                        (it: any) => ({
+                          position: it.position as number,
+                          numbers: (it.numbers as number[]) ?? [],
+                          matches: it.matches ?? null,
+                        }),
+                      );
                       setItems(fetchedItems);
                       setManualPositions(new Set());
                     } finally {

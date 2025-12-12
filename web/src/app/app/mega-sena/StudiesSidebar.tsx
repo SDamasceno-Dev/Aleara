@@ -165,7 +165,10 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
         <div className='min-w-0'>
           <Select
             theme='light'
-            items={allStudies.map((s) => ({ value: s.study_key, label: s.title }))}
+            items={allStudies.map((s) => ({
+              value: s.study_key,
+              label: s.title,
+            }))}
             value={selected}
             placeholder='Escolha uma opção'
             onChange={(v) => {
