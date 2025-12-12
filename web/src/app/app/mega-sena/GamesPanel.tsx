@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@/components/select/Select';
 import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
@@ -91,6 +91,87 @@ export default function GamesPanel() {
       marked_idx: number | null;
     }>
   >([]);
+  // Loader: fetch saved combinations
+  const loadSavedSets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/loterias/mega-sena/games/sets/list', {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      const rows = (data.items ?? []) as Array<{
+        id: string;
+        title: string | null;
+        source_numbers: number[];
+        sample_size: number;
+        marked_idx: number | null;
+      }>;
+      setSavedSets(
+        rows.map((it) => ({
+          id: it.id,
+          title: String(it.title ?? ''),
+          source_numbers: it.source_numbers ?? [],
+          sample_size: Number(it.sample_size ?? 0),
+          marked_idx: it.marked_idx ?? null,
+        })),
+      );
+    } catch {
+      // ignore
+    }
+  }, []);
+  // Preload on mount
+  useEffect(() => {
+    loadSavedSets();
+  }, [loadSavedSets]);
+  // Refresh when tab regains focus or becomes visible
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        void loadSavedSets();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [loadSavedSets]);
+  // Preload saved combinations on mount
+  useEffect(() => {
+    let isActive = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/loterias/mega-sena/games/sets/list', {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+        const rows = (data.items ?? []) as Array<{
+          id: string;
+          title: string | null;
+          source_numbers: number[];
+          sample_size: number;
+          marked_idx: number | null;
+        }>;
+        if (!isActive) return;
+        setSavedSets(
+          rows.map((it) => ({
+            id: it.id,
+            title: String(it.title ?? ''),
+            source_numbers: it.source_numbers ?? [],
+            sample_size: Number(it.sample_size ?? 0),
+            marked_idx: it.marked_idx ?? null,
+          })),
+        );
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      isActive = false;
+    };
+  }, []);
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [drawOtp, setDrawOtp] = useState<string[]>(
     Array.from({ length: 6 }, () => ''),
