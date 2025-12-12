@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Select } from '@/components/select/Select';
 
 type CatalogItem = { study_key: string; title: string };
 type StudyItem = {
@@ -45,21 +46,16 @@ export function StudiesSidebar() {
   return (
     <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
       <div className='text-sm text-zinc-200 mb-2'>Estudos</div>
-      <select
+      <Select
+        theme='light'
+        items={catalog.map((c) => ({ value: c.study_key, label: c.title }))}
         value={selected}
-        onChange={(e) => {
-          const v = e.target.value;
+        placeholder='Escolha uma opção'
+        onChange={(v) => {
+          setSelected(v);
           if (v) loadStudy(v);
         }}
-        className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1.5 text-sm text-zinc-100'
-      >
-        <option value=''>Escolha uma opção</option>
-        {catalog.map((c) => (
-          <option key={c.study_key} value={c.study_key}>
-            {c.title}
-          </option>
-        ))}
-      </select>
+      />
       {open ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
           <button

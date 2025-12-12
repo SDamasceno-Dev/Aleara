@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/button';
+import { Select } from '@/components/select/Select';
 
 type ImportCsvModalProps = {
   onDone: (summary: {
@@ -187,17 +188,15 @@ export function ImportCsvModal({ onDone }: ImportCsvModalProps) {
           }}
           className='text-sm border border-[var(--black-30)] p-1 rounded-md cursor-pointer'
         />
-        <div className='rounded-md border border-[var(--black-30)] p-1'>
-          <select
+        <div className='rounded-md border border-[var(--black-30)] p-1 w-40'>
+          <Select
+            items={[
+              { value: 'USER', label: 'USER' },
+              { value: 'ADMIN', label: 'ADMIN' },
+            ]}
             value={role}
-            onChange={(e) =>
-              setRole((e.target.value as 'USER' | 'ADMIN') ?? 'USER')
-            }
-            className='text-sm'
-          >
-            <option value='USER'>USER</option>
-            <option value='ADMIN'>ADMIN</option>
-          </select>
+            onChange={(v) => setRole((v as 'USER' | 'ADMIN') ?? 'USER')}
+          />
         </div>
         <Button
           type='button'

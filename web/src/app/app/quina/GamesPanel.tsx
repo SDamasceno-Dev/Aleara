@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Select } from '@/components/select/Select';
 
 type GeneratedItem = {
   position: number;
@@ -434,99 +435,76 @@ export function GamesPanel() {
             {/* Seleção e nome da combinação */}
             <div className='grid grid-cols-1 gap-2 mt-2'>
               <div>
-                <label className='text-xs text-zinc-400'>
-                  Combinações salvas
-                  <select
-                    className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
-                    onFocus={async () => {
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/quina/games/sets/list',
-                          {
-                            cache: 'no-store',
-                          },
-                        );
-                        const data = await res.json();
-                        if (res.ok) {
-                          const rows = (data.items ?? []) as Array<{
-                            id: string;
-                            title: string | null;
-                            source_numbers: number[];
-                            sample_size: number;
-                            marked_idx: number | null;
-                          }>;
-                          setSavedSets(
-                            rows.map((it) => ({
-                              id: it.id,
-                              title: String(it.title ?? ''),
-                              source_numbers: it.source_numbers ?? [],
-                              sample_size: Number(it.sample_size ?? 0),
-                              marked_idx: it.marked_idx ?? null,
-                            })),
-                          );
-                        }
-                      } catch {}
-                    }}
-                    onChange={async (e) => {
-                      const id = e.target.value;
-                      if (!id) return;
-                      try {
-                        const res = await fetch(
-                          `/api/loterias/quina/games/${id}?size=1000`,
-                          { cache: 'no-store' },
-                        );
-                        const data = await res.json();
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao carregar set.');
-                          return;
-                        }
-                        const set = data.set as {
+                <label className='text-xs text-zinc-400'>Combinações salvas</label>
+                <Select
+                  theme='light'
+                  items={savedSets.map((s) => ({ value: s.id, label: s.title }))}
+                  value={''}
+                  placeholder='Selecione…'
+                  onOpen={async () => {
+                    try {
+                      const res = await fetch('/api/loterias/quina/games/sets/list', {
+                        cache: 'no-store',
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        const rows = (data.items ?? []) as Array<{
                           id: string;
+                          title: string | null;
                           source_numbers: number[];
                           sample_size: number;
-                          title?: string | null;
-                          marked_idx?: number | null;
-                        };
-                        const src = (set.source_numbers ?? []).map((n) =>
-                          String(n).padStart(2, '0'),
+                          marked_idx: number | null;
+                        }>;
+                        setSavedSets(
+                          rows.map((it) => ({
+                            id: it.id,
+                            title: String(it.title ?? ''),
+                            source_numbers: it.source_numbers ?? [],
+                            sample_size: Number(it.sample_size ?? 0),
+                            marked_idx: it.marked_idx ?? null,
+                          })),
                         );
-                        setCountInput(
-                          String(Math.max(5, Math.min(15, src.length))),
-                        );
-                        setOtpValues(
-                          src.slice(0, Math.max(5, Math.min(15, src.length))),
-                        );
-                        setOtpInvalid(
-                          Array.from({ length: src.length }, () => false),
-                        );
-                        setKInput(String(set.sample_size).padStart(2, '0'));
-                        setSetId(set.id);
-                        setCurrentSource(set.source_numbers ?? []);
-                        setTitleInput(set.title ?? '');
-                        setMarkedIdx(set.marked_idx ?? null);
-                        const fetchedItems = (
-                          (data.items ?? []) as Array<{
-                            position: number;
-                            numbers: number[];
-                            matches?: number | null;
-                          }>
-                        ).map((it) => ({
-                          position: it.position,
-                          numbers: it.numbers ?? [],
-                          matches: it.matches ?? null,
-                        }));
-                        setItems(fetchedItems);
-                      } catch {}
-                    }}
-                  >
-                    <option value=''>Selecione…</option>
-                    {savedSets.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                      }
+                    } catch {}
+                  }}
+                  onChange={async (id) => {
+                    if (!id) return;
+                    try {
+                      const res = await fetch(`/api/loterias/quina/games/${id}?size=1000`, {
+                        cache: 'no-store',
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao carregar set.');
+                        return;
+                      }
+                      const set = data.set as {
+                        id: string;
+                        source_numbers: number[];
+                        sample_size: number;
+                        title?: string | null;
+                        marked_idx?: number | null;
+                      };
+                      const src = (set.source_numbers ?? []).map((n) =>
+                        String(n).padStart(2, '0'),
+                      );
+                      setCountInput(String(Math.max(5, Math.min(15, src.length))));
+                      setOtpValues(src.slice(0, Math.max(5, Math.min(15, src.length))));
+                      setOtpInvalid(Array.from({ length: src.length }, () => false));
+                      setKInput(String(set.sample_size).padStart(2, '0'));
+                      setSetId(set.id);
+                      setCurrentSource(set.source_numbers ?? []);
+                      setTitleInput(set.title ?? '');
+                      setMarkedIdx(set.marked_idx ?? null);
+                      const fetchedItems = (data.items ?? []).map((it: any) => ({
+                        position: it.position as number,
+                        numbers: (it.numbers as number[]) ?? [],
+                        matches: it.matches ?? null,
+                      }));
+                      setItems(fetchedItems);
+                    } catch {}
+                  }}
+                />
               </div>
               <div>
                 <label className='text-xs text-zinc-400'>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useDialog } from '@/components/dialog';
+import { Select } from '@/components/select/Select';
 
 type StudyPreview = {
   study_key: string;
@@ -161,26 +162,18 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
     <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
       <div className='mb-3 flex items-center justify-between gap-2'>
         <div className='text-sm text-zinc-200'>Estudos</div>
-        <select
-          className='text-sm bg-white-10 border border-black-30 rounded-md px-2 py-1'
-          value={selected}
-          onChange={(e) => {
-            const v = e.target.value;
-            setSelected(v);
-            if (v) openFullList(v);
-          }}
-          onBlur={(e) => {
-            const v = e.target.value;
-            setSelected(v);
-          }}
-        >
-          <option value=''>Escolha uma opção</option>
-          {allStudies.map((s) => (
-            <option key={s.study_key} value={s.study_key}>
-              {s.title}
-            </option>
-          ))}
-        </select>
+        <div className='min-w-0'>
+          <Select
+            theme='light'
+            items={allStudies.map((s) => ({ value: s.study_key, label: s.title }))}
+            value={selected}
+            placeholder='Escolha uma opção'
+            onChange={(v) => {
+              setSelected(v);
+              if (v) openFullList(v);
+            }}
+          />
+        </div>
       </div>
       <div className='space-y-4'>
         {previews

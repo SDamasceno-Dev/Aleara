@@ -18,9 +18,12 @@ export type SelectItem = {
 
 export type SelectProps = {
   items: SelectItem[];
-  value: string | null | undefined;
+  value?: string | null;
   placeholder?: string;
   onChange: (value: string) => void;
+  onOpen?: () => void;
+  // 'light' = for dark backgrounds (light text), 'dark' = for light backgrounds (dark text)
+  theme?: 'light' | 'dark';
   className?: string;
   buttonClassName?: string;
   listClassName?: string;
@@ -31,9 +34,11 @@ export function Select({
   value,
   placeholder = 'Selecione…',
   onChange,
+  onOpen,
   className,
   buttonClassName,
   listClassName,
+  theme = 'dark',
 }: SelectProps) {
   const compId = useId();
   const listboxId = `${compId}-listbox`;
@@ -155,6 +160,14 @@ export function Select({
     }
   }, [open, activeIndex]);
 
+  const isLight = theme === 'light';
+  const triggerTextCls = isLight ? 'text-zinc-200' : 'text-zinc-900';
+  const caretCls = isLight ? 'text-zinc-300' : 'text-zinc-600';
+  const listToneCls = isLight
+    ? 'bg-[rgb(15,15,15)] text-zinc-100'
+    : 'bg-white text-zinc-900';
+  const activeBgCls = isLight ? 'bg-white/10' : 'bg-black/5';
+
   return (
     <div ref={rootRef} className={`relative ${className ?? ''}`.trim()}>
       <button
@@ -164,18 +177,57 @@ export function Select({
         aria-controls={listboxId}
         aria-expanded={open}
         aria-haspopup='listbox'
-        className={`w-full rounded-md border border-black/30 bg-transparent px-2 py-1.5 text-left text-sm flex items-center justify-between text-zinc-200 focus:outline-none ${buttonClassName ?? ''}`.trim()}
-        onClick={() => setOpen((v) => !v)}
+        className={`w-full rounded-md bg-transparent px-2 py-1.5 text-left text-sm flex items-center justify-between ${triggerTextCls} focus:outline-none ${buttonClassName ?? ''}`.trim()}
+        onClick={() => {
+          const opening = !open;
+          if (opening) {
+            const idx = items.findIndex((it) => it.value === (value ?? ''));
+            setActiveIndex(idx >= 0 ? idx : 0);
+            if (onOpen) onOpen();
+          }
+          setOpen(opening);
+        }}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          if (
+            e.key === 'ArrowDown' ||
+            e.key === 'ArrowUp' ||
+            e.key === ' ' ||
+            e.key === 'Enter'
+          ) {
             e.preventDefault();
-            setOpen(true);
+            if (!open) {
+              const idx = items.findIndex((it) => it.value === (value ?? ''));
+              setActiveIndex(idx >= 0 ? idx : 0);
+              if (onOpen) onOpen();
+              setOpen(true);
+              return;
+            }
+            if (e.key === 'ArrowDown') {
+              setActiveIndex((i) => {
+                let j = Math.min(items.length - 1, i + 1);
+                while (j < items.length && items[j]?.disabled) j += 1;
+                return j;
+              });
+              return;
+            }
+            if (e.key === 'ArrowUp') {
+              setActiveIndex((i) => {
+                let j = Math.max(0, i - 1);
+                while (j >= 0 && items[j]?.disabled) j -= 1;
+                return Math.max(0, j);
+              });
+              return;
+            }
+            if (e.key === 'Enter' || e.key === ' ') {
+              commitSelection(activeIndex);
+              return;
+            }
           }
         }}
       >
         <span className={value ? '' : 'text-zinc-500'}>{label}</span>
         <ArrowBigDown
-          className='float-right opacity-70 text-zinc-300'
+          className={`float-right opacity-70 ${caretCls}`}
           size={14}
           aria-hidden
         />
@@ -186,7 +238,7 @@ export function Select({
           id={listboxId}
           role='listbox'
           aria-activedescendant={`${listboxId}-opt-${activeIndex}`}
-          className={`absolute z-50 mt-1 w-full max-h-56 overflow-auto rounded-md border border-black/30 bg-[rgb(15,15,15)] text-zinc-100 shadow-lg outline-none scroll-y ${listClassName ?? ''}`.trim()}
+          className={`absolute z-50 mt-1 w-full max-h-56 overflow-auto rounded-md border border-black/30 ${listToneCls} shadow-lg outline-none scroll-y ${listClassName ?? ''}`.trim()}
           tabIndex={-1}
         >
           {items.map((it, idx) => {
@@ -201,7 +253,7 @@ export function Select({
                 role='option'
                 aria-selected={selected}
                 aria-disabled={dimmed || undefined}
-                className={`px-2 py-1.5 text-sm cursor-pointer select-none ${active ? 'bg-white/10' : ''} ${selected ? 'font-medium' : ''} ${dimmed ? 'opacity-50 cursor-not-allowed' : ''}`.trim()}
+                className={`px-2 py-1.5 text-sm cursor-pointer select-none ${active ? activeBgCls : ''} ${selected ? 'font-medium' : ''} ${dimmed ? 'opacity-50 cursor-not-allowed' : ''}`.trim()}
                 onMouseEnter={() => !dimmed && setActiveIndex(idx)}
                 onMouseDown={(e) => {
                   e.preventDefault();

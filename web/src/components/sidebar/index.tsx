@@ -74,6 +74,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 Selecionar loteria
               </label>
               <Select
+                theme='light'
                 items={[
                   { value: '', label: 'Escolha a loteria', disabled: true },
                   ...lotterySlugs.map((l) => ({
