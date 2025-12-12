@@ -524,7 +524,20 @@ export default function GamesPanel() {
                 ) : null}
                 <button
                   type='button'
-                  className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                  className='
+                    rounded-md 
+                    border 
+                    border-red-20 
+                    px-3 
+                    py-1 
+                    text-sm 
+                    text-red-300 
+                    hover:bg-red-600 
+                    hover:text-white
+                    w-full
+                    text-center
+                    my-2
+                    '
                   onClick={() => {
                     const n = Math.max(
                       6,
@@ -591,16 +604,18 @@ export default function GamesPanel() {
                     regInvalid[idx]
                       ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
                       : regDuplicateFlags[idx]
-                        ? 'bg-red-10 border-black-30 text-zinc-900 font-semibold'
+                        ? 'bg-(--alertError) border-(--alertError) text-white font-semibold'
                         : 'bg-white border-black-30 text-zinc-900'
                   }`}
                   placeholder='00'
                 />
               ))}
+            </div>
+            <div>
               <div className='items-center gap-2'>
                 <button
                   type='button'
-                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                  className='w-full rounded-md border border-white-10 px-2 py-1 text-sm hover:bg-white-10 my-2'
                   disabled={
                     regParsed.length === 0 ||
                     regInvalid.some(Boolean) ||
@@ -658,7 +673,7 @@ export default function GamesPanel() {
                 </div>
               </div>
             </div>
-            <div className='h-px bg-white/10 my-2' />
+            <div className='h-px bg-white/10 my-5' />
             <div className='flex items-center text-sm text-zinc-300'>
               Gerar combinações
               <InfoTip>
@@ -669,106 +684,6 @@ export default function GamesPanel() {
           </div>
           <div>
             <div className='grid grid-cols-1 gap-2'>
-              <div>
-                <label className='text-xs text-zinc-400'>
-                  Combinações salvas
-                </label>
-                <Select
-                  theme='light'
-                  items={savedSets.map((s) => ({
-                    value: s.id,
-                    label: s.title,
-                  }))}
-                  value={''}
-                  placeholder='Selecione…'
-                  onOpen={async () => {
-                    try {
-                      const res = await fetch(
-                        '/api/loterias/mega-sena/games/sets/list',
-                        {
-                          cache: 'no-store',
-                        },
-                      );
-                      const data = await res.json();
-                      if (res.ok) {
-                        const rows = (data.items ?? []) as Array<{
-                          id: string;
-                          title: string | null;
-                          source_numbers: number[];
-                          sample_size: number;
-                          marked_idx: number | null;
-                        }>;
-                        setSavedSets(
-                          rows.map((it) => ({
-                            id: it.id,
-                            title: String(it.title ?? ''),
-                            source_numbers: it.source_numbers ?? [],
-                            sample_size: Number(it.sample_size ?? 0),
-                            marked_idx: it.marked_idx ?? null,
-                          })),
-                        );
-                      }
-                    } catch {}
-                  }}
-                  onChange={async (id) => {
-                    if (!id) return;
-                    setBusy(true);
-                    setBusyMsg('Carregando combinação…');
-                    try {
-                      const res = await fetch(
-                        `/api/loterias/mega-sena/games/${id}?size=1000`,
-                        {
-                          cache: 'no-store',
-                        },
-                      );
-                      const data = await res.json();
-                      if (!res.ok) {
-                        alert(data?.error || 'Falha ao carregar set.');
-                        return;
-                      }
-                      const set = data.set as {
-                        id: string;
-                        source_numbers: number[];
-                        sample_size: number;
-                        title?: string | null;
-                        marked_idx?: number | null;
-                      };
-                      const src = (set.source_numbers ?? []).map((n) =>
-                        String(n).padStart(2, '0'),
-                      );
-                      setCountInput(
-                        String(Math.max(7, Math.min(15, src.length))),
-                      );
-                      setOtpValues(
-                        src.slice(0, Math.max(7, Math.min(15, src.length))),
-                      );
-                      setOtpInvalid(
-                        Array.from({ length: src.length }, () => false),
-                      );
-                      setKInput(String(set.sample_size).padStart(2, '0'));
-                      setSetId(set.id);
-                      setCurrentSource(set.source_numbers ?? []);
-                      setTitleInput(set.title ?? '');
-                      setMarkedIdx(set.marked_idx ?? null);
-                      const fetchedItems = (
-                        (data.items ?? []) as Array<{
-                          position: number;
-                          numbers: number[];
-                          matches?: number | null;
-                        }>
-                      ).map((it) => ({
-                        position: it.position,
-                        numbers: it.numbers ?? [],
-                        matches: it.matches ?? null,
-                      }));
-                      setItems(fetchedItems);
-                      setManualPositions(new Set());
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                />
-              </div>
               <div>
                 <label className='text-xs text-zinc-400'>
                   Nome da combinação
@@ -1078,6 +993,108 @@ export default function GamesPanel() {
               ) : null}
             </div>
           </div>
+          <div>
+            <div>
+              <label className='text-xs text-zinc-400'>
+                Combinações salvas
+              </label>
+              <Select
+                theme='light'
+                items={savedSets.map((s) => ({
+                  value: s.id,
+                  label: s.title,
+                }))}
+                value={''}
+                placeholder='Selecione…'
+                onOpen={async () => {
+                  try {
+                    const res = await fetch(
+                      '/api/loterias/mega-sena/games/sets/list',
+                      {
+                        cache: 'no-store',
+                      },
+                    );
+                    const data = await res.json();
+                    if (res.ok) {
+                      const rows = (data.items ?? []) as Array<{
+                        id: string;
+                        title: string | null;
+                        source_numbers: number[];
+                        sample_size: number;
+                        marked_idx: number | null;
+                      }>;
+                      setSavedSets(
+                        rows.map((it) => ({
+                          id: it.id,
+                          title: String(it.title ?? ''),
+                          source_numbers: it.source_numbers ?? [],
+                          sample_size: Number(it.sample_size ?? 0),
+                          marked_idx: it.marked_idx ?? null,
+                        })),
+                      );
+                    }
+                  } catch {}
+                }}
+                onChange={async (id) => {
+                  if (!id) return;
+                  setBusy(true);
+                  setBusyMsg('Carregando combinação…');
+                  try {
+                    const res = await fetch(
+                      `/api/loterias/mega-sena/games/${id}?size=1000`,
+                      {
+                        cache: 'no-store',
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao carregar set.');
+                      return;
+                    }
+                    const set = data.set as {
+                      id: string;
+                      source_numbers: number[];
+                      sample_size: number;
+                      title?: string | null;
+                      marked_idx?: number | null;
+                    };
+                    const src = (set.source_numbers ?? []).map((n) =>
+                      String(n).padStart(2, '0'),
+                    );
+                    setCountInput(
+                      String(Math.max(7, Math.min(15, src.length))),
+                    );
+                    setOtpValues(
+                      src.slice(0, Math.max(7, Math.min(15, src.length))),
+                    );
+                    setOtpInvalid(
+                      Array.from({ length: src.length }, () => false),
+                    );
+                    setKInput(String(set.sample_size).padStart(2, '0'));
+                    setSetId(set.id);
+                    setCurrentSource(set.source_numbers ?? []);
+                    setTitleInput(set.title ?? '');
+                    setMarkedIdx(set.marked_idx ?? null);
+                    const fetchedItems = (
+                      (data.items ?? []) as Array<{
+                        position: number;
+                        numbers: number[];
+                        matches?: number | null;
+                      }>
+                    ).map((it) => ({
+                      position: it.position,
+                      numbers: it.numbers ?? [],
+                      matches: it.matches ?? null,
+                    }));
+                    setItems(fetchedItems);
+                    setManualPositions(new Set());
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Conferir */}
@@ -1257,7 +1274,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='w-full rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                className='w-full rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
                 onClick={async () => {
                   setBusy(true);
                   setBusyMsg('Limpando conferências…');
@@ -1439,7 +1456,7 @@ export default function GamesPanel() {
         </button>
         <button
           type='button'
-          className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+          className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
           onClick={() => {
             setItems([]);
             setSetId(null);
