@@ -4,6 +4,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@/components/select/Select';
 import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
+function InfoTip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className='group relative inline-flex items-center'>
+      <button
+        type='button'
+        tabIndex={0}
+        aria-label='Informação'
+        className='ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-[10px] leading-none text-zinc-300 hover:bg-white/10 focus:outline-none'
+      >
+        i
+      </button>
+      <span
+        role='tooltip'
+        className='pointer-events-none absolute left-1/2 top-full z-50 mt-1 hidden w-64 -translate-x-1/2 rounded-md border border-white/10 bg-[rgb(15,15,15)] p-2 text-xs text-zinc-100 shadow-lg group-hover:block group-focus-within:block'
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
 type GeneratedItem = {
   position: number;
   numbers: number[];
@@ -452,13 +473,15 @@ export default function GamesPanel() {
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         {/* Gerador (inclui Registrar apostas acima) */}
         <div className='rounded-md border border-white/10 p-3'>
-          <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
+          <div className='mb-2 flex items-center text-sm text-zinc-300'>
+            Registrar apostas
+            <InfoTip>
+              Informe {regCountInput || '6'} dezenas para cadastrar uma aposta
+              manualmente.
+            </InfoTip>
+          </div>
           <div className='space-y-2'>
             <div className='flex items-start justify-between gap-4'>
-              <div className='text-xs text-zinc-500'>
-                Informe {regCountInput || '6'} dezenas para cadastrar uma aposta
-                manualmente.
-              </div>
               {/* <div className='flex flex-col items-center gap-2'> */}
               <div className='flex w-full flex-col'>
                 <label className='text-xs text-zinc-400'>
@@ -636,7 +659,13 @@ export default function GamesPanel() {
               </div>
             </div>
             <div className='h-px bg-white/10 my-2' />
-            <div className='text-sm text-zinc-300'>Gerar combinações</div>
+            <div className='flex items-center text-sm text-zinc-300'>
+              Gerar combinações
+              <InfoTip>
+                Informe {countInput || '7'} dezenas abaixo. Cada “caixinha”
+                aceita 2 algarismos e avança automaticamente.
+              </InfoTip>
+            </div>
           </div>
           <div>
             <div className='grid grid-cols-1 gap-2'>
@@ -863,11 +892,6 @@ export default function GamesPanel() {
                   />
                 </label>
               </div>
-              <div className='text-xs text-zinc-500'>
-                Informe {countInput || '7'} dezenas abaixo. Cada “caixinha”
-                aceita 2 algarismos e avança automaticamente.
-              </div>
-
               <div className='flex flex-wrap gap-2'>
                 {otpValues.map((val, idx) => (
                   <div key={idx} className='flex flex-col items-center'>
@@ -1058,12 +1082,14 @@ export default function GamesPanel() {
 
         {/* Conferir */}
         <div className='rounded-md border border-white/10 p-3'>
-          <div className='text-sm text-zinc-300 mb-2'>Conferir resultado</div>
-          <div className='space-y-2'>
-            <div className='text-xs text-zinc-500'>
+          <div className='mb-2 flex items-center text-sm text-zinc-300'>
+            Conferir resultado
+            <InfoTip>
               Informe as 6 dezenas do sorteio. Cada “caixinha” aceita 2
               algarismos.
-            </div>
+            </InfoTip>
+          </div>
+          <div className='space-y-2'>
             <div className='flex flex-wrap gap-2'>
               {drawOtp.map((val, idx) => (
                 <input
@@ -1177,10 +1203,10 @@ export default function GamesPanel() {
                 />
               ))}
             </div>
-            <div className='flex items-center gap-2'>
+            <div className='grid grid-cols-2 gap-2'>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   checkLoading ||
                   !setId ||
@@ -1198,7 +1224,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   !setId ||
                   // Só pode salvar após conferência ter sido feita (checkedDraw preenchido)
@@ -1214,7 +1240,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 onClick={() => {
                   setDrawOtp(Array.from({ length: 6 }, () => ''));
                   setDrawInvalid(Array.from({ length: 6 }, () => false));
@@ -1231,7 +1257,7 @@ export default function GamesPanel() {
               </button>
               <button
                 type='button'
-                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                className='w-full rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
                 onClick={async () => {
                   setBusy(true);
                   setBusyMsg('Limpando conferências…');
