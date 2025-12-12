@@ -91,6 +91,18 @@ export default function GamesPanel() {
       marked_idx: number | null;
     }>
   >([]);
+  const [titleInput, setTitleInput] = useState('');
+  const [markedIdx, setMarkedIdx] = useState<number | null>(null);
+  const [currentSource, setCurrentSource] = useState<number[] | null>(null);
+  const [savedSets, setSavedSets] = useState<
+    Array<{
+      id: string;
+      title: string;
+      source_numbers: number[];
+      sample_size: number;
+      marked_idx: number | null;
+    }>
+  >([]);
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [drawOtp, setDrawOtp] = useState<string[]>(
     Array.from({ length: 6 }, () => ''),
@@ -559,210 +571,7 @@ export default function GamesPanel() {
           </div>
           <div>
             <div className='grid grid-cols-1 gap-2'>
-              <div>
-                <label className='text-xs text-zinc-400'>
-                  Combinações salvas
-                </label>
-                <Select
-                  theme='light'
-                  items={savedSets.map((s) => ({
-                    value: s.id,
-                    label: s.title,
-                  }))}
-                  value={''}
-                  placeholder='Selecione…'
-                  onOpen={async () => {
-                    try {
-                      const res = await fetch(
-                        '/api/loterias/mega-sena/games/sets/list',
-                        {
-                          cache: 'no-store',
-                        },
-                      );
-                      const data = await res.json();
-                      if (res.ok) {
-                        const rows = (data.items ?? []) as Array<{
-                          id: string;
-                          title: string | null;
-                          source_numbers: number[];
-                          sample_size: number;
-                          marked_idx: number | null;
-                        }>;
-                        setSavedSets(
-                          rows.map((it) => ({
-                            id: it.id,
-                            title: String(it.title ?? ''),
-                            source_numbers: it.source_numbers ?? [],
-                            sample_size: Number(it.sample_size ?? 0),
-                            marked_idx: it.marked_idx ?? null,
-                          })),
-                        );
-                      }
-                    } catch {}
-                  }}
-                  onChange={async (id) => {
-                    if (!id) return;
-                    setBusy(true);
-                    setBusyMsg('Carregando combinação…');
-                    try {
-                      const res = await fetch(
-                        `/api/loterias/mega-sena/games/${id}?size=1000`,
-                        {
-                          cache: 'no-store',
-                        },
-                      );
-                      const data = await res.json();
-                      if (!res.ok) {
-                        alert(data?.error || 'Falha ao carregar set.');
-                        return;
-                      }
-                      const set = data.set as {
-                        id: string;
-                        source_numbers: number[];
-                        sample_size: number;
-                        title?: string | null;
-                        marked_idx?: number | null;
-                      };
-                      const src = (set.source_numbers ?? []).map((n) =>
-                        String(n).padStart(2, '0'),
-                      );
-                      setCountInput(
-                        String(Math.max(7, Math.min(15, src.length))),
-                      );
-                      setOtpValues(
-                        src.slice(0, Math.max(7, Math.min(15, src.length))),
-                      );
-                      setOtpInvalid(
-                        Array.from({ length: src.length }, () => false),
-                      );
-                      setKInput(String(set.sample_size).padStart(2, '0'));
-                      setSetId(set.id);
-                      setCurrentSource(set.source_numbers ?? []);
-                      setTitleInput(set.title ?? '');
-                      setMarkedIdx(set.marked_idx ?? null);
-                      const fetchedItems = (
-                        (data.items ?? []) as Array<{
-                          position: number;
-                          numbers: number[];
-                          matches?: number | null;
-                        }>
-                      ).map((it) => ({
-                        position: it.position,
-                        numbers: it.numbers ?? [],
-                        matches: it.matches ?? null,
-                      }));
-                      setItems(fetchedItems);
-                      setManualPositions(new Set());
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                />
-              </div>
-              <div>
-                <label className='text-xs text-zinc-400'>
-                  Nome da combinação
-                  <input
-                    value={titleInput}
-                    onChange={(e) => setTitleInput(e.target.value)}
-                    className='w-full rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
-                    placeholder='Ex.: Universo 01'
-                  />
-                </label>
-              </div>
-
-              {setId ? (
-                <div className='flex justify-between gap-2'>
-                  <button
-                    type='button'
-                    className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                    disabled={!setId || !titleInput.trim()}
-                    onClick={async () => {
-                      if (!setId || !titleInput.trim()) return;
-                      setBusy(true);
-                      setBusyMsg('Salvando meta…');
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/mega-sena/games/sets/save-meta',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({
-                              setId,
-                              title: titleInput.trim(),
-                              markedIdx,
-                            }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao salvar meta.');
-                        } else {
-                          alert('Salvo com sucesso.');
-                        }
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    {setId ? 'Salvar/Update' : 'Salvar'}
-                  </button>
-
-                  <button
-                    type='button'
-                    className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
-                    onClick={async () => {
-                      if (!setId) return;
-                      if (
-                        !window.confirm(
-                          'Excluir permanentemente esta combinação salva?',
-                        )
-                      )
-                        return;
-                      if (
-                        !window.confirm(
-                          'Confirma a exclusão? Esta ação não pode ser desfeita.',
-                        )
-                      )
-                        return;
-                      setBusy(true);
-                      setBusyMsg('Excluindo combinação…');
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/mega-sena/games/sets/delete',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({ setId }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao excluir combinação.');
-                          return;
-                        }
-                        // reset UI
-                        setItems([]);
-                        setSetId(null);
-                        setCheckedDraw([]);
-                        setManualPositions(new Set());
-                        setTitleInput('');
-                        setMarkedIdx(null);
-                        setCurrentSource(null);
-                        setCountInput('7');
-                        setOtpValues(Array.from({ length: 7 }, () => ''));
-                        setOtpInvalid(Array.from({ length: 7 }, () => false));
-                        alert('Combinação excluída.');
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    Excluir combinação (BD)
-                  </button>
-                </div>
-              ) : null}
-              <div className='flex justify-between'>
+              <div className='flex items-center gap-2'>
                 <label className='block text-xs text-zinc-400'>
                   Quantidade de dezenas a combinar (7 a 15)
                   <input
