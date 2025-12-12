@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Home, LogOut, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { Select } from '@/components/select/Select';
 const itemBase =
   'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-zinc-300/90 hover:text-white hover:bg-white/10 transition-colors';
 
@@ -72,32 +73,26 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
               <label htmlFor='lottery' className='sr-only'>
                 Selecionar loteria
               </label>
-              <div className='glass-dark border px-2 py-1.5'>
-                <select
-                  id='lottery'
-                  className='text-sm w-full outline-none'
-                  value={selectedLottery}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v) {
-                      setSelectedLottery(v);
-                      try {
-                        localStorage.setItem('lastLottery', v);
-                      } catch {}
-                      if (pathname !== `/app/${v}`) router.push(`/app/${v}`);
-                    }
-                  }}
-                >
-                  <option value='' disabled>
-                    Escolha a loteria
-                  </option>
-                  {lotterySlugs.map((l) => (
-                    <option key={l.slug} value={l.slug}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                theme='light'
+                items={[
+                  { value: '', label: 'Escolha a loteria', disabled: true },
+                  ...lotterySlugs.map((l) => ({
+                    value: l.slug,
+                    label: l.label,
+                  })),
+                ]}
+                value={selectedLottery || ''}
+                onChange={(v) => {
+                  if (!v) return;
+                  setSelectedLottery(v);
+                  try {
+                    localStorage.setItem('lastLottery', v);
+                  } catch {}
+                  if (pathname !== `/app/${v}`) router.push(`/app/${v}`);
+                }}
+                className='glass-dark border'
+              />
             </div>
           </div>
           <div className='mt-6 space-y-1'>
