@@ -91,18 +91,6 @@ export default function GamesPanel() {
       marked_idx: number | null;
     }>
   >([]);
-  const [titleInput, setTitleInput] = useState('');
-  const [markedIdx, setMarkedIdx] = useState<number | null>(null);
-  const [currentSource, setCurrentSource] = useState<number[] | null>(null);
-  const [savedSets, setSavedSets] = useState<
-    Array<{
-      id: string;
-      title: string;
-      source_numbers: number[];
-      sample_size: number;
-      marked_idx: number | null;
-    }>
-  >([]);
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [drawOtp, setDrawOtp] = useState<string[]>(
     Array.from({ length: 6 }, () => ''),
