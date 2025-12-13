@@ -167,6 +167,7 @@ export function Select({
     ? 'bg-[rgb(15,15,15)] text-zinc-100'
     : 'bg-white text-zinc-900';
   const activeBgCls = isLight ? 'bg-white/10' : 'bg-black/5';
+  const borderCls = isLight ? 'border-white/10' : 'border-black/20';
 
   return (
     <div ref={rootRef} className={`relative ${className ?? ''}`.trim()}>
@@ -177,7 +178,7 @@ export function Select({
         aria-controls={listboxId}
         aria-expanded={open}
         aria-haspopup='listbox'
-        className={`w-full rounded-md bg-transparent px-2 py-1.5 text-left text-sm flex items-center justify-between ${triggerTextCls} focus:outline-none ${buttonClassName ?? ''}`.trim()}
+        className={`w-full rounded-md bg-transparent px-2 py-1.5 text-left text-sm flex items-center justify-between border ${borderCls} ${triggerTextCls} focus:outline-none ${buttonClassName ?? ''}`.trim()}
         onClick={() => {
           const opening = !open;
           if (opening) {
@@ -238,7 +239,7 @@ export function Select({
           id={listboxId}
           role='listbox'
           aria-activedescendant={`${listboxId}-opt-${activeIndex}`}
-          className={`absolute z-50 mt-1 w-full max-h-56 overflow-auto rounded-md border border-black/30 ${listToneCls} shadow-lg outline-none scroll-y ${listClassName ?? ''}`.trim()}
+          className={`absolute z-50 mt-1 w-full max-h-56 overflow-auto rounded-md border ${borderCls} ${listToneCls} shadow-lg outline-none scroll-y ${listClassName ?? ''}`.trim()}
           tabIndex={-1}
         >
           {items.map((it, idx) => {

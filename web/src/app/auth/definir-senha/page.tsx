@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PasswordForm } from './PasswordForm';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
+import Image from 'next/image';
 
 export default function DefinirSenhaPage() {
   const supabase = createSupabaseBrowserClient();
@@ -209,18 +210,27 @@ export default function DefinirSenhaPage() {
         Crie sua senha de acesso. Ela deve ter pelo menos 20 caracteres e
         incluir caracteres especiais.
       </p>
+      <div className='mt-4 flex justify-center relative z-50'>
+        <Image
+          src='/assets/Logo_Aleara.svg'
+          alt='Aleara'
+          width={120}
+          height={120}
+          priority
+        />
+      </div>
       <div className='mt-4 rounded-md border border-white/10 bg-card-foreground p-4 relative z-50'>
         {!ready ? (
           <div className='text-sm text-zinc-300'>Preparando…</div>
         ) : authed ? (
           <PasswordForm />
         ) : (
-          <div className='space-y-3 text-sm text-zinc-300'>
-            <div>Link inválido ou expirado.</div>
+          <div className='w-full space-y-3 text-sm text-zinc-900'>
+            <div className='font-medium'>Link inválido ou expirado.</div>
             <div className='space-y-2'>
               <label
                 htmlFor='invite-email'
-                className='block text-xs text-zinc-400'
+                className='block text-xs text-zinc-700'
               >
                 Informe seu e-mail para reenviar o convite
               </label>
@@ -230,7 +240,7 @@ export default function DefinirSenhaPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder='email@exemplo.com'
-                className='h-11 w-full rounded-md border border-white/20 bg-white/5 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)'
+                className='h-11 w-full rounded-md border border-black-30 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-500 focus:ring-2 focus:ring-(--wine)/40 focus:border-(--wine)'
               />
               <button
                 type='button'
@@ -260,7 +270,7 @@ export default function DefinirSenhaPage() {
               >
                 {resending ? 'Reenviando…' : 'Reenviar convite'}
               </button>
-              <div className='text-xs text-zinc-500'>ou</div>
+              <div className='text-xs text-zinc-600'>ou</div>
               <button
                 type='button'
                 disabled={!email}
@@ -286,7 +296,7 @@ export default function DefinirSenhaPage() {
                     setStatus('Falha ao enviar magic link.');
                   }
                 }}
-                className='inline-flex items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm text-zinc-100 hover:bg-white/10 disabled:opacity-60'
+                className='inline-flex items-center justify-center rounded-md border border-black-30 px-4 py-2 text-sm text-zinc-900 hover:bg-black/5 disabled:opacity-60'
               >
                 Enviar link de acesso (magic link)
               </button>
