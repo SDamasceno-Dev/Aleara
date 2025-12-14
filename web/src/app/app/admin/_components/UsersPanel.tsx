@@ -249,9 +249,10 @@ function RemovalModalContent({
       {/* Permanent removal warning */}
       <div className='mb-3 rounded-md border border-red-700/40 bg-red-900/20 px-3 py-2'>
         <p className='text-[12px] text-red-400 leading-snug'>
-          Atenção: a remoção é <strong className='font-semibold'>permanente</strong>.
-          O e-mail será removido da allowlist e a <strong>conta/perfil no Supabase</strong> será excluída.
-          Esta ação <strong>não pode</strong> ser desfeita.
+          Atenção: a remoção é{' '}
+          <strong className='font-semibold'>permanente</strong>. O e-mail será
+          removido da allowlist e a <strong>conta/perfil no Supabase</strong>{' '}
+          será excluída. Esta ação <strong>não pode</strong> ser desfeita.
         </p>
       </div>
       {/* Search area (fixed inside dialog content) */}
@@ -374,8 +375,10 @@ function RemovalModalContent({
               {confirming ? (
                 <>
                   <span className='text-xs text-zinc-600'>
-                    Confirmar <strong className='text-red-500'>remoção PERMANENTE</strong> de {selectedCount}{' '}
-                    selecionado(s)? Esta ação não pode ser desfeita.
+                    Confirmar{' '}
+                    <strong className='text-red-500'>remoção PERMANENTE</strong>{' '}
+                    de {selectedCount} selecionado(s)? Esta ação não pode ser
+                    desfeita.
                   </span>
                   <Button
                     type='button'

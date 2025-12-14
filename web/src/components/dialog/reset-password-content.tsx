@@ -76,7 +76,9 @@ export function ResetPasswordContent() {
               setLoading(false);
             } catch (e: unknown) {
               setError(
-                e instanceof Error ? e.message : 'Falha ao solicitar redefinição.',
+                e instanceof Error
+                  ? e.message
+                  : 'Falha ao solicitar redefinição.',
               );
               setLoading(false);
             }
