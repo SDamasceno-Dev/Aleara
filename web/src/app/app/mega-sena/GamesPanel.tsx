@@ -695,98 +695,6 @@ export default function GamesPanel() {
                   />
                 </label>
               </div>
-
-              {setId ? (
-                <div className='flex justify-between gap-2'>
-                  <button
-                    type='button'
-                    className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                    disabled={!setId || !titleInput.trim()}
-                    onClick={async () => {
-                      if (!setId || !titleInput.trim()) return;
-                      setBusy(true);
-                      setBusyMsg('Salvando meta…');
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/mega-sena/games/sets/save-meta',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({
-                              setId,
-                              title: titleInput.trim(),
-                              markedIdx,
-                            }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao salvar meta.');
-                        } else {
-                          alert('Salvo com sucesso.');
-                        }
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    {setId ? 'Salvar/Update' : 'Salvar'}
-                  </button>
-
-                  <button
-                    type='button'
-                    className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
-                    onClick={async () => {
-                      if (!setId) return;
-                      if (
-                        !window.confirm(
-                          'Excluir permanentemente esta combinação salva?',
-                        )
-                      )
-                        return;
-                      if (
-                        !window.confirm(
-                          'Confirma a exclusão? Esta ação não pode ser desfeita.',
-                        )
-                      )
-                        return;
-                      setBusy(true);
-                      setBusyMsg('Excluindo combinação…');
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/mega-sena/games/sets/delete',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({ setId }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao excluir combinação.');
-                          return;
-                        }
-                        // reset UI
-                        setItems([]);
-                        setSetId(null);
-                        setCheckedDraw([]);
-                        setManualPositions(new Set());
-                        setTitleInput('');
-                        setMarkedIdx(null);
-                        setCurrentSource(null);
-                        setCountInput('7');
-                        setOtpValues(Array.from({ length: 7 }, () => ''));
-                        setOtpInvalid(Array.from({ length: 7 }, () => false));
-                        alert('Combinação excluída.');
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    Excluir combinação (BD)
-                  </button>
-                </div>
-              ) : null}
               <div className='flex justify-between'>
                 <label className='block text-xs text-zinc-400'>
                   Quantidade de dezenas a combinar (7 a 15)
@@ -992,6 +900,99 @@ export default function GamesPanel() {
                 </span>
               ) : null}
             </div>
+          </div>
+          <div className='mt-4 mb-2'>
+            {setId ? (
+              <div className='flex justify-between gap-2'>
+                <button
+                  type='button'
+                  className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                  disabled={!setId || !titleInput.trim()}
+                  onClick={async () => {
+                    if (!setId || !titleInput.trim()) return;
+                    setBusy(true);
+                    setBusyMsg('Salvando meta…');
+                    try {
+                      const res = await fetch(
+                        '/api/loterias/mega-sena/games/sets/save-meta',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            setId,
+                            title: titleInput.trim(),
+                            markedIdx,
+                          }),
+                        },
+                      );
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao salvar meta.');
+                      } else {
+                        alert('Salvo com sucesso.');
+                      }
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {setId ? 'Salvar/Update' : 'Salvar'}
+                </button>
+
+                <button
+                  type='button'
+                  className='w-full rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                  onClick={async () => {
+                    if (!setId) return;
+                    if (
+                      !window.confirm(
+                        'Excluir permanentemente esta combinação salva?',
+                      )
+                    )
+                      return;
+                    if (
+                      !window.confirm(
+                        'Confirma a exclusão? Esta ação não pode ser desfeita.',
+                      )
+                    )
+                      return;
+                    setBusy(true);
+                    setBusyMsg('Excluindo combinação…');
+                    try {
+                      const res = await fetch(
+                        '/api/loterias/mega-sena/games/sets/delete',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({ setId }),
+                        },
+                      );
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao excluir combinação.');
+                        return;
+                      }
+                      // reset UI
+                      setItems([]);
+                      setSetId(null);
+                      setCheckedDraw([]);
+                      setManualPositions(new Set());
+                      setTitleInput('');
+                      setMarkedIdx(null);
+                      setCurrentSource(null);
+                      setCountInput('7');
+                      setOtpValues(Array.from({ length: 7 }, () => ''));
+                      setOtpInvalid(Array.from({ length: 7 }, () => false));
+                      alert('Combinação excluída.');
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Excluir combinação (BD)
+                </button>
+              </div>
+            ) : null}
           </div>
           <div>
             <div>

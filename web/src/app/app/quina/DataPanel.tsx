@@ -35,7 +35,18 @@ function formatBRL(v: number | null): string {
 
 export async function DataPanel() {
   const supabase = await createSupabaseServerClient();
-  const [drawsRes, statsRes] = await Promise.all([
+  const previewKeys = [
+    'overdue_dezena',
+    'pair_freq',
+    'consecutive_pair',
+    'sum_range_20',
+    'parity_comp',
+    'repeaters_prev',
+    'window200_hot',
+    'decade_dist',
+    'last_digit',
+  ];
+  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] = await Promise.all([
     supabase
       .from('quina_draws')
       .select(
@@ -48,9 +59,44 @@ export async function DataPanel() {
       .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
       .order('vezes_sorteada', { ascending: false })
       .order('dezena', { ascending: true }),
+    supabase.from('quina_stats_catalog').select('study_key, title'),
+    supabase
+      .from('quina_stats_items')
+      .select('study_key, item_key, rank, value, extra')
+      .in('study_key', previewKeys)
+      .order('study_key', { ascending: true })
+      .order('rank', { ascending: true }),
   ]);
   const rows = (drawsRes.data as DrawRow[]) ?? [];
   const stats = (statsRes.data as StatRow[]) ?? [];
+  const allStudies = (
+    (studiesCatalogRes.data ?? []) as Array<{ study_key: string; title: string }>
+  ).map((c) => ({ study_key: c.study_key, title: c.title }));
+  const previewsMap = new Map<
+    string,
+    Array<{ item_key: string; rank: number; value: number; extra?: Record<string, unknown> }>
+  >();
+  for (const it of (studiesItemsRes.data ?? []) as Array<{
+    study_key: string;
+    item_key: string;
+    rank: number;
+    value: number | string;
+    extra?: Record<string, unknown>;
+  }>) {
+    const arr = previewsMap.get(it.study_key) ?? [];
+    arr.push({
+      item_key: it.item_key,
+      rank: it.rank,
+      value: Number(it.value),
+      extra: it.extra,
+    });
+    previewsMap.set(it.study_key, arr);
+  }
+  const previews = allStudies.map((s) => ({
+    study_key: s.study_key,
+    title: s.title,
+    items: (previewsMap.get(s.study_key) ?? []).slice(0, 5),
+  }));
   return (
     <section className='space-y-4'>
       <div className='rounded-lg border border-border/60 bg-card/90 p-4'>
@@ -132,7 +178,7 @@ export async function DataPanel() {
             </div>
           )}
         </div>
-        <StudiesSidebar />
+        <StudiesSidebar previews={previews} allStudies={allStudies} />
       </div>
     </section>
   );
