@@ -46,8 +46,8 @@ export default async function QuinaPage({
         ariaLabel='Quina'
         refreshOnChange
         className='min-h-0 flex flex-col'
-        tablistClassName='sticky top-0 z-10 bg-background/90 backdrop-blur-sm'
-        panelsClassName='min-h-0 flex-1 overflow-y-auto scroll-y pt-4'
+        tablistClassName='sticky top-0 z-10'
+        panelsClassName='min-h-0 flex-1 overflow-y-auto scroll-y'
       />
     </div>
   );
