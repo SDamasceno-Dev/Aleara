@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.2.0...aleara-web-v0.3.0) (2025-12-15)
+
+
+### Features
+
+* implement dark mode styles for native form controls ([#38](https://github.com/SDamasceno-Dev/Aleara/issues/38)) ([c33f9ea](https://github.com/SDamasceno-Dev/Aleara/commit/c33f9eabc81190e074a5dc5a19dfac26231b62d2))
+
 ## [0.2.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.1.0...aleara-web-v0.2.0) (2025-12-08)
 
 
