@@ -46,35 +46,44 @@ export async function DataPanel() {
     'decade_dist',
     'last_digit',
   ];
-  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] = await Promise.all([
-    supabase
-      .from('quina_draws')
-      .select(
-        'concurso, data_sorteio, bola1, bola2, bola3, bola4, bola5, estimativa_premio',
-      )
-      .order('concurso', { ascending: false })
-      .limit(3),
-    supabase
-      .from('quina_stats_dezenas')
-      .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
-      .order('vezes_sorteada', { ascending: false })
-      .order('dezena', { ascending: true }),
-    supabase.from('quina_stats_catalog').select('study_key, title'),
-    supabase
-      .from('quina_stats_items')
-      .select('study_key, item_key, rank, value, extra')
-      .in('study_key', previewKeys)
-      .order('study_key', { ascending: true })
-      .order('rank', { ascending: true }),
-  ]);
+  const [drawsRes, statsRes, studiesCatalogRes, studiesItemsRes] =
+    await Promise.all([
+      supabase
+        .from('quina_draws')
+        .select(
+          'concurso, data_sorteio, bola1, bola2, bola3, bola4, bola5, estimativa_premio',
+        )
+        .order('concurso', { ascending: false })
+        .limit(3),
+      supabase
+        .from('quina_stats_dezenas')
+        .select('dezena, vezes_sorteada, pct_sorteios, total_sorteios')
+        .order('vezes_sorteada', { ascending: false })
+        .order('dezena', { ascending: true }),
+      supabase.from('quina_stats_catalog').select('study_key, title'),
+      supabase
+        .from('quina_stats_items')
+        .select('study_key, item_key, rank, value, extra')
+        .in('study_key', previewKeys)
+        .order('study_key', { ascending: true })
+        .order('rank', { ascending: true }),
+    ]);
   const rows = (drawsRes.data as DrawRow[]) ?? [];
   const stats = (statsRes.data as StatRow[]) ?? [];
   const allStudies = (
-    (studiesCatalogRes.data ?? []) as Array<{ study_key: string; title: string }>
+    (studiesCatalogRes.data ?? []) as Array<{
+      study_key: string;
+      title: string;
+    }>
   ).map((c) => ({ study_key: c.study_key, title: c.title }));
   const previewsMap = new Map<
     string,
-    Array<{ item_key: string; rank: number; value: number; extra?: Record<string, unknown> }>
+    Array<{
+      item_key: string;
+      rank: number;
+      value: number;
+      extra?: Record<string, unknown>;
+    }>
   >();
   for (const it of (studiesItemsRes.data ?? []) as Array<{
     study_key: string;
