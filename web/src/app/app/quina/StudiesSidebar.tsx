@@ -1,41 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Select } from '@/components/select/Select';
 
-type CatalogItem = { study_key: string; title: string };
-type StudyItem = {
-  rank: number;
-  item_key: string;
-  value: number;
-  extra?: Record<string, unknown>;
+type StudyPreview = {
+  study_key: string;
+  title: string;
+  items: Array<{
+    item_key: string;
+    rank: number;
+    value: number;
+    extra?: Record<string, unknown>;
+  }>;
 };
 
-export function StudiesSidebar() {
-  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+export function StudiesSidebar({
+  previews,
+  allStudies,
+}: {
+  previews: StudyPreview[];
+  allStudies: Array<{ study_key: string; title: string }>;
+}) {
   const [selected, setSelected] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [studyTitle, setStudyTitle] = useState<string>('');
-  const [items, setItems] = useState<StudyItem[]>([]);
+  const [items, setItems] = useState<
+    Array<{ rank: number; item_key: string; value: number }>
+  >([]);
 
-  useEffect(() => {
-    (async () => {
-      const res = await fetch('/api/loterias/quina/studies');
-      const data = await res.json();
-      setCatalog(data?.catalog ?? []);
-    })();
-  }, []);
+  const mapTitle = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of allStudies) m.set(s.study_key, s.title);
+    return m;
+  }, [allStudies]);
 
   async function loadStudy(key: string) {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/loterias/quina/studies?study_key=${encodeURIComponent(key)}&limit=60`,
+        `/api/loterias/quina/studies?study_key=${encodeURIComponent(
+          key,
+        )}&limit=60`,
       );
       const data = await res.json();
       setStudyTitle(data?.study?.title ?? key);
-      setItems(data?.items ?? []);
+      setItems(
+        ((data?.items ?? []) as Array<{
+          rank: number;
+          item_key: string;
+          value: number;
+        }>) ?? [],
+      );
       setOpen(true);
       setSelected('');
     } finally {
@@ -45,17 +61,45 @@ export function StudiesSidebar() {
 
   return (
     <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
-      <div className='text-sm text-zinc-200 mb-2'>Estudos</div>
-      <Select
-        theme='light'
-        items={catalog.map((c) => ({ value: c.study_key, label: c.title }))}
-        value={selected}
-        placeholder='Escolha uma opção'
-        onChange={(v) => {
-          setSelected(v);
-          if (v) loadStudy(v);
-        }}
-      />
+      <div className='mb-3 flex items-center justify-between gap-2'>
+        <div className='text-sm text-zinc-200'>Estudos</div>
+        <div className='min-w-0'>
+          <Select
+            theme='light'
+            items={allStudies.map((s) => ({
+              value: s.study_key,
+              label: s.title,
+            }))}
+            value={selected}
+            placeholder='Escolha uma opção'
+            onChange={(v) => {
+              setSelected(v);
+              if (v) loadStudy(v);
+            }}
+          />
+        </div>
+      </div>
+      <div className='space-y-4'>
+        {previews
+          .filter((p) => (p.items?.length ?? 0) > 0)
+          .map((p) => (
+            <div key={p.study_key} className='rounded-md border border-white/10 p-3'>
+              <div className='text-sm text-zinc-400 mb-2'>{p.title}</div>
+              <ul className='text-sm text-zinc-300/90 space-y-1'>
+                {p.items.slice(0, 5).map((it) => (
+                  <li
+                    key={it.item_key}
+                    className='flex items-center justify-between'
+                  >
+                    <span>{`${String(it.item_key).replace(/^.*?:/, '')} • ${it.value}`}</span>
+                    <span className='text-zinc-500'>#{it.rank}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+      </div>
+
       {open ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
           <button
@@ -88,7 +132,7 @@ export function StudiesSidebar() {
                       {items.map((it) => (
                         <tr
                           key={it.item_key}
-                          className='border-t border-black/10 hover:bg-[var(--black-10)] cursor-pointer'
+                          className='border-t border-black/10 hover:bg-black-10 cursor-pointer'
                         >
                           <td className='py-2 pl-3 pr-3 text-zinc-600'>
                             {it.rank}
