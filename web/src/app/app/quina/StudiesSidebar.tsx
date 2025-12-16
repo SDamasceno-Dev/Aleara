@@ -83,7 +83,10 @@ export function StudiesSidebar({
         {previews
           .filter((p) => (p.items?.length ?? 0) > 0)
           .map((p) => (
-            <div key={p.study_key} className='rounded-md border border-white/10 p-3'>
+            <div
+              key={p.study_key}
+              className='rounded-md border border-white/10 p-3'
+            >
               <div className='text-sm text-zinc-400 mb-2'>{p.title}</div>
               <ul className='text-sm text-zinc-300/90 space-y-1'>
                 {p.items.slice(0, 5).map((it) => (
