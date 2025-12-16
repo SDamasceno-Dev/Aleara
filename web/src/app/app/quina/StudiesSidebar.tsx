@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Select } from '@/components/select/Select';
 
 type StudyPreview = {
@@ -28,12 +28,6 @@ export function StudiesSidebar({
   const [items, setItems] = useState<
     Array<{ rank: number; item_key: string; value: number }>
   >([]);
-
-  const mapTitle = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const s of allStudies) m.set(s.study_key, s.title);
-    return m;
-  }, [allStudies]);
 
   async function loadStudy(key: string) {
     setLoading(true);
