@@ -40,8 +40,7 @@ export function StudiesSidebar({
       consecutive_pair: 'Pares consecutivos (n e n+1) mais frequentes.',
       sum_range_20:
         'Faixas de soma (largura 20) mais comuns entre as 5 dezenas.',
-      parity_comp:
-        'Composições de pares/ímpares mais frequentes (ex.: 3p-2i).',
+      parity_comp: 'Composições de pares/ímpares mais frequentes (ex.: 3p-2i).',
       repeaters_prev:
         'Quantidade de repetidores em relação ao sorteio anterior.',
       window200_hot: 'Dezenas mais frequentes nos últimos 200 concursos.',
@@ -118,9 +117,7 @@ export function StudiesSidebar({
         ).slice(0, 10);
 
         // Adicionar cabeçalho do estudo
-        csvRows.push(
-          `"${studyData.title}","${description}",${totalJogos}`,
-        );
+        csvRows.push(`"${studyData.title}","${description}",${totalJogos}`);
         csvRows.push('Rank,Item,Valor');
 
         // Adicionar itens do estudo

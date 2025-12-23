@@ -99,8 +99,7 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
       // Buscar quantidade total de jogos
       const totalRes = await fetch('/api/loterias/mega-sena/total-draws');
       const totalData = await totalRes.json();
-      const totalJogos =
-        (totalData?.total_sorteios as number | undefined) ?? 0;
+      const totalJogos = (totalData?.total_sorteios as number | undefined) ?? 0;
 
       // Preparar CSV
       const csvRows: string[] = [];
@@ -124,16 +123,16 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
           title: study.title,
           params: {},
         };
-        const items = ((data.items ?? []) as Array<{
-          item_key: string;
-          rank: number;
-          value: number;
-        }>).slice(0, 10);
+        const items = (
+          (data.items ?? []) as Array<{
+            item_key: string;
+            rank: number;
+            value: number;
+          }>
+        ).slice(0, 10);
 
         // Adicionar cabeçalho do estudo
-        csvRows.push(
-          `"${catalog.title}","${description}",${totalJogos}`,
-        );
+        csvRows.push(`"${catalog.title}","${description}",${totalJogos}`);
         csvRows.push('Rank,Item,Valor');
 
         // Adicionar itens do estudo
