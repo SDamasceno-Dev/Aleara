@@ -20,7 +20,7 @@
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.46.1",
     "lucide-react": "^0.447.0",
-    "next": "16.0.7",
+    "next": "^16.1.1",
     "puppeteer-core": "^24.31.0",
     "react": "19.2.1",
     "react-dom": "19.2.1"
