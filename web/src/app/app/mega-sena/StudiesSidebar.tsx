@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Info } from 'lucide-react';
 import { useDialog } from '@/components/dialog';
 import { Select } from '@/components/select/Select';
 
@@ -43,6 +44,7 @@ function formatItem(studyKey: string, itemKey: string, value: number) {
 export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
   const dialog = useDialog();
   const [selected, setSelected] = useState<string>('');
+  const [exporting, setExporting] = useState(false);
   const mapTitle = useMemo(() => {
     const m = new Map<string, string>();
     for (const s of allStudies) m.set(s.study_key, s.title);
@@ -90,6 +92,79 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
   useEffect(() => {
     // keep placeholder if none selected
   }, [selected, allStudies]);
+
+  async function exportAllStudies() {
+    setExporting(true);
+    try {
+      // Buscar quantidade total de jogos
+      const totalRes = await fetch('/api/loterias/mega-sena/total-draws');
+      const totalData = await totalRes.json();
+      const totalJogos =
+        (totalData?.total_sorteios as number | undefined) ?? 0;
+
+      // Preparar CSV
+      const csvRows: string[] = [];
+      csvRows.push('Estudo,Descrição,Quantidade Total de Jogos');
+      csvRows.push('');
+
+      // Exportar todos os estudos
+      for (const study of allStudies) {
+        const studyKey = study.study_key;
+        const description = descriptions[studyKey] || '';
+
+        // Buscar os primeiros 10 itens do estudo
+        const res = await fetch(
+          `/api/loterias/mega-sena/studies?key=${encodeURIComponent(
+            studyKey,
+          )}&limit=10`,
+        );
+        const data = await res.json();
+        const catalog = data?.catalog ?? {
+          study_key: studyKey,
+          title: study.title,
+          params: {},
+        };
+        const items = ((data.items ?? []) as Array<{
+          item_key: string;
+          rank: number;
+          value: number;
+        }>).slice(0, 10);
+
+        // Adicionar cabeçalho do estudo
+        csvRows.push(
+          `"${catalog.title}","${description}",${totalJogos}`,
+        );
+        csvRows.push('Rank,Item,Valor');
+
+        // Adicionar itens do estudo
+        for (const item of items) {
+          const itemKey = String(item.item_key).replace(/^.*?:/, '');
+          csvRows.push(`${item.rank},"${itemKey}",${item.value}`);
+        }
+
+        // Separador entre estudos
+        csvRows.push('');
+      }
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], {
+        type: 'text/csv;charset=utf-8;',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `estudos_mega-sena_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao exportar estudos:', error);
+      alert('Erro ao exportar estudos. Tente novamente.');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function openFullList(key: string) {
     const res = await fetch(
@@ -162,7 +237,7 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
     <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
       <div className='mb-3 flex items-center justify-between gap-2'>
         <div className='text-sm text-zinc-200'>Estudos</div>
-        <div className='min-w-0'>
+        <div className='flex items-center gap-2 min-w-0'>
           <Select
             theme='light'
             items={allStudies.map((s) => ({
@@ -176,6 +251,16 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
               if (v) openFullList(v);
             }}
           />
+          <button
+            type='button'
+            onClick={exportAllStudies}
+            disabled={exporting || allStudies.length === 0}
+            className='rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+            aria-label='Exportar todos os estudos'
+            title='Exportar todos os estudos em um único arquivo CSV'
+          >
+            {exporting ? 'Exportando...' : 'Exportar'}
+          </button>
         </div>
       </div>
       <div className='space-y-4'>
@@ -186,7 +271,20 @@ export function StudiesSidebar({ previews, allStudies }: StudiesSidebarProps) {
               key={p.study_key}
               className='rounded-md border border-white/10 p-3'
             >
-              <div className='text-sm text-zinc-400 mb-2'>{p.title}</div>
+              <div className='flex items-center gap-2 text-sm text-zinc-400 mb-2'>
+                <span>{p.title}</span>
+                {descriptions[p.study_key] && (
+                  <div className='group relative inline-flex'>
+                    <Info
+                      className='w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300 cursor-help transition-colors'
+                      aria-label={`Informação: ${descriptions[p.study_key]}`}
+                    />
+                    <div className='absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 w-64 p-2 text-xs text-zinc-900 bg-white rounded-md shadow-lg border border-black/10 pointer-events-none whitespace-normal'>
+                      {descriptions[p.study_key]}
+                    </div>
+                  </div>
+                )}
+              </div>
               <ul className='text-sm text-zinc-300/90 space-y-1'>
                 {p.items.slice(0, 5).map((it) => (
                   <li
