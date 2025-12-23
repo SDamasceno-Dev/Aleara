@@ -17,4 +17,3 @@ export async function GET() {
     total_sorteios: (data?.total_sorteios as number) ?? 0,
   });
 }
-
