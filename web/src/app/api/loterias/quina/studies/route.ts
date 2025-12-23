@@ -5,10 +5,10 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const url = new URL(request.url);
   const studyKey = url.searchParams.get('study_key');
-  const limit = Math.min(
-    200,
-    Math.max(1, Number(url.searchParams.get('limit') || '60')),
-  );
+  const rawLimit = url.searchParams.get('limit');
+  const limit = rawLimit
+    ? Math.min(10000, Math.max(1, Number(rawLimit)))
+    : 60;
 
   if (!studyKey) {
     // Return catalog

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Info } from 'lucide-react';
 import { Select } from '@/components/select/Select';
 
 type StudyPreview = {
@@ -28,6 +29,31 @@ export function StudiesSidebar({
   const [items, setItems] = useState<
     Array<{ rank: number; item_key: string; value: number }>
   >([]);
+  const [exporting, setExporting] = useState(false);
+
+  const descriptions = useMemo<Record<string, string>>(
+    () => ({
+      overdue_dezena:
+        'Lista as dezenas com maior tempo desde a última ocorrência.',
+      pair_freq:
+        'Pares de dezenas que mais saíram juntas em toda a série histórica.',
+      consecutive_pair: 'Pares consecutivos (n e n+1) mais frequentes.',
+      sum_range_20:
+        'Faixas de soma (largura 20) mais comuns entre as 5 dezenas.',
+      parity_comp:
+        'Composições de pares/ímpares mais frequentes (ex.: 3p-2i).',
+      repeaters_prev:
+        'Quantidade de repetidores em relação ao sorteio anterior.',
+      window200_hot: 'Dezenas mais frequentes nos últimos 200 concursos.',
+      decade_dist: 'Distribuição de dezenas por décadas (01–10, 11–20, ...).',
+      last_digit:
+        'Distribuição dos últimos dígitos (0–9) das dezenas sorteadas.',
+      freq_all: 'Frequência total por dezena em toda a série histórica.',
+      hot_top: 'Dezenas mais frequentes historicamente (quentes).',
+      cold_top: 'Dezenas menos frequentes historicamente (frias).',
+    }),
+    [],
+  );
 
   async function loadStudy(key: string) {
     setLoading(true);
@@ -53,11 +79,85 @@ export function StudiesSidebar({
     }
   }
 
+  async function exportAllStudies() {
+    setExporting(true);
+    try {
+      // Buscar quantidade total de jogos
+      const totalRes = await fetch('/api/loterias/quina/total-draws');
+      const totalData = await totalRes.json();
+      const totalJogos = (totalData?.total_sorteios as number | undefined) ?? 0;
+
+      // Preparar CSV
+      const csvRows: string[] = [];
+      csvRows.push('Estudo,Descrição,Quantidade Total de Jogos');
+      csvRows.push('');
+
+      // Exportar todos os estudos
+      for (const study of allStudies) {
+        const studyKey = study.study_key;
+        const description = descriptions[studyKey] || '';
+
+        // Buscar os primeiros 10 itens do estudo
+        const res = await fetch(
+          `/api/loterias/quina/studies?study_key=${encodeURIComponent(
+            studyKey,
+          )}&limit=10`,
+        );
+        const data = await res.json();
+        const studyData = data?.study ?? {
+          study_key: studyKey,
+          title: study.title,
+          params: {},
+        };
+        const items = (
+          (data?.items ?? []) as Array<{
+            rank: number;
+            item_key: string;
+            value: number;
+          }>
+        ).slice(0, 10);
+
+        // Adicionar cabeçalho do estudo
+        csvRows.push(
+          `"${studyData.title}","${description}",${totalJogos}`,
+        );
+        csvRows.push('Rank,Item,Valor');
+
+        // Adicionar itens do estudo
+        for (const item of items) {
+          const itemKey = String(item.item_key).replace(/^.*?:/, '');
+          csvRows.push(`${item.rank},"${itemKey}",${item.value}`);
+        }
+
+        // Separador entre estudos
+        csvRows.push('');
+      }
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], {
+        type: 'text/csv;charset=utf-8;',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `estudos_quina_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao exportar estudos:', error);
+      alert('Erro ao exportar estudos. Tente novamente.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <aside className='rounded-lg border border-border/60 bg-card/90 p-4 md:w-1/2'>
       <div className='mb-3 flex items-center justify-between gap-2'>
         <div className='text-sm text-zinc-200'>Estudos</div>
-        <div className='min-w-0'>
+        <div className='flex items-center gap-2 min-w-0'>
           <Select
             theme='light'
             items={allStudies.map((s) => ({
@@ -71,6 +171,16 @@ export function StudiesSidebar({
               if (v) loadStudy(v);
             }}
           />
+          <button
+            type='button'
+            onClick={exportAllStudies}
+            disabled={exporting || allStudies.length === 0}
+            className='rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+            aria-label='Exportar todos os estudos'
+            title='Exportar todos os estudos em um único arquivo CSV'
+          >
+            {exporting ? 'Exportando...' : 'Exportar'}
+          </button>
         </div>
       </div>
       <div className='space-y-4'>
@@ -81,7 +191,20 @@ export function StudiesSidebar({
               key={p.study_key}
               className='rounded-md border border-white/10 p-3'
             >
-              <div className='text-sm text-zinc-400 mb-2'>{p.title}</div>
+              <div className='flex items-center gap-2 text-sm text-zinc-400 mb-2'>
+                <span>{p.title}</span>
+                {descriptions[p.study_key] && (
+                  <div className='group relative inline-flex'>
+                    <Info
+                      className='w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300 cursor-help transition-colors'
+                      aria-label={`Informação: ${descriptions[p.study_key]}`}
+                    />
+                    <div className='absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 w-64 p-2 text-xs text-zinc-900 bg-white rounded-md shadow-lg border border-black/10 pointer-events-none whitespace-normal'>
+                      {descriptions[p.study_key]}
+                    </div>
+                  </div>
+                )}
+              </div>
               <ul className='text-sm text-zinc-300/90 space-y-1'>
                 {p.items.slice(0, 5).map((it) => (
                   <li
