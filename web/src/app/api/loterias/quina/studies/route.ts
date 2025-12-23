@@ -6,9 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const studyKey = url.searchParams.get('study_key');
   const rawLimit = url.searchParams.get('limit');
-  const limit = rawLimit
-    ? Math.min(10000, Math.max(1, Number(rawLimit)))
-    : 60;
+  const limit = rawLimit ? Math.min(10000, Math.max(1, Number(rawLimit))) : 60;
 
   if (!studyKey) {
     // Return catalog
