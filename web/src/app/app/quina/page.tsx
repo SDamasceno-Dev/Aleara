@@ -39,7 +39,9 @@ export default async function QuinaPage({
     requestedTab && allowedIds.has(requestedTab) ? requestedTab : 'overview';
   return (
     <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
-      <h1 className='text-lg font-semibold text-zinc-100 flex-shrink-0 pb-4'>Quina</h1>
+      <h1 className='text-lg font-semibold text-zinc-100 flex-shrink-0 pb-4'>
+        Quina
+      </h1>
       <Tabs
         tabs={tabs}
         initialTabId={initialId}
