@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.3.0...aleara-web-v0.4.0) (2025-12-23)
+
+
+### Features
+
+* **quina:** alinhar abas à Mega‑Sena e pré‑carregar estudos ([534e215](https://github.com/SDamasceno-Dev/Aleara/commit/534e215d398949957a46c98d2b7a0a4963386701))
+
+
+### Bug Fixes
+
+* layout adjustment ([0307664](https://github.com/SDamasceno-Dev/Aleara/commit/03076643e9e1291f7bbd33f98f34e4964aca8a0c))
+
 ## [0.3.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.2.0...aleara-web-v0.3.0) (2025-12-15)
 
 
