@@ -38,15 +38,15 @@ export default async function MegaSenaPage({
     requestedTab && allowedIds.has(requestedTab) ? requestedTab : 'overview';
 
   return (
-    <div className='flex-1 min-h-0 flex flex-col space-y-4'>
-      <h1 className='text-xl font-semibold'>Mega-Sena</h1>
+    <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
+      <h1 className='text-xl font-semibold flex-shrink-0 pb-4'>Mega-Sena</h1>
       <Tabs
         tabs={tabs}
         initialTabId={initialId}
         ariaLabel='Mega-Sena'
         refreshOnChange
-        className='min-h-0 flex flex-col'
-        tablistClassName='sticky top-0 z-10'
+        className='min-h-0 flex-1 flex flex-col overflow-hidden'
+        tablistClassName='flex-shrink-0'
         panelsClassName='min-h-0 flex-1 overflow-y-auto scroll-y'
       />
     </div>

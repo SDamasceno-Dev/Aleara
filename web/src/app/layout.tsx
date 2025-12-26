@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <DialogProvider>
-          <div className='min-h-dvh min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden'>
+          <div className='h-dvh h-screen bg-background text-foreground flex flex-col relative overflow-hidden'>
             {/* Global background layers */}
             <div aria-hidden className='login-bg' />
             <div aria-hidden className='login-aurora' />

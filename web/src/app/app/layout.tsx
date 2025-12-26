@@ -38,11 +38,11 @@ export default async function AppLayout({
     null;
 
   return (
-    <div className='relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-4 py-6'>
-      <div className='flex flex-1 min-h-0 gap-4 items-stretch'>
+    <div className='relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-4 py-6 overflow-hidden'>
+      <div className='flex flex-1 min-h-0 gap-4 items-stretch overflow-hidden'>
         <Sidebar isAdmin={role === 'ADMIN'} />
-        <div className='flex-1 min-h-0 flex flex-col'>
-          <div className='flex flex-row justify-end pb-4'>
+        <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
+          <div className='flex flex-row justify-end pb-4 flex-shrink-0'>
             <div className='flex items-center gap-3 '>
               <div className='leading-tight text-right'>
                 <div className='text-sm text-zinc-100'>
@@ -67,7 +67,7 @@ export default async function AppLayout({
               )}
             </div>
           </div>
-          <div className='flex-1 min-h-0 flex flex-col'>{children}</div>
+          <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>{children}</div>
         </div>
       </div>
     </div>
