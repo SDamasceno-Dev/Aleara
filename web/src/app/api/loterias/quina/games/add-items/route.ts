@@ -26,13 +26,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No items' }, { status: 400 });
 
   // Ensure all numbers valid and lengths 5..20
-  const normItems = items.map((arr) =>
-    Array.from(
-      new Set(
-        arr.filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 80),
-      ),
-    ).sort((a, b) => a - b),
-  );
+  // Preserve insertion order for source_numbers, but normalize items (games) for storage
+  const normItems = items.map((arr) => {
+    // Remove duplicates while preserving order
+    const seen = new Set<number>();
+    const unique = arr.filter((n: number) => {
+      if (!Number.isInteger(n) || n < 1 || n > 80) return false;
+      if (seen.has(n)) return false;
+      seen.add(n);
+      return true;
+    });
+    // Sort only for the items (games), not for source_numbers
+    return [...unique].sort((a, b) => a - b);
+  });
   if (normItems.some((a) => a.length < 5 || a.length > 20)) {
     return NextResponse.json(
       { error: 'Each item must have 5 to 20 numbers between 1 and 80' },
@@ -42,8 +48,18 @@ export async function POST(request: Request) {
 
   let targetSetId = setId;
   if (!targetSetId) {
-    // create a new set
-    const first = normItems[0];
+    // create a new set - preserve insertion order for source_numbers
+    const firstOriginal = items[0] ?? [];
+    const firstSource = firstOriginal.filter(
+      (n: number) => Number.isInteger(n) && n >= 1 && n <= 80,
+    );
+    // Remove duplicates while preserving order
+    const seen = new Set<number>();
+    const first = firstSource.filter((n: number) => {
+      if (seen.has(n)) return false;
+      seen.add(n);
+      return true;
+    });
     const { data, error } = await supabase
       .from('quina_user_sets')
       .insert({
