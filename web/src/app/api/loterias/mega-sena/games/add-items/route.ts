@@ -32,11 +32,24 @@ export async function POST(request: Request) {
   let setId = maybeSetId;
 
   // Build normalized bets exactly as provided (length 6..20), no combination expansion
+  // Preserve insertion order for source_numbers, but normalize items (games) for storage
   const numbersKey = (a: number[]) => normalizeNumbers(a).join(',');
   const localKeys = new Set<string>();
   const betsFromPayload: number[][] = [];
+  const firstOriginalForSource: number[] = [];
   for (const arr of items) {
     if (!Array.isArray(arr) || arr.length < 6 || arr.length > 20) continue;
+    // For source_numbers: preserve order, remove duplicates
+    if (firstOriginalForSource.length === 0) {
+      const seen = new Set<number>();
+      for (const n of arr) {
+        if (!Number.isInteger(n) || n < 1 || n > 60) continue;
+        if (seen.has(n)) continue;
+        seen.add(n);
+        firstOriginalForSource.push(n);
+      }
+    }
+    // For items (games): normalize (sort) for storage
     const base = normalizeNumbers(arr).filter(
       (n) => Number.isInteger(n) && n >= 1 && n <= 60,
     );
@@ -53,9 +66,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // If no set provided, create a minimal manual set using the first 6-number combo
+  // If no set provided, create a minimal manual set using the first item's numbers in insertion order
   if (!setId) {
-    const firstSix = betsFromPayload[0];
+    const firstSix = firstOriginalForSource;
     const { data: created, error: createErr } = await supabase
       .from('megasena_user_sets')
       .insert({
