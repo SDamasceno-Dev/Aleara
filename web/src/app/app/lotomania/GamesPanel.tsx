@@ -608,8 +608,9 @@ export function GamesPanel() {
             <div className='flex items-center text-sm text-zinc-300'>
               Gerar combinações
               <InfoTip>
-                Informe {countInput || '50'} dezenas abaixo. Cada &quot;caixinha&quot;
-                aceita 2 algarismos (00 = 100) e avança automaticamente.
+                Informe {countInput || '50'} dezenas abaixo. Cada
+                &quot;caixinha&quot; aceita 2 algarismos (00 = 100) e avança
+                automaticamente.
               </InfoTip>
             </div>
           </div>
@@ -1058,8 +1059,8 @@ export function GamesPanel() {
           <div className='mb-2 flex items-center text-sm text-zinc-300'>
             Conferir resultado
             <InfoTip>
-              Informe as 20 dezenas do sorteio. Cada &quot;caixinha&quot; aceita 2
-              algarismos (00 = 100).
+              Informe as 20 dezenas do sorteio. Cada &quot;caixinha&quot; aceita
+              2 algarismos (00 = 100).
             </InfoTip>
           </div>
           <div className='space-y-2'>
