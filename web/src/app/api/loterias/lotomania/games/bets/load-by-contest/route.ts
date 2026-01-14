@@ -63,7 +63,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: cErr.message }, { status: 500 });
     targetSetId = created.id as string;
   } else if (mode === 'replace') {
-    await supabase.from('lotomania_user_items').delete().eq('set_id', targetSetId);
+    await supabase
+      .from('lotomania_user_items')
+      .delete()
+      .eq('set_id', targetSetId);
   }
 
   // Determine next position if append

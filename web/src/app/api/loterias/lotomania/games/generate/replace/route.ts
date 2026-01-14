@@ -30,11 +30,11 @@ function indexToCombination(index: number, n: number, k: number): number[] {
   let idx = BigInt(index);
   let nVal = BigInt(n);
   let kVal = BigInt(k);
-  
+
   for (let i = 0; i < k; i++) {
     let found = false;
     let candidate = nVal;
-    
+
     while (!found && candidate >= kVal) {
       const c = binom(Number(candidate - BigInt(1)), Number(kVal - BigInt(1)));
       if (idx < c) {
@@ -47,14 +47,14 @@ function indexToCombination(index: number, n: number, k: number): number[] {
         candidate = candidate - BigInt(1);
       }
     }
-    
+
     if (!found) {
       comb.push(Number(nVal - BigInt(1)));
       kVal = kVal - BigInt(1);
       nVal = nVal - BigInt(1);
     }
   }
-  
+
   return comb.reverse();
 }
 
@@ -103,7 +103,9 @@ export async function POST(request: Request) {
   }
   if (uniq.length < 50 || uniq.length > 100) {
     return NextResponse.json(
-      { error: 'Provide 50 to 100 unique numbers between 1 and 100 (00 = 100)' },
+      {
+        error: 'Provide 50 to 100 unique numbers between 1 and 100 (00 = 100)',
+      },
       { status: 400 },
     );
   }
@@ -125,7 +127,7 @@ export async function POST(request: Request) {
   // Generate random indices without creating all combinations in memory
   const rnd = mulberry32(newSeed);
   const indices = new Set<number>();
-  
+
   while (indices.size < cap) {
     let candidate: number;
     if (total <= 2 ** 32) {
@@ -135,7 +137,7 @@ export async function POST(request: Request) {
     }
     indices.add(candidate);
   }
-  
+
   const chosen = Array.from(indices).sort((a, b) => a - b);
   const items = chosen.map((pos) => {
     const idxs = indexToCombination(pos, uniq.length, 50);
