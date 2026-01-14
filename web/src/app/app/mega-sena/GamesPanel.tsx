@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@/components/select/Select';
 import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
+import { useDialog } from '@/components/dialog';
+import { Button } from '@/components/button';
 
 function InfoTip({ children }: { children: React.ReactNode }) {
   return (
@@ -31,7 +33,22 @@ type GeneratedItem = {
   matches?: number | null;
 };
 
+// Calculate binomial coefficient C(n, k)
+function binom(n: number, k: number): number {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  const nn = BigInt(n);
+  let kk = BigInt(k);
+  if (kk > nn - kk) kk = nn - kk;
+  let result = BigInt(1);
+  for (let i = BigInt(1); i <= kk; i = i + BigInt(1)) {
+    result = (result * (nn - kk + i)) / i;
+  }
+  return Number(result);
+}
+
 export default function GamesPanel() {
+  const dialog = useDialog();
   // Registrar apostas (manual)
   const [regCountInput, setRegCountInput] = useState('6');
   const [regOtp, setRegOtp] = useState<string[]>(
@@ -326,6 +343,61 @@ export default function GamesPanel() {
       if (!proceed) return;
       setManualPositions(new Set());
     }
+    
+    // Calculate total combinations
+    const n = parsedNumbers.length;
+    const k = Number(kInput || '0');
+    const totalCombinations = binom(n, 6); // Mega-Sena: 6 numbers per game
+    
+    // Show confirmation modal
+    return new Promise<void>((resolve) => {
+      dialog.open({
+        intent: 'message',
+        title: 'Confirmar geração de combinações',
+        description: (
+          <div className='space-y-3'>
+            <p className='text-sm text-zinc-700'>
+              Você está prestes a gerar <strong>{k}</strong> combinações de <strong>6</strong> números
+              a partir de <strong>{n}</strong> dezenas selecionadas.
+            </p>
+            <p className='text-sm font-semibold text-zinc-900'>
+              Total de combinações possíveis: <strong>{totalCombinations.toLocaleString('pt-BR')}</strong>
+            </p>
+            <p className='text-xs text-zinc-600'>
+              Deseja continuar com a geração?
+            </p>
+          </div>
+        ),
+        actions: (
+          <div className='flex justify-end gap-2 pt-3 border-t border-black/10'>
+            <Button
+              intent='secondary'
+              size='sm'
+              onClick={() => {
+                dialog.close();
+                resolve();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              intent='primary'
+              size='sm'
+              onClick={async () => {
+                dialog.close();
+                resolve();
+                await doGenerate();
+              }}
+            >
+              Continuar
+            </Button>
+          </div>
+        ),
+      });
+    });
+  }
+
+  async function doGenerate() {
     setBusy(true);
     setBusyMsg('Gerando combinações…');
     setLoading(true);

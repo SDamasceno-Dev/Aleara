@@ -207,6 +207,11 @@ function DialogRoot({
                     state.description
                   )}
                 </div>
+                {state.actions ? (
+                  <div className='px-5 py-3 border-t border-black/10 bg-white'>
+                    {state.actions}
+                  </div>
+                ) : null}
               </div>
             </div>,
             document.body,

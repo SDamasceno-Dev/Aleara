@@ -28,16 +28,16 @@ function binom(n: number, k: number): number {
 export function GamesPanel() {
   const dialog = useDialog();
   // Registrar apostas (manual)
-  const [regCountInput, setRegCountInput] = useState('5');
+  const [regCountInput, setRegCountInput] = useState('50');
   const [regOtp, setRegOtp] = useState<string[]>(
-    Array.from({ length: 5 }, () => ''),
+    Array.from({ length: 50 }, () => ''),
   );
   const [regInvalid, setRegInvalid] = useState<boolean[]>(
-    Array.from({ length: 5 }, () => false),
+    Array.from({ length: 50 }, () => false),
   );
   const regRefs = useRef<Array<HTMLInputElement | null>>([]);
   useEffect(() => {
-    const n = Math.max(5, Math.min(15, Number(regCountInput || '5') || 5));
+    const n = Math.max(50, Math.min(100, Number(regCountInput || '50') || 50));
     setRegOtp((prev) =>
       prev.length === n
         ? prev
@@ -58,23 +58,35 @@ export function GamesPanel() {
       .map((v) => v.trim())
       .filter((v) => v.length === 2)
       .map((v) => Number(v))
-      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 80);
+      .map((v) => {
+        const num = Number(v);
+        return num === 0 ? 100 : num;
+      })
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 100);
     const desired = Math.max(
-      5,
-      Math.min(15, Number(regCountInput || '5') || 5),
+      50,
+      Math.min(100, Number(regCountInput || '50') || 50),
     );
     if (nums.length !== desired) return [];
-    const unique = Array.from(new Set(nums)).sort((a, b) => a - b);
+    // Preserve insertion order, don't sort
+    const unique: number[] = [];
+    const seen = new Set<number>();
+    for (const n of nums) {
+      if (!seen.has(n)) {
+        seen.add(n);
+        unique.push(n);
+      }
+    }
     return unique.length === desired ? unique : [];
   }, [regOtp, regCountInput]);
 
   // Gerar
-  const [countInput, setCountInput] = useState('5');
+  const [countInput, setCountInput] = useState('50');
   const [otpValues, setOtpValues] = useState<string[]>(
-    Array.from({ length: 5 }, () => ''),
+    Array.from({ length: 50 }, () => ''),
   );
   const [otpInvalid, setOtpInvalid] = useState<boolean[]>(
-    Array.from({ length: 5 }, () => false),
+    Array.from({ length: 50 }, () => false),
   );
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [kInput, setKInput] = useState('05');
@@ -98,7 +110,7 @@ export function GamesPanel() {
   // Loader: fetch saved combinations
   const loadSavedSets = useCallback(async () => {
     try {
-      const res = await fetch('/api/loterias/quina/games/sets/list', {
+      const res = await fetch('/api/loterias/lotomania/games/sets/list', {
         cache: 'no-store',
       });
       const data = await res.json();
@@ -144,7 +156,7 @@ export function GamesPanel() {
   const [items, setItems] = useState<GeneratedItem[]>([]);
   const [appendOnGenerate, setAppendOnGenerate] = useState(false);
   useEffect(() => {
-    const n = Math.max(5, Math.min(15, Number(countInput || '0') || 5));
+    const n = Math.max(50, Math.min(100, Number(countInput || '0') || 50));
     setOtpValues((prev) =>
       prev.length === n
         ? prev
@@ -167,18 +179,41 @@ export function GamesPanel() {
           .map((v) => v.trim())
           .filter((v) => v.length > 0)
           .map((v) => Number(v))
-          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 80),
+          .map((v) => {
+            const num = Number(v);
+            return num === 0 ? 100 : num;
+          })
+          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 100),
       ),
     );
+    // Preserve insertion order, don't sort
     return nums;
+  }, [otpValues]);
+
+  // Duplicate flags for OTP boxes
+  const duplicateFlags = useMemo(() => {
+    const norm = otpValues.map((v) => {
+      if (!v || v.length !== 2) return '';
+      const num = Number(v);
+      // Normalize: 0 becomes 100, but keep as number for comparison
+      const normalized = num === 0 ? 100 : num;
+      // Return normalized number as string for comparison (00 and 100 both become "100")
+      return String(normalized);
+    });
+    const counts = new Map<string, number>();
+    for (const s of norm) {
+      if (!s) continue;
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return norm.map((s) => (s && (counts.get(s) ?? 0) > 1 ? true : false));
   }, [otpValues]);
 
   // Conferir
   const [drawOtp, setDrawOtp] = useState<string[]>(
-    Array.from({ length: 5 }, () => ''),
+    Array.from({ length: 20 }, () => ''),
   );
   const [drawInvalid, setDrawInvalid] = useState<boolean[]>(
-    Array.from({ length: 5 }, () => false),
+    Array.from({ length: 20 }, () => false),
   );
   const drawRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [checkLoading, setCheckLoading] = useState(false);
@@ -198,7 +233,7 @@ export function GamesPanel() {
     // Calculate total combinations
     const n = parsedNumbers.length;
     const k = Number(kInput || '0');
-    const totalCombinations = binom(n, 5); // Quina: 5 numbers per game
+    const totalCombinations = binom(n, 50); // Lotomania: 50 numbers per game
     
     // Show confirmation modal
     return new Promise<void>((resolve) => {
@@ -208,7 +243,7 @@ export function GamesPanel() {
         description: (
           <div className='space-y-3'>
             <p className='text-sm text-zinc-700'>
-              Você está prestes a gerar <strong>{k}</strong> combinações de <strong>5</strong> números
+              Você está prestes a gerar <strong>{k}</strong> combinações de <strong>50</strong> números
               a partir de <strong>{n}</strong> dezenas selecionadas.
             </p>
             <p className='text-sm font-semibold text-zinc-900'>
@@ -252,15 +287,15 @@ export function GamesPanel() {
     setLoading(true);
     try {
       const k = Number(kInput || '0');
-      let endpoint = '/api/loterias/quina/games/generate';
+      let endpoint = '/api/loterias/lotomania/games/generate';
       if (appendOnGenerate && setId) {
-        endpoint = '/api/loterias/quina/games/generate/append';
+        endpoint = '/api/loterias/lotomania/games/generate/append';
       } else if (setId) {
         const changed =
           !!currentSource &&
           (currentSource.length !== parsedNumbers.length ||
             currentSource.some((v, i) => v !== parsedNumbers[i]));
-        if (changed) endpoint = '/api/loterias/quina/games/generate/replace';
+        if (changed) endpoint = '/api/loterias/lotomania/games/generate/replace';
       }
       const payload:
         | { setId: string; numbers: number[]; k: number; seed?: number }
@@ -297,7 +332,7 @@ export function GamesPanel() {
     if (!setId) return;
     setCheckLoading(true);
     try {
-      const res = await fetch('/api/loterias/quina/games/check', {
+      const res = await fetch('/api/loterias/lotomania/games/check', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ setId, draw }),
@@ -324,24 +359,28 @@ export function GamesPanel() {
 
   // Summary
   const matchesSummary = useMemo(() => {
-    if (checkedDraw.length !== 5) return null;
-    let c2 = 0,
-      c3 = 0,
-      c4 = 0,
-      c5 = 0;
+    if (checkedDraw.length !== 20) return null;
+    let c15 = 0,
+      c16 = 0,
+      c17 = 0,
+      c18 = 0,
+      c19 = 0,
+      c20 = 0;
     for (const it of items) {
       const m = it.matches ?? null;
-      if (m === 2) c2 += 1;
-      else if (m === 3) c3 += 1;
-      else if (m === 4) c4 += 1;
-      else if (m === 5) c5 += 1;
+      if (m === 15) c15 += 1;
+      else if (m === 16) c16 += 1;
+      else if (m === 17) c17 += 1;
+      else if (m === 18) c18 += 1;
+      else if (m === 19) c19 += 1;
+      else if (m === 20) c20 += 1;
     }
-    return { c2, c3, c4, c5, total: items.length };
+    return { c15, c16, c17, c18, c19, c20, total: items.length };
   }, [items, checkedDraw]);
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
-      <div className='mb-3 text-sm text-zinc-200'>Jogos — Quina</div>
+      <div className='mb-3 text-sm text-zinc-200'>Jogos — Lotomania</div>
       {/* Ações de listas */}
       <div className='mb-3 flex items-center gap-2'>
         <button
@@ -360,7 +399,7 @@ export function GamesPanel() {
             }
             const title = window.prompt('Título (opcional):') || undefined;
             const res = await fetch(
-              '/api/loterias/quina/games/bets/save-by-contest',
+              '/api/loterias/lotomania/games/bets/save-by-contest',
               {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
@@ -396,7 +435,7 @@ export function GamesPanel() {
               ? 'replace'
               : 'append';
             const res = await fetch(
-              '/api/loterias/quina/games/bets/load-by-contest',
+              '/api/loterias/lotomania/games/bets/load-by-contest',
               {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
@@ -438,11 +477,11 @@ export function GamesPanel() {
             <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
             <div className='flex items-center gap-2'>
               <label className='text-xs text-zinc-400'>
-                Qtd. dezenas (5 a 15)
+                Qtd. dezenas (50 a 100)
                 <input
                   type='number'
-                  min={5}
-                  max={15}
+                  min={50}
+                  max={100}
                   value={regCountInput}
                   onChange={(e) =>
                     setRegCountInput(e.target.value.replace(/\D+/g, ''))
@@ -502,7 +541,7 @@ export function GamesPanel() {
                 disabled={regParsed.length === 0 || regInvalid.some(Boolean)}
                 onClick={async () => {
                   const res = await fetch(
-                    '/api/loterias/quina/games/add-items',
+                    '/api/loterias/lotomania/games/add-items',
                     {
                       method: 'POST',
                       headers: { 'content-type': 'application/json' },
@@ -567,7 +606,7 @@ export function GamesPanel() {
                   onOpen={async () => {
                     try {
                       const res = await fetch(
-                        '/api/loterias/quina/games/sets/list',
+                        '/api/loterias/lotomania/games/sets/list',
                         {
                           cache: 'no-store',
                         },
@@ -597,7 +636,7 @@ export function GamesPanel() {
                     if (!id) return;
                     try {
                       const res = await fetch(
-                        `/api/loterias/quina/games/${id}?size=1000`,
+                        `/api/loterias/lotomania/games/${id}?size=1000`,
                         {
                           cache: 'no-store',
                         },
@@ -618,10 +657,10 @@ export function GamesPanel() {
                         String(n).padStart(2, '0'),
                       );
                       setCountInput(
-                        String(Math.max(5, Math.min(15, src.length))),
+                        String(Math.max(50, Math.min(100, src.length))),
                       );
                       setOtpValues(
-                        src.slice(0, Math.max(5, Math.min(15, src.length))),
+                        src.slice(0, Math.max(50, Math.min(100, src.length))),
                       );
                       setOtpInvalid(
                         Array.from({ length: src.length }, () => false),
@@ -668,7 +707,7 @@ export function GamesPanel() {
                       if (!setId || !titleInput.trim()) return;
                       try {
                         const res = await fetch(
-                          '/api/loterias/quina/games/sets/save-meta',
+                          '/api/loterias/lotomania/games/sets/save-meta',
                           {
                             method: 'POST',
                             headers: { 'content-type': 'application/json' },
@@ -709,7 +748,7 @@ export function GamesPanel() {
                       setBusyMsg('Excluindo combinação…');
                       try {
                         const res = await fetch(
-                          '/api/loterias/quina/games/sets/delete',
+                          '/api/loterias/lotomania/games/sets/delete',
                           {
                             method: 'POST',
                             headers: { 'content-type': 'application/json' },
@@ -727,9 +766,9 @@ export function GamesPanel() {
                         setTitleInput('');
                         setMarkedIdx(null);
                         setCurrentSource(null);
-                        setCountInput('5');
-                        setOtpValues(Array.from({ length: 5 }, () => ''));
-                        setOtpInvalid(Array.from({ length: 5 }, () => false));
+                        setCountInput('50');
+                        setOtpValues(Array.from({ length: 50 }, () => ''));
+                        setOtpInvalid(Array.from({ length: 50 }, () => false));
                         alert('Combinação excluída.');
                       } finally {
                         setBusy(false);
@@ -742,7 +781,7 @@ export function GamesPanel() {
               ) : null}
               <div className='flex justify-between'>
                 <label className='block text-xs text-zinc-400'>
-                  Quantidade de dezenas (5 a 15)
+                  Quantidade de dezenas (50 a 100)
                   <input
                     value={countInput}
                     onChange={(e) => setCountInput(e.target.value)}
@@ -761,8 +800,8 @@ export function GamesPanel() {
                 </label>
               </div>
               <div className='text-xs text-zinc-500'>
-                Informe {countInput || '5'} dezenas abaixo. Cada “caixinha”
-                aceita 2 algarismos e avança automaticamente.
+                Informe {countInput || '50'} dezenas abaixo. Cada "caixinha"
+                aceita 2 algarismos (00 = 100) e avança automaticamente.
               </div>
             </div>
 
@@ -789,7 +828,7 @@ export function GamesPanel() {
                       if (raw.length === 2) {
                         const num = Number(raw);
                         const isValid =
-                          Number.isInteger(num) && num >= 1 && num <= 80;
+                          Number.isInteger(num) && num >= 0 && num <= 100;
                         setOtpInvalid((prev) => {
                           const next = [...prev];
                           next[idx] = !isValid;
@@ -808,7 +847,9 @@ export function GamesPanel() {
                     className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
                       otpInvalid[idx]
                         ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                        : 'bg-white border-black-30 text-zinc-900'
+                        : duplicateFlags[idx]
+                          ? 'bg-red-70 border-black-30 text-white font-bold'
+                          : 'bg-white border-black-30 text-zinc-900'
                     }`}
                     placeholder='00'
                   />
@@ -848,7 +889,8 @@ export function GamesPanel() {
                   parsedNumbers.length < otpValues.length ||
                   parsedNumbers.length !== otpValues.length ||
                   otpValues.some((v) => v.length !== 2) ||
-                  otpInvalid.some((b) => b)
+                  otpInvalid.some((b) => b) ||
+                  duplicateFlags.some((b) => b)
                 }
                 onClick={handleGenerate}
               >
@@ -861,7 +903,7 @@ export function GamesPanel() {
                 onClick={async () => {
                   if (!setId) return;
                   const res = await fetch(
-                    '/api/loterias/quina/games/resample',
+                    '/api/loterias/lotomania/games/resample',
                     {
                       method: 'POST',
                       headers: { 'content-type': 'application/json' },
@@ -935,7 +977,7 @@ export function GamesPanel() {
                       setCheckedDraw([]);
                       const num = Number(raw);
                       const isValid =
-                        Number.isInteger(num) && num >= 1 && num <= 80;
+                        Number.isInteger(num) && num >= 0 && num <= 100;
                       setDrawInvalid((prev) => {
                         const next = [...prev];
                         next[idx] = !isValid;
@@ -971,7 +1013,10 @@ export function GamesPanel() {
                   drawInvalid.some((b) => b)
                 }
                 onClick={async () => {
-                  const draw = drawOtp.map((v) => Number(v));
+                  const draw = drawOtp.map((v) => {
+                    const num = Number(v);
+                    return num === 0 ? 100 : num;
+                  });
                   setCheckedDraw(draw);
                   await handleCheck(draw);
                 }}
@@ -981,7 +1026,7 @@ export function GamesPanel() {
               <button
                 type='button'
                 className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={!setId || checkedDraw.length !== 5}
+                disabled={!setId || checkedDraw.length !== 20}
                 onClick={async () => {
                   const contest = window.prompt('Número do concurso:');
                   if (!contest) return;
@@ -991,7 +1036,7 @@ export function GamesPanel() {
                     return;
                   }
                   const res = await fetch(
-                    '/api/loterias/quina/games/save-check',
+                    '/api/loterias/lotomania/games/save-check',
                     {
                       method: 'POST',
                       headers: { 'content-type': 'application/json' },
@@ -1020,13 +1065,13 @@ export function GamesPanel() {
                 onClick={async () => {
                   if (
                     !window.confirm(
-                      'Excluir TODAS as suas conferências da Quina?',
+                      'Excluir TODAS as suas conferências da Lotomania?',
                     )
                   )
                     return;
                   if (!window.confirm('Confirma novamente?')) return;
                   const res = await fetch(
-                    '/api/loterias/quina/games/delete-checks',
+                    '/api/loterias/lotomania/games/delete-checks',
                     { method: 'POST' },
                   );
                   const data = await res.json();
@@ -1047,10 +1092,12 @@ export function GamesPanel() {
             {matchesSummary ? (
               <div className='mt-2 text-sm text-zinc-300 flex items-center gap-3'>
                 <span className='text-zinc-400'>Sumário:</span>
-                <span>2: {matchesSummary.c2}</span>
-                <span>3: {matchesSummary.c3}</span>
-                <span>4: {matchesSummary.c4}</span>
-                <span>5: {matchesSummary.c5}</span>
+                <span>15: {matchesSummary.c15}</span>
+                <span>16: {matchesSummary.c16}</span>
+                <span>17: {matchesSummary.c17}</span>
+                <span>18: {matchesSummary.c18}</span>
+                <span>19: {matchesSummary.c19}</span>
+                <span>20: {matchesSummary.c20}</span>
               </div>
             ) : null}
           </div>
@@ -1079,7 +1126,7 @@ export function GamesPanel() {
                   <td className='py-2 pr-3'>( {it.position} )</td>
                   <td className='py-2 pr-3 font-medium text-zinc-100'>
                     {it.numbers.map((n, i) => {
-                      const s = String(n).padStart(2, '0');
+                      const s = n === 100 ? '00' : String(n).padStart(2, '0');
                       const hit = checkedDrawSet.has(n);
                       return (
                         <span
@@ -1143,7 +1190,7 @@ function ManageLists({
           setOpen(true);
           setLoading(true);
           try {
-            const res = await fetch('/api/loterias/quina/games/bets/lists');
+            const res = await fetch('/api/loterias/lotomania/games/bets/lists');
             const data = await res.json();
             if (!res.ok) alert(data?.error || 'Falha ao listar.');
             else setBetLists(data.items ?? []);
@@ -1165,7 +1212,7 @@ function ManageLists({
           <div className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'>
             <div className='px-5 py-3 border-b border-black/10 bg-white'>
               <h2 className='text-sm font-semibold tracking-wider'>
-                Listas salvas — Quina
+                Listas salvas — Lotomania
               </h2>
             </div>
             <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
@@ -1218,7 +1265,7 @@ function ManageLists({
                               ? 'replace'
                               : 'append';
                             const res = await fetch(
-                              '/api/loterias/quina/games/bets/load-by-contest',
+                              '/api/loterias/lotomania/games/bets/load-by-contest',
                               {
                                 method: 'POST',
                                 headers: { 'content-type': 'application/json' },
@@ -1292,7 +1339,7 @@ function ManageLists({
                     if (selected.size === 0) return;
                     if (!window.confirm('Excluir listas selecionadas?')) return;
                     const res = await fetch(
-                      '/api/loterias/quina/games/bets/lists/delete',
+                      '/api/loterias/lotomania/games/bets/lists/delete',
                       {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
