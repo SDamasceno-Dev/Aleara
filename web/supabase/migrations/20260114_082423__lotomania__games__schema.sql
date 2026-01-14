@@ -1,0 +1,134 @@
+-- Migration: 20260114_082423__lotomania__games__schema
+-- Title: Lotomania games schema
+-- Description: Create lotomania_user_sets and lotomania_user_items with RLS owner policies. Stores user-generated combinations (50 numbers from source_numbers 50-100).
+-- Affects: public.lotomania_user_sets, public.lotomania_user_items, policies
+-- Dependencies: auth.users
+-- Idempotent: yes
+-- Rollback: drop table public.lotomania_user_items cascade; drop table public.lotomania_user_sets cascade;
+-- Author: system | CreatedAt: 2026-01-14 08:24:23Z
+
+begin;
+
+create table if not exists public.lotomania_user_sets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  source_numbers smallint[] not null,
+  total_combinations integer not null default 0,
+  sample_size integer not null default 0 check (sample_size >= 0),
+  seed bigint,
+  title text,
+  marked_idx integer,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz
+);
+
+alter table public.lotomania_user_sets
+  add constraint lotomania_user_sets_source_numbers_check
+  check (array_length(source_numbers, 1) between 50 and 100);
+
+create table if not exists public.lotomania_user_items (
+  set_id uuid not null references public.lotomania_user_sets(id) on delete cascade,
+  position integer not null,
+  numbers smallint[] not null,
+  matches smallint,
+  primary key (set_id, position)
+);
+
+alter table public.lotomania_user_items
+  add constraint lotomania_user_items_numbers_check
+  check (array_length(numbers, 1) = 50);
+
+create index if not exists lotomania_user_items_set_idx on public.lotomania_user_items (set_id, position);
+create index if not exists lotomania_user_sets_user_idx on public.lotomania_user_sets (user_id, created_at desc);
+
+-- RLS
+alter table public.lotomania_user_sets enable row level security;
+alter table public.lotomania_user_items enable row level security;
+
+-- Owner policies for user_sets
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_sets' and policyname = 'sel_own'
+  ) then
+    create policy sel_own on public.lotomania_user_sets
+      for select
+      to authenticated
+      using (user_id = auth.uid());
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_sets' and policyname = 'ins_own'
+  ) then
+    create policy ins_own on public.lotomania_user_sets
+      for insert
+      to authenticated
+      with check (user_id = auth.uid());
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_sets' and policyname = 'upd_own'
+  ) then
+    create policy upd_own on public.lotomania_user_sets
+      for update
+      to authenticated
+      using (user_id = auth.uid())
+      with check (user_id = auth.uid());
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_sets' and policyname = 'del_own'
+  ) then
+    create policy del_own on public.lotomania_user_sets
+      for delete
+      to authenticated
+      using (user_id = auth.uid());
+  end if;
+end $$;
+
+-- Owner policies for user_items
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_items' and policyname = 'sel_items_own'
+  ) then
+    create policy sel_items_own on public.lotomania_user_items
+      for select
+      to authenticated
+      using (exists (select 1 from public.lotomania_user_sets s where s.id = set_id and s.user_id = auth.uid()));
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_items' and policyname = 'ins_items_own'
+  ) then
+    create policy ins_items_own on public.lotomania_user_items
+      for insert
+      to authenticated
+      with check (exists (select 1 from public.lotomania_user_sets s where s.id = set_id and s.user_id = auth.uid()));
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_items' and policyname = 'upd_items_own'
+  ) then
+    create policy upd_items_own on public.lotomania_user_items
+      for update
+      to authenticated
+      using (exists (select 1 from public.lotomania_user_sets s where s.id = set_id and s.user_id = auth.uid()))
+      with check (exists (select 1 from public.lotomania_user_sets s where s.id = set_id and s.user_id = auth.uid()));
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'lotomania_user_items' and policyname = 'del_items_own'
+  ) then
+    create policy del_items_own on public.lotomania_user_items
+      for delete
+      to authenticated
+      using (exists (select 1 from public.lotomania_user_sets s where s.id = set_id and s.user_id = auth.uid()));
+  end if;
+end $$;
+
+commit;
