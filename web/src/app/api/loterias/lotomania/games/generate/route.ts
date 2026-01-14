@@ -37,23 +37,23 @@ function indexToCombination(index: number, n: number, k: number): number[] {
     let candidate = nVal;
     
     while (!found && candidate >= kVal) {
-      const c = binom(Number(candidate - 1n), Number(kVal - 1n));
+      const c = binom(Number(candidate - BigInt(1)), Number(kVal - BigInt(1)));
       if (idx < c) {
-        comb.push(Number(candidate - 1n));
-        kVal = kVal - 1n;
-        nVal = candidate - 1n;
+        comb.push(Number(candidate - BigInt(1)));
+        kVal = kVal - BigInt(1);
+        nVal = candidate - BigInt(1);
         found = true;
       } else {
         idx = idx - BigInt(c);
-        candidate = candidate - 1n;
+        candidate = candidate - BigInt(1);
       }
     }
     
     if (!found) {
       // Fallback: should not happen with valid inputs
-      comb.push(Number(nVal - 1n));
-      kVal = kVal - 1n;
-      nVal = nVal - 1n;
+      comb.push(Number(nVal - BigInt(1)));
+      kVal = kVal - BigInt(1);
+      nVal = nVal - BigInt(1);
     }
   }
   
