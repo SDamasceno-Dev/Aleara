@@ -6,10 +6,7 @@ export async function POST(request: Request) {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
   if (!user)
-    return NextResponse.json(
-      { error: 'Not authenticated' },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   let body: unknown;
   try {
