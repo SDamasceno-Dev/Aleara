@@ -2,8 +2,30 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@/components/select/Select';
+import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 import { useDialog } from '@/components/dialog';
 import { Button } from '@/components/button';
+
+function InfoTip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className='group relative inline-flex items-center'>
+      <button
+        type='button'
+        tabIndex={0}
+        aria-label='Informação'
+        className='ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-[10px] leading-none text-zinc-300 hover:bg-white/10 focus:outline-none'
+      >
+        i
+      </button>
+      <span
+        role='tooltip'
+        className='pointer-events-none absolute left-1/2 top-full z-50 mt-1 hidden w-64 -translate-x-1/2 rounded-md border border-white/10 bg-[rgb(15,15,15)] p-2 text-xs text-zinc-100 shadow-lg group-hover:block group-focus-within:block'
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
 
 type GeneratedItem = {
   position: number;
@@ -89,11 +111,31 @@ export function GamesPanel() {
     Array.from({ length: 50 }, () => false),
   );
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
+  // Keep OTP inputs length in sync with countInput (50..100)
+  useEffect(() => {
+    const n = Math.max(50, Math.min(100, Number(countInput || '0') || 50));
+    setOtpValues((prev) => {
+      if (prev.length === n) return prev;
+      if (prev.length < n)
+        return [...prev, ...Array.from({ length: n - prev.length }, () => '')];
+      return prev.slice(0, n);
+    });
+    setOtpInvalid((prev) => {
+      if (prev.length === n) return prev;
+      if (prev.length < n)
+        return [
+          ...prev,
+          ...Array.from({ length: n - prev.length }, () => false),
+        ];
+      return prev.slice(0, n);
+    });
+    otpRefs.current = otpRefs.current.slice(0, n);
+  }, [countInput]);
   const [kInput, setKInput] = useState('05');
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [, setBusy] = useState(false);
-  const [, setBusyMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState<string>('Processando…');
   const [setId, setSetId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [markedIdx, setMarkedIdx] = useState<number | null>(null);
@@ -219,6 +261,31 @@ export function GamesPanel() {
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
   const checkedDrawSet = useMemo(() => new Set(checkedDraw), [checkedDraw]);
+  const parsedDraw = useMemo(() => {
+    const nums = drawOtp
+      .map((v) => v.trim())
+      .filter((v) => v.length === 2)
+      .map((v) => {
+        const num = Number(v);
+        return num === 0 ? 100 : num;
+      })
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 100);
+    return nums;
+  }, [drawOtp]);
+  const drawDuplicateFlags = useMemo(() => {
+    const norm = drawOtp.map((v) => {
+      if (!v || v.length !== 2) return '';
+      const num = Number(v);
+      const normalized = num === 0 ? 100 : num;
+      return String(normalized).padStart(2, '0');
+    });
+    const counts = new Map<string, number>();
+    for (const s of norm) {
+      if (!s) continue;
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return norm.map((s) => (s && (counts.get(s) ?? 0) > 1 ? true : false));
+  }, [drawOtp]);
   const liveRef = useRef<HTMLDivElement | null>(null);
 
   // Actions
@@ -380,118 +447,65 @@ export function GamesPanel() {
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
-      <div className='mb-3 text-sm text-zinc-200'>Jogos — Lotomania</div>
-      {/* Ações de listas */}
-      <div className='mb-3 flex items-center gap-2'>
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          disabled={!setId || items.length === 0}
-          onClick={async () => {
-            const contest = window.prompt(
-              'Número do concurso para salvar as apostas:',
-            );
-            if (!contest) return;
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              return;
-            }
-            const title = window.prompt('Título (opcional):') || undefined;
-            const res = await fetch(
-              '/api/loterias/lotomania/games/bets/save-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ setId, contestNo: n, title }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) alert(data?.error || 'Falha ao salvar apostas.');
-            else
-              alert(
-                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
-              );
-          }}
-        >
-          Salvar apostas (por concurso)
-        </button>
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          onClick={async () => {
-            const contest = window.prompt(
-              'Número do concurso para carregar as apostas:',
-            );
-            if (!contest) return;
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              return;
-            }
-            const mode = window.confirm(
-              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
-            )
-              ? 'replace'
-              : 'append';
-            const res = await fetch(
-              '/api/loterias/lotomania/games/bets/load-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ contestNo: n, mode, setId }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) {
-              alert(data?.error || 'Falha ao carregar apostas.');
-              return;
-            }
-            if (!setId && data.setId) setSetId(data.setId);
-            const fetched = (
-              (data.items ?? []) as Array<{
-                position: number;
-                numbers: number[];
-              }>
-            ).map((it) => ({
-              position: it.position,
-              numbers: it.numbers ?? [],
-              matches: null as number | null,
-            }));
-            if (fetched.length > 0) setItems(fetched);
-          }}
-        >
-          Carregar apostas (por concurso)
-        </button>
-        <ManageLists
-          setId={setId}
-          setItems={setItems}
-          setCheckedDraw={setCheckedDraw}
-        />
-      </div>
-
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Por favor, aguarde.'
+      />
+      <div className='mb-3 text-sm text-zinc-200'>Jogos</div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        <div className='space-y-3'>
-          {/* Registrar apostas */}
-          <div className='rounded-md border border-white/10 p-3 mb-3'>
-            <div className='text-sm text-zinc-300 mb-2'>Registrar apostas</div>
-            <div className='flex items-center gap-2'>
-              <label className='text-xs text-zinc-400'>
-                Qtd. dezenas (50 a 100)
-                <input
-                  type='number'
-                  min={50}
-                  max={100}
-                  value={regCountInput}
-                  onChange={(e) =>
-                    setRegCountInput(e.target.value.replace(/\D+/g, ''))
-                  }
-                  className='ml-2 w-16 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
-                  placeholder='05'
-                />
-              </label>
+        {/* Gerador (inclui Registrar apostas acima) */}
+        <div className='rounded-md border border-white/10 p-3'>
+          <div className='mb-2 flex items-center text-sm text-zinc-300'>
+            Registrar apostas
+            <InfoTip>
+              Informe {regCountInput || '50'} dezenas para cadastrar uma aposta
+              manualmente.
+            </InfoTip>
+          </div>
+          <div className='space-y-2'>
+            <div className='flex items-start justify-between gap-4'>
+              <div className='flex w-full flex-col'>
+                <label className='text-xs text-zinc-400'>
+                  Qtd. dezenas (50 a 100)
+                  <input
+                    type='number'
+                    min={50}
+                    max={100}
+                    inputMode='numeric'
+                    value={regCountInput}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D+/g, '');
+                      setRegCountInput(v);
+                    }}
+                    onBlur={() => {
+                      const n = Number(regCountInput || '0');
+                      if (!Number.isInteger(n) || n < 50 || n > 100) {
+                        const clamped = Math.min(100, Math.max(50, n || 50));
+                        setRegCountInput(String(clamped));
+                      }
+                    }}
+                    className='ml-2 w-16 rounded-md border px-2 py-1 text-sm border-black-30 bg-white-10'
+                    placeholder='50'
+                  />
+                </label>
+                <button
+                  type='button'
+                  className='rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white w-full text-center my-2'
+                  onClick={() => {
+                    const n = Math.max(
+                      50,
+                      Math.min(100, Number(regCountInput || '50') || 50),
+                    );
+                    setRegOtp(Array.from({ length: n }, () => ''));
+                    setRegInvalid(Array.from({ length: n }, () => false));
+                  }}
+                >
+                  Limpar apostas
+                </button>
+              </div>
             </div>
-            <div className='mt-2 flex flex-wrap gap-2'>
+            <div className='flex flex-wrap gap-2'>
               {regOtp.map((val, idx) => (
                 <input
                   key={idx}
@@ -511,7 +525,7 @@ export function GamesPanel() {
                     if (raw.length === 2) {
                       const num = Number(raw);
                       const isValid =
-                        Number.isInteger(num) && num >= 1 && num <= 80;
+                        Number.isInteger(num) && num >= 0 && num <= 100;
                       setRegInvalid((prev) => {
                         const next = [...prev];
                         next[idx] = !isValid;
@@ -535,157 +549,72 @@ export function GamesPanel() {
                   placeholder='00'
                 />
               ))}
-              <button
-                type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={regParsed.length === 0 || regInvalid.some(Boolean)}
-                onClick={async () => {
-                  const res = await fetch(
-                    '/api/loterias/lotomania/games/add-items',
-                    {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify(
-                        setId
-                          ? { setId, items: [regParsed] }
-                          : { items: [regParsed] },
-                      ),
-                    },
-                  );
-                  const data = await res.json();
-                  if (!res.ok) {
-                    alert(data?.error || 'Falha ao registrar aposta.');
-                    return;
+            </div>
+            <div>
+              <div className='items-center gap-2'>
+                <button
+                  type='button'
+                  className='w-full rounded-md border border-white-10 px-2 py-1 text-sm hover:bg-white-10 my-2'
+                  disabled={
+                    regParsed.length === 0 ||
+                    regInvalid.some(Boolean)
                   }
-                  if (!setId && data.setId) setSetId(data.setId);
-                  setItems((prev) => [...prev, ...(data.items ?? [])]);
-                }}
-              >
-                Registrar
-              </button>
-            </div>
-          </div>
-
-          {/* Gerar combinações */}
-          <div className='rounded-md border border-white/10 p-3 mb-3'>
-            <div className='text-sm text-zinc-300 mb-2'>Gerar combinações</div>
-            {/* Seed e modo de adição */}
-            <div className='flex items-center gap-2'>
-              <label className='text-xs text-zinc-400'>
-                Seed (opcional)
-                <input
-                  value={seedInput}
-                  onChange={(e) => setSeedInput(e.target.value)}
-                  className='ml-2 w-28 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
-                />
-              </label>
-              <label className='text-xs text-zinc-400 inline-flex items-center gap-2 ml-auto'>
-                <input
-                  type='checkbox'
-                  checked={appendOnGenerate}
-                  onChange={(e) => setAppendOnGenerate(e.target.checked)}
-                />
-                Adicionar aos jogos existentes
-              </label>
-            </div>
-
-            {/* Seleção e nome da combinação */}
-            <div className='grid grid-cols-1 gap-2 mt-2'>
-              <div>
-                <label className='text-xs text-zinc-400'>
-                  Combinações salvas
-                </label>
-                <Select
-                  theme='light'
-                  items={savedSets.map((s) => ({
-                    value: s.id,
-                    label: s.title,
-                  }))}
-                  value={''}
-                  placeholder='Selecione…'
-                  onOpen={async () => {
+                  onClick={async () => {
+                    setBusy(true);
+                    setBusyMsg('Registrando apostas…');
                     try {
                       const res = await fetch(
-                        '/api/loterias/lotomania/games/sets/list',
+                        '/api/loterias/lotomania/games/add-items',
                         {
-                          cache: 'no-store',
-                        },
-                      );
-                      const data = await res.json();
-                      if (res.ok) {
-                        const rows = (data.items ?? []) as Array<{
-                          id: string;
-                          title: string | null;
-                          source_numbers: number[];
-                          sample_size: number;
-                          marked_idx: number | null;
-                        }>;
-                        setSavedSets(
-                          rows.map((it) => ({
-                            id: it.id,
-                            title: String(it.title ?? ''),
-                            source_numbers: it.source_numbers ?? [],
-                            sample_size: Number(it.sample_size ?? 0),
-                            marked_idx: it.marked_idx ?? null,
-                          })),
-                        );
-                      }
-                    } catch {}
-                  }}
-                  onChange={async (id) => {
-                    if (!id) return;
-                    try {
-                      const res = await fetch(
-                        `/api/loterias/lotomania/games/${id}?size=1000`,
-                        {
-                          cache: 'no-store',
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify(
+                            setId
+                              ? { setId, items: [regParsed] }
+                              : { items: [regParsed] },
+                          ),
                         },
                       );
                       const data = await res.json();
                       if (!res.ok) {
-                        alert(data?.error || 'Falha ao carregar set.');
+                        alert(data?.error || 'Falha ao registrar aposta.');
+                        setBusy(false);
                         return;
                       }
-                      const set = data.set as {
-                        id: string;
-                        source_numbers: number[];
-                        sample_size: number;
-                        title?: string | null;
-                        marked_idx?: number | null;
-                      };
-                      const src = (set.source_numbers ?? []).map((n) =>
-                        String(n).padStart(2, '0'),
+                      if (!setId && data.setId) setSetId(data.setId);
+                      setItems((prev) => [...prev, ...(data.items ?? [])]);
+                      const n = Math.max(
+                        50,
+                        Math.min(100, Number(regCountInput || '50') || 50),
                       );
-                      setCountInput(
-                        String(Math.max(50, Math.min(100, src.length))),
-                      );
-                      setOtpValues(
-                        src.slice(0, Math.max(50, Math.min(100, src.length))),
-                      );
-                      setOtpInvalid(
-                        Array.from({ length: src.length }, () => false),
-                      );
-                      setKInput(String(set.sample_size).padStart(2, '0'));
-                      setSetId(set.id);
-                      setCurrentSource(set.source_numbers ?? []);
-                      setTitleInput(set.title ?? '');
-                      setMarkedIdx(set.marked_idx ?? null);
-                      const fetchedItems = (
-                        (data.items ?? []) as Array<{
-                          position: number;
-                          numbers: number[];
-                          matches?: number | null;
-                        }>
-                      ).map((it) => ({
-                        position: it.position,
-                        numbers: it.numbers ?? [],
-                        matches: it.matches ?? null,
-                      }));
-                      setItems(fetchedItems);
-                    } catch {}
+                      setRegOtp(Array.from({ length: n }, () => ''));
+                      setRegInvalid(Array.from({ length: n }, () => false));
+                      setBusy(false);
+                    } catch {
+                      setBusy(false);
+                    }
                   }}
-                />
+                >
+                  Registrar
+                </button>
+                <div className='text-xs text-zinc-500'>
+                  {setId
+                    ? 'Aposta será adicionada ao conjunto atual.'
+                    : 'Um conjunto será criado automaticamente.'}
+                </div>
               </div>
+            </div>
+            <div className='h-px bg-white/10 my-5' />
+            <div className='flex items-center text-sm text-zinc-300'>
+              Gerar combinações
+              <InfoTip>
+                Informe {countInput || '50'} dezenas abaixo. Cada "caixinha"
+                aceita 2 algarismos (00 = 100) e avança automaticamente.
+              </InfoTip>
+            </div>
+          </div>
+          <div>
+            <div className='grid grid-cols-1 gap-2'>
               <div>
                 <label className='text-xs text-zinc-400'>
                   Nome da combinação
@@ -697,96 +626,14 @@ export function GamesPanel() {
                   />
                 </label>
               </div>
-              {setId ? (
-                <div className='flex justify-between gap-2'>
-                  <button
-                    type='button'
-                    className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                    disabled={!setId || !titleInput.trim()}
-                    onClick={async () => {
-                      if (!setId || !titleInput.trim()) return;
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/lotomania/games/sets/save-meta',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({
-                              setId,
-                              title: titleInput.trim(),
-                              markedIdx,
-                            }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok)
-                          alert(data?.error || 'Falha ao salvar meta.');
-                        else alert('Salvo com sucesso.');
-                      } catch {}
-                    }}
-                  >
-                    {setId ? 'Salvar/Update' : 'Salvar'}
-                  </button>
-                  <button
-                    type='button'
-                    className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
-                    onClick={async () => {
-                      if (!setId) return;
-                      if (
-                        !window.confirm(
-                          'Excluir permanentemente esta combinação salva?',
-                        )
-                      )
-                        return;
-                      if (
-                        !window.confirm(
-                          'Confirma a exclusão? Esta ação não pode ser desfeita.',
-                        )
-                      )
-                        return;
-                      setBusy(true);
-                      setBusyMsg('Excluindo combinação…');
-                      try {
-                        const res = await fetch(
-                          '/api/loterias/lotomania/games/sets/delete',
-                          {
-                            method: 'POST',
-                            headers: { 'content-type': 'application/json' },
-                            body: JSON.stringify({ setId }),
-                          },
-                        );
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                          alert(data?.error || 'Falha ao excluir combinação.');
-                          return;
-                        }
-                        setItems([]);
-                        setSetId(null);
-                        setCheckedDraw([]);
-                        setTitleInput('');
-                        setMarkedIdx(null);
-                        setCurrentSource(null);
-                        setCountInput('50');
-                        setOtpValues(Array.from({ length: 50 }, () => ''));
-                        setOtpInvalid(Array.from({ length: 50 }, () => false));
-                        alert('Combinação excluída.');
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    Excluir combinação (BD)
-                  </button>
-                </div>
-              ) : null}
               <div className='flex justify-between'>
                 <label className='block text-xs text-zinc-400'>
-                  Quantidade de dezenas (50 a 100)
+                  Quantidade de dezenas a combinar (50 a 100)
                   <input
                     value={countInput}
                     onChange={(e) => setCountInput(e.target.value)}
                     className='mt-1 w-12 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
-                    placeholder='05'
+                    placeholder='50'
                   />
                 </label>
                 <label className='text-xs text-zinc-400'>
@@ -799,73 +646,206 @@ export function GamesPanel() {
                   />
                 </label>
               </div>
-              <div className='text-xs text-zinc-500'>
-                Informe {countInput || '50'} dezenas abaixo. Cada "caixinha"
-                aceita 2 algarismos (00 = 100) e avança automaticamente.
+              <div className='flex flex-wrap gap-2'>
+                {otpValues.map((val, idx) => (
+                  <div key={idx} className='flex flex-col items-center'>
+                    <input
+                      ref={(el) => {
+                        otpRefs.current[idx] = el;
+                      }}
+                      value={val}
+                      inputMode='numeric'
+                      maxLength={2}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                          .replace(/\D+/g, '')
+                          .slice(0, 2);
+                        setOtpValues((prev) => {
+                          const next = [...prev];
+                          next[idx] = raw;
+                          return next;
+                        });
+                        // validate and possibly advance
+                        if (raw.length === 2) {
+                          const num = Number(raw);
+                          const isValid =
+                            Number.isInteger(num) && num >= 0 && num <= 100;
+                          setOtpInvalid((prev) => {
+                            const next = [...prev];
+                            next[idx] = !isValid;
+                            return next;
+                          });
+                          if (isValid && idx + 1 < otpValues.length) {
+                            otpRefs.current[idx + 1]?.focus();
+                          }
+                        } else {
+                          // incomplete -> clear invalid
+                          setOtpInvalid((prev) => {
+                            const next = [...prev];
+                            next[idx] = false;
+                            return next;
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === 'Backspace' &&
+                          otpValues[idx].length === 0 &&
+                          idx > 0
+                        ) {
+                          otpRefs.current[idx - 1]?.focus();
+                        }
+                        // Block tab forward when current value is invalid
+                        if (e.key === 'Tab' && !e.shiftKey && otpInvalid[idx]) {
+                          e.preventDefault();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        const text = e.clipboardData.getData('text');
+                        const digits = text.replace(/\D+/g, '');
+                        if (!digits) return;
+                        e.preventDefault();
+                        const pairs: string[] = [];
+                        for (let i = 0; i < digits.length; i += 2) {
+                          pairs.push(digits.slice(i, i + 2));
+                        }
+                        setOtpValues((prev) => {
+                          const next = [...prev];
+                          let j = idx;
+                          for (const p of pairs) {
+                            if (j >= next.length) break;
+                            next[j] = p.slice(0, 2);
+                            j += 1;
+                          }
+                          // validate filled and focus first invalid or last
+                          setOtpInvalid((invPrev) => {
+                            const invNext = [...invPrev];
+                            for (
+                              let t = idx;
+                              t < Math.min(idx + pairs.length, next.length);
+                              t += 1
+                            ) {
+                              const num = Number(next[t]);
+                              const isValid =
+                                Number.isInteger(num) && num >= 0 && num <= 100;
+                              invNext[t] = !isValid;
+                            }
+                            return invNext;
+                          });
+                          const firstInvalid = invNext.findIndex(
+                            (inv, i) => i >= idx && inv,
+                          );
+                          if (firstInvalid >= 0) {
+                            otpRefs.current[firstInvalid]?.focus();
+                          } else {
+                            const lastIdx = Math.min(
+                              idx + pairs.length - 1,
+                              next.length - 1,
+                            );
+                            otpRefs.current[lastIdx]?.focus();
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
+                        otpInvalid[idx]
+                          ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
+                          : duplicateFlags[idx]
+                            ? 'bg-red-70 border-black-30 text-white font-bold'
+                            : 'bg-white border-black-30 text-zinc-900'
+                      }`}
+                      placeholder='00'
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-
-            {/* Universo de dezenas (ordem preservada) + rádio */}
-            <div className='mt-2 flex flex-wrap gap-2'>
-              {otpValues.map((val, idx) => (
-                <div key={idx} className='flex flex-col items-center'>
-                  <input
-                    ref={(el) => {
-                      otpRefs.current[idx] = el;
-                    }}
-                    value={val}
-                    inputMode='numeric'
-                    maxLength={2}
-                    onChange={(e) => {
-                      const raw = e.target.value
-                        .replace(/\D+/g, '')
-                        .slice(0, 2);
-                      setOtpValues((prev) => {
-                        const next = [...prev];
-                        next[idx] = raw;
-                        return next;
-                      });
-                      if (raw.length === 2) {
-                        const num = Number(raw);
-                        const isValid =
-                          Number.isInteger(num) && num >= 0 && num <= 100;
-                        setOtpInvalid((prev) => {
-                          const next = [...prev];
-                          next[idx] = !isValid;
-                          return next;
-                        });
-                        if (isValid && idx + 1 < otpValues.length)
-                          otpRefs.current[idx + 1]?.focus();
-                      } else {
-                        setOtpInvalid((prev) => {
-                          const next = [...prev];
-                          next[idx] = false;
-                          return next;
-                        });
+            <div className='flex items-center gap-2'>
+              <label className='text-xs text-zinc-400'>
+                Seed (opcional)
+                <input
+                  value={seedInput}
+                  onChange={(e) => setSeedInput(e.target.value)}
+                  className='ml-2 w-28 rounded-md border border-black-30 bg-white-10 px-2 py-1 text-sm'
+                  placeholder=''
+                />
+              </label>
+              <label className='text-xs text-zinc-400 inline-flex items-center gap-2'>
+                <input
+                  type='checkbox'
+                  checked={appendOnGenerate}
+                  onChange={(e) => setAppendOnGenerate(e.target.checked)}
+                />
+                Adicionar aos jogos existentes
+              </label>
+              <div className='ml-auto flex flex-col gap-2'>
+                <button
+                  type='button'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                  disabled={
+                    loading ||
+                    parsedNumbers.length < 50 ||
+                    parsedNumbers.length > 100 ||
+                    parsedNumbers.length !== otpValues.length ||
+                    otpValues.some((v) => v.length !== 2) ||
+                    otpInvalid.some((b) => b) ||
+                    duplicateFlags.some((b) => b)
+                  }
+                  onClick={handleGenerate}
+                >
+                  {loading ? 'Gerando…' : 'Gerar'}
+                </button>
+                <button
+                  type='button'
+                  className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10 w-28'
+                  disabled={!setId}
+                  title='Refaz a amostra dos jogos a partir do mesmo conjunto base'
+                  onClick={async () => {
+                    if (!setId) return;
+                    setBusy(true);
+                    setBusyMsg('Re-sorteando jogos…');
+                    try {
+                      const res = await fetch(
+                        '/api/loterias/lotomania/games/resample',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            setId,
+                            k: Number(kInput || '0') || undefined,
+                            seed: seedInput ? Number(seedInput) : undefined,
+                          }),
+                        },
+                      );
+                      const data = await res.json();
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao re-sortear.');
+                        setBusy(false);
+                        return;
                       }
-                    }}
-                    className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
-                      otpInvalid[idx]
-                        ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                        : duplicateFlags[idx]
-                          ? 'bg-red-70 border-black-30 text-white font-bold'
-                          : 'bg-white border-black-30 text-zinc-900'
-                    }`}
-                    placeholder='00'
-                  />
-                  <input
-                    type='radio'
-                    name='markedIdx'
-                    className='mt-1'
-                    checked={markedIdx === idx}
-                    onChange={() => setMarkedIdx(idx)}
-                    aria-label={`Marcar posição ${idx + 1}`}
-                  />
-                </div>
-              ))}
+                      setItems(
+                        (
+                          (data.items ?? []) as Array<{
+                            position: number;
+                            numbers: number[];
+                          }>
+                        ).map((it) => ({
+                          position: it.position,
+                          numbers: it.numbers ?? [],
+                          matches: null as number | null,
+                        })),
+                      );
+                      setCheckedDraw([]);
+                      setBusy(false);
+                    } catch {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Re-sortear
+                </button>
+              </div>
             </div>
-
-            {/* Feedback de universo atual */}
             <div className='text-xs text-zinc-500'>
               Dezenas válidas: {parsedNumbers.join(', ') || '—'}
               {setId &&
@@ -878,84 +858,214 @@ export function GamesPanel() {
                 </span>
               ) : null}
             </div>
+          </div>
+          <div className='mt-4 mb-2'>
+            {setId ? (
+              <div className='flex justify-between gap-2'>
+                <button
+                  type='button'
+                  className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                  disabled={!setId || !titleInput.trim()}
+                  onClick={async () => {
+                    if (!setId || !titleInput.trim()) return;
+                    setBusy(true);
+                    setBusyMsg('Salvando meta…');
+                    try {
+                      const res = await fetch(
+                        '/api/loterias/lotomania/games/sets/save-meta',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            setId,
+                            title: titleInput.trim(),
+                            markedIdx,
+                          }),
+                        },
+                      );
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao salvar meta.');
+                      } else {
+                        alert('Salvo com sucesso.');
+                      }
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {setId ? 'Salvar/Update' : 'Salvar'}
+                </button>
 
-            {/* Geração e reamostragem */}
-            <div className='mt-2 flex gap-2'>
-              <button
-                type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={
-                  loading ||
-                  parsedNumbers.length < otpValues.length ||
-                  parsedNumbers.length !== otpValues.length ||
-                  otpValues.some((v) => v.length !== 2) ||
-                  otpInvalid.some((b) => b) ||
-                  duplicateFlags.some((b) => b)
-                }
-                onClick={handleGenerate}
-              >
-                {loading ? 'Gerando…' : 'Gerar'}
-              </button>
-              <button
-                type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={!setId}
-                onClick={async () => {
-                  if (!setId) return;
-                  const res = await fetch(
-                    '/api/loterias/lotomania/games/resample',
-                    {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({
-                        setId,
-                        k: Number(kInput || '0') || undefined,
-                        seed: seedInput ? Number(seedInput) : undefined,
-                      }),
-                    },
-                  );
-                  const data = await res.json();
-                  if (!res.ok) {
-                    alert(data?.error || 'Falha ao re-sortear.');
-                    return;
-                  }
-                  setItems(
-                    (
+                <button
+                  type='button'
+                  className='w-full rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
+                  onClick={async () => {
+                    if (!setId) return;
+                    if (
+                      !window.confirm(
+                        'Excluir permanentemente esta combinação salva?',
+                      )
+                    )
+                      return;
+                    if (
+                      !window.confirm(
+                        'Confirma a exclusão? Esta ação não pode ser desfeita.',
+                      )
+                    )
+                      return;
+                    setBusy(true);
+                    setBusyMsg('Excluindo combinação…');
+                    try {
+                      const res = await fetch(
+                        '/api/loterias/lotomania/games/sets/delete',
+                        {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({ setId }),
+                        },
+                      );
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao excluir combinação.');
+                        return;
+                      }
+                      // reset UI
+                      setItems([]);
+                      setSetId(null);
+                      setCheckedDraw([]);
+                      setTitleInput('');
+                      setMarkedIdx(null);
+                      setCurrentSource(null);
+                      setCountInput('50');
+                      setOtpValues(Array.from({ length: 50 }, () => ''));
+                      setOtpInvalid(Array.from({ length: 50 }, () => false));
+                      alert('Combinação excluída.');
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Excluir combinação (BD)
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <div>
+            <div>
+              <label className='text-xs text-zinc-400'>
+                Combinações salvas
+              </label>
+              <Select
+                theme='light'
+                items={savedSets.map((s) => ({
+                  value: s.id,
+                  label: s.title,
+                }))}
+                value={''}
+                placeholder='Selecione…'
+                onOpen={async () => {
+                  try {
+                    const res = await fetch(
+                      '/api/loterias/lotomania/games/sets/list',
+                      {
+                        cache: 'no-store',
+                      },
+                    );
+                    const data = await res.json();
+                    if (res.ok) {
+                      const rows = (data.items ?? []) as Array<{
+                        id: string;
+                        title: string | null;
+                        source_numbers: number[];
+                        sample_size: number;
+                        marked_idx: number | null;
+                      }>;
+                      setSavedSets(
+                        rows.map((it) => ({
+                          id: it.id,
+                          title: String(it.title ?? ''),
+                          source_numbers: it.source_numbers ?? [],
+                          sample_size: Number(it.sample_size ?? 0),
+                          marked_idx: it.marked_idx ?? null,
+                        })),
+                      );
+                    }
+                  } catch {}
+                }}
+                onChange={async (id) => {
+                  if (!id) return;
+                  setBusy(true);
+                  setBusyMsg('Carregando combinação…');
+                  try {
+                    const res = await fetch(
+                      `/api/loterias/lotomania/games/${id}?size=1000`,
+                      {
+                        cache: 'no-store',
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao carregar set.');
+                      setBusy(false);
+                      return;
+                    }
+                    const set = data.set as {
+                      id: string;
+                      source_numbers: number[];
+                      sample_size: number;
+                      title?: string | null;
+                      marked_idx?: number | null;
+                    };
+                    const src = (set.source_numbers ?? []).map((n) =>
+                      String(n).padStart(2, '0'),
+                    );
+                    setCountInput(
+                      String(Math.max(50, Math.min(100, src.length))),
+                    );
+                    setOtpValues(
+                      src.slice(0, Math.max(50, Math.min(100, src.length))),
+                    );
+                    setOtpInvalid(
+                      Array.from({ length: src.length }, () => false),
+                    );
+                    setKInput(String(set.sample_size).padStart(2, '0'));
+                    setSetId(set.id);
+                    setCurrentSource(set.source_numbers ?? []);
+                    setTitleInput(set.title ?? '');
+                    setMarkedIdx(set.marked_idx ?? null);
+                    const fetchedItems = (
                       (data.items ?? []) as Array<{
                         position: number;
                         numbers: number[];
+                        matches?: number | null;
                       }>
                     ).map((it) => ({
                       position: it.position,
                       numbers: it.numbers ?? [],
-                      matches: null,
-                    })),
-                  );
-                  setCheckedDraw([]);
+                      matches: it.matches ?? null,
+                    }));
+                    setItems(fetchedItems);
+                    setBusy(false);
+                  } catch {
+                    setBusy(false);
+                  }
                 }}
-              >
-                Re-sortear
-              </button>
-              <button
-                type='button'
-                className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300'
-                onClick={() => {
-                  setItems([]);
-                  setSetId(null);
-                  setCheckedDraw([]);
-                }}
-                disabled={items.length === 0 && !setId}
-              >
-                Limpar jogos gerados
-              </button>
+              />
             </div>
           </div>
-
-          {/* Conferir */}
         </div>
-        <div>
-          <div className='rounded-md border border-white/10 p-3'>
-            <div className='text-sm text-zinc-300 mb-2'>Conferir resultado</div>
+
+        {/* Conferir */}
+        <div className='rounded-md border border-white/10 p-3'>
+          <div className='mb-2 flex items-center text-sm text-zinc-300'>
+            Conferir resultado
+            <InfoTip>
+              Informe as 20 dezenas do sorteio. Cada "caixinha" aceita 2
+              algarismos (00 = 100).
+            </InfoTip>
+          </div>
+          <div className='space-y-2'>
             <div className='flex flex-wrap gap-2'>
               {drawOtp.map((val, idx) => (
                 <input
@@ -996,37 +1106,47 @@ export function GamesPanel() {
                   className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
                     drawInvalid[idx]
                       ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                      : 'bg-white border-black-30 text-zinc-900'
+                      : drawDuplicateFlags[idx]
+                        ? 'bg-red-10 border-black-30 text-zinc-900 font-semibold'
+                        : 'bg-white border-black-30 text-zinc-900'
                   }`}
+                  aria-invalid={drawInvalid[idx] ? 'true' : 'false'}
+                  title={
+                    drawInvalid[idx]
+                      ? 'Digite um número entre 00 e 100'
+                      : undefined
+                  }
                   placeholder='00'
                 />
               ))}
             </div>
-            <div className='mt-2 flex gap-2'>
+            <div className='grid grid-cols-2 gap-2'>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
                 disabled={
                   checkLoading ||
                   !setId ||
+                  parsedDraw.length !== 20 ||
                   drawOtp.some((v) => v.length !== 2) ||
-                  drawInvalid.some((b) => b)
+                  drawInvalid.some((b) => b) ||
+                  drawDuplicateFlags.some((b) => b)
                 }
                 onClick={async () => {
-                  const draw = drawOtp.map((v) => {
-                    const num = Number(v);
-                    return num === 0 ? 100 : num;
-                  });
-                  setCheckedDraw(draw);
-                  await handleCheck(draw);
+                  await handleCheck(parsedDraw);
+                  setCheckedDraw(parsedDraw);
                 }}
               >
                 {checkLoading ? 'Conferindo…' : 'Conferir'}
               </button>
               <button
                 type='button'
-                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={!setId || checkedDraw.length !== 20}
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                disabled={
+                  !setId ||
+                  // Só pode salvar após conferência ter sido feita (checkedDraw preenchido)
+                  checkedDraw.length !== 20
+                }
                 onClick={async () => {
                   const contest = window.prompt('Número do concurso:');
                   if (!contest) return;
@@ -1035,49 +1155,92 @@ export function GamesPanel() {
                     alert('Concurso inválido.');
                     return;
                   }
-                  const res = await fetch(
-                    '/api/loterias/lotomania/games/save-check',
-                    {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({
-                        setId,
-                        draw: checkedDraw,
-                        contest: n,
-                      }),
-                    },
-                  );
-                  const data = await res.json();
-                  if (!res.ok) {
-                    alert(data?.error || 'Falha ao salvar conferência.');
-                    return;
+                  setBusy(true);
+                  setBusyMsg('Salvando conferência…');
+                  try {
+                    const res = await fetch(
+                      '/api/loterias/lotomania/games/save-check',
+                      {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({
+                          setId,
+                          draw: checkedDraw,
+                          contest: n,
+                        }),
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data?.error || 'Falha ao salvar conferência.');
+                      setBusy(false);
+                      return;
+                    }
+                    alert(
+                      `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
+                    );
+                    setBusy(false);
+                  } catch {
+                    setBusy(false);
                   }
-                  alert(
-                    `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
-                  );
                 }}
               >
                 Salvar
               </button>
               <button
                 type='button'
-                className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300 ml-auto'
+                className='w-full rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                onClick={() => {
+                  setDrawOtp(Array.from({ length: 20 }, () => ''));
+                  setDrawInvalid(Array.from({ length: 20 }, () => false));
+                  setCheckedDraw([]);
+                  setItems((prev) =>
+                    prev.map((it) => ({
+                      ...it,
+                      matches: null as number | null,
+                    })),
+                  );
+                }}
+              >
+                Limpar resultado
+              </button>
+              <button
+                type='button'
+                className='w-full rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
                 onClick={async () => {
+                  setBusy(true);
+                  setBusyMsg('Limpando conferências…');
                   if (
                     !window.confirm(
-                      'Excluir TODAS as suas conferências da Lotomania?',
+                      'Tem certeza que deseja excluir TODAS as suas conferências salvas?',
                     )
-                  )
+                  ) {
+                    setBusy(false);
                     return;
-                  if (!window.confirm('Confirma novamente?')) return;
+                  }
+                  if (
+                    !window.confirm(
+                      'Confirma novamente? Esta ação não pode ser desfeita.',
+                    )
+                  ) {
+                    setBusy(false);
+                    return;
+                  }
                   const res = await fetch(
                     '/api/loterias/lotomania/games/delete-checks',
-                    { method: 'POST' },
+                    {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body: JSON.stringify({}), // remove todas as conferências do usuário logado
+                    },
                   );
                   const data = await res.json();
-                  if (!res.ok)
+                  if (!res.ok) {
                     alert(data?.error || 'Falha ao remover conferências.');
-                  else alert('Conferências removidas.');
+                  } else {
+                    alert(`Conferências removidas: ${data.deleted ?? 0}.`);
+                  }
+                  setBusy(false);
                 }}
               >
                 Limpar conferências
@@ -1089,21 +1252,170 @@ export function GamesPanel() {
                 className='sr-only'
               />
             </div>
-            {matchesSummary ? (
-              <div className='mt-2 text-sm text-zinc-300 flex items-center gap-3'>
-                <span className='text-zinc-400'>Sumário:</span>
-                <span>15: {matchesSummary.c15}</span>
-                <span>16: {matchesSummary.c16}</span>
-                <span>17: {matchesSummary.c17}</span>
-                <span>18: {matchesSummary.c18}</span>
-                <span>19: {matchesSummary.c19}</span>
-                <span>20: {matchesSummary.c20}</span>
-              </div>
-            ) : null}
+            <div className='text-xs text-zinc-500'>
+              Sorteio: {parsedDraw.join(', ') || '—'}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Ações da lista e Resultados */}
+      <div className='mt-4 mb-2 flex items-center gap-2'>
+        <ManageLists
+          setId={setId}
+          setItems={setItems}
+          setCheckedDraw={setCheckedDraw}
+        />
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          disabled={!setId || items.length === 0}
+          onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Salvando lista de apostas…');
+            const contest = window.prompt(
+              'Número do concurso para salvar as apostas:',
+            );
+            if (!contest) {
+              setBusy(false);
+              return;
+            }
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              setBusy(false);
+              return;
+            }
+            const title =
+              window.prompt('Título (opcional) para esta lista de apostas:') ||
+              undefined;
+            const res = await fetch(
+              '/api/loterias/lotomania/games/bets/save-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ setId, contestNo: n, title }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao salvar apostas.');
+            } else {
+              alert(
+                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
+              );
+            }
+            setBusy(false);
+          }}
+        >
+          Salvar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Carregando lista de apostas…');
+            const contest = window.prompt(
+              'Número do concurso para carregar as apostas:',
+            );
+            if (!contest) {
+              setBusy(false);
+              return;
+            }
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              setBusy(false);
+              return;
+            }
+            const mode = window.confirm(
+              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
+            )
+              ? 'replace'
+              : 'append';
+            const res = await fetch(
+              '/api/loterias/lotomania/games/bets/load-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ contestNo: n, mode, setId }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao carregar apostas.');
+            } else {
+              if (!setId && data.setId) {
+                setSetId(data.setId);
+              }
+              alert(
+                `Apostas ${mode === 'replace' ? 'substituídas' : 'adicionadas'}: ${data.loaded}.`,
+              );
+              setCheckedDraw([]);
+              const fetched = (
+                (data.items ?? []) as Array<{
+                  position: number;
+                  numbers: number[];
+                }>
+              ).map((it) => ({
+                position: it.position,
+                numbers: it.numbers ?? [],
+                matches: null as number | null,
+              }));
+              if (fetched.length > 0) setItems(fetched);
+            }
+            setBusy(false);
+          }}
+        >
+          Carregar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
+          onClick={() => {
+            setItems([]);
+            setSetId(null);
+            setCheckedDraw([]);
+          }}
+          disabled={items.length === 0 && !setId}
+        >
+          Limpar jogos gerados
+        </button>
+      </div>
+      <div className='rounded-md border border-white/10'>
+        {matchesSummary ? (
+          <div className='flex items-center justify-end gap-3 px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
+            <span className='text-zinc-400'>Sumário de acertos:</span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>15</span>
+              <span className='font-semibold'>{matchesSummary.c15}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>16</span>
+              <span className='font-semibold'>{matchesSummary.c16}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>17</span>
+              <span className='font-semibold'>{matchesSummary.c17}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>18</span>
+              <span className='font-semibold'>{matchesSummary.c18}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>19</span>
+              <span className='font-semibold'>{matchesSummary.c19}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>20</span>
+              <span className='font-semibold text-green-300'>
+                {matchesSummary.c20}
+              </span>
+            </span>
+          </div>
+        ) : null}
+      </div>
       {/* Resultados */}
       <div className='mt-3 rounded-md border border-white/10'>
         <div className='overflow-x-auto'>
