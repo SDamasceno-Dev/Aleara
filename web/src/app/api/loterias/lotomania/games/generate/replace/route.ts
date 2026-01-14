@@ -24,22 +24,38 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function generateAllCombIndices(m: number, k: number): number[][] {
-  const res: number[][] = [];
-  const cur: number[] = [];
-  function dfs(start: number, need: number) {
-    if (need === 0) {
-      res.push([...cur]);
-      return;
+// Convert index to combination without generating all combinations
+function indexToCombination(index: number, n: number, k: number): number[] {
+  const comb: number[] = [];
+  let idx = BigInt(index);
+  let nVal = BigInt(n);
+  let kVal = BigInt(k);
+  
+  for (let i = 0; i < k; i++) {
+    let found = false;
+    let candidate = nVal;
+    
+    while (!found && candidate >= kVal) {
+      const c = binom(Number(candidate - 1n), Number(kVal - 1n));
+      if (idx < c) {
+        comb.push(Number(candidate - 1n));
+        kVal = kVal - 1n;
+        nVal = candidate - 1n;
+        found = true;
+      } else {
+        idx = idx - BigInt(c);
+        candidate = candidate - 1n;
+      }
     }
-    for (let i = start; i <= m - need; i++) {
-      cur.push(i);
-      dfs(i + 1, need - 1);
-      cur.pop();
+    
+    if (!found) {
+      comb.push(Number(nVal - 1n));
+      kVal = kVal - 1n;
+      nVal = nVal - 1n;
     }
   }
-  dfs(0, k);
-  return res;
+  
+  return comb.reverse();
 }
 
 export async function POST(request: Request) {
@@ -106,19 +122,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const allIdx = generateAllCombIndices(uniq.length, 50);
+  // Generate random indices without creating all combinations in memory
   const rnd = mulberry32(newSeed);
-  const idxArr = Array.from({ length: allIdx.length }, (_, i) => i);
-  for (let i = idxArr.length - 1; i > idxArr.length - 1 - cap; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    const tmp = idxArr[i];
-    idxArr[i] = idxArr[j];
-    idxArr[j] = tmp;
+  const indices = new Set<number>();
+  
+  while (indices.size < cap) {
+    let candidate: number;
+    if (total <= 2 ** 32) {
+      candidate = Math.floor(rnd() * total);
+    } else {
+      candidate = Number(BigInt(Math.floor(rnd() * 2 ** 31)) % BigInt(total));
+    }
+    indices.add(candidate);
   }
-  const chosen = idxArr.slice(idxArr.length - cap).sort((a, b) => a - b);
+  
+  const chosen = Array.from(indices).sort((a, b) => a - b);
   const items = chosen.map((pos) => {
-    const comb = allIdx[pos].map((ii) => uniq[ii]).sort((a, b) => a - b); // Sort numbers within game
-    return { position: pos, numbers: comb };
+    const idxs = indexToCombination(pos, uniq.length, 50);
+    const nums = idxs.map((ii) => uniq[ii]).sort((a, b) => a - b); // Sort numbers within game
+    return { position: pos, numbers: nums };
   });
 
   // Replace items and update set metadata

@@ -33,18 +33,45 @@ export async function POST(request: Request) {
     .order('position', { ascending: true });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  // Upsert list
-  const { data: listRow, error: listErr } = await supabase
-    .from('lotomania_bet_lists')
-    .upsert(
-      { user_id: user.id, contest_no: contestNo, title: title ?? null },
-      { onConflict: 'user_id,contest_no' },
-    )
-    .select('id')
-    .single();
-  if (listErr)
-    return NextResponse.json({ error: listErr.message }, { status: 500 });
-  const listId = listRow.id as string;
+  // Upsert list (check if exists first, then insert or update)
+  let listId: string | null = null;
+  {
+    const { data: existing, error } = await supabase
+      .from('lotomania_bet_lists')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('contest_no', contestNo)
+      .maybeSingle();
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (existing) {
+      listId = existing.id as string;
+      if (title !== undefined) {
+        const { error: updErr } = await supabase
+          .from('lotomania_bet_lists')
+          .update({ title: title ?? null })
+          .eq('id', listId);
+        if (updErr)
+          return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+    } else {
+      const { data: created, error: insErr } = await supabase
+        .from('lotomania_bet_lists')
+        .insert({
+          user_id: user.id,
+          contest_no: contestNo,
+          title: title ?? null,
+        })
+        .select('id')
+        .single();
+      if (insErr || !created)
+        return NextResponse.json(
+          { error: insErr?.message || 'Cannot create list' },
+          { status: 500 },
+        );
+      listId = created.id as string;
+    }
+  }
   // Replace items
   const { error: delErr } = await supabase
     .from('lotomania_bet_list_items')
