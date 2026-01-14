@@ -296,12 +296,12 @@ export function GamesPanel() {
       );
       if (!proceed) return;
     }
-    
+
     // Calculate total combinations
     const n = parsedNumbers.length;
     const k = Number(kInput || '0');
     const totalCombinations = binom(n, 50); // Lotomania: 50 numbers per game
-    
+
     // Show confirmation modal
     return new Promise<void>((resolve) => {
       dialog.open({
@@ -310,11 +310,13 @@ export function GamesPanel() {
         description: (
           <div className='space-y-3'>
             <p className='text-sm text-zinc-700'>
-              Você está prestes a gerar <strong>{k}</strong> combinações de <strong>50</strong> números
-              a partir de <strong>{n}</strong> dezenas selecionadas.
+              Você está prestes a gerar <strong>{k}</strong> combinações de{' '}
+              <strong>50</strong> números a partir de <strong>{n}</strong>{' '}
+              dezenas selecionadas.
             </p>
             <p className='text-sm font-semibold text-zinc-900'>
-              Total de combinações possíveis: <strong>{totalCombinations.toLocaleString('pt-BR')}</strong>
+              Total de combinações possíveis:{' '}
+              <strong>{totalCombinations.toLocaleString('pt-BR')}</strong>
             </p>
             <p className='text-xs text-zinc-600'>
               Deseja continuar com a geração?
@@ -362,7 +364,8 @@ export function GamesPanel() {
           !!currentSource &&
           (currentSource.length !== parsedNumbers.length ||
             currentSource.some((v, i) => v !== parsedNumbers[i]));
-        if (changed) endpoint = '/api/loterias/lotomania/games/generate/replace';
+        if (changed)
+          endpoint = '/api/loterias/lotomania/games/generate/replace';
       }
       const payload:
         | { setId: string; numbers: number[]; k: number; seed?: number }
@@ -555,10 +558,7 @@ export function GamesPanel() {
                 <button
                   type='button'
                   className='w-full rounded-md border border-white-10 px-2 py-1 text-sm hover:bg-white-10 my-2'
-                  disabled={
-                    regParsed.length === 0 ||
-                    regInvalid.some(Boolean)
-                  }
+                  disabled={regParsed.length === 0 || regInvalid.some(Boolean)}
                   onClick={async () => {
                     setBusy(true);
                     setBusyMsg('Registrando apostas…');
@@ -1260,116 +1260,119 @@ export function GamesPanel() {
       </div>
 
       {/* Ações da lista e Resultados */}
-      <div className='mt-4 mb-2 flex items-center gap-2'>
-        <ManageLists
-          setId={setId}
-          setItems={setItems}
-          setCheckedDraw={setCheckedDraw}
-        />
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          disabled={!setId || items.length === 0}
-          onClick={async () => {
-            setBusy(true);
-            setBusyMsg('Salvando lista de apostas…');
-            const contest = window.prompt(
-              'Número do concurso para salvar as apostas:',
-            );
-            if (!contest) {
-              setBusy(false);
-              return;
-            }
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              setBusy(false);
-              return;
-            }
-            const title =
-              window.prompt('Título (opcional) para esta lista de apostas:') ||
-              undefined;
-            const res = await fetch(
-              '/api/loterias/lotomania/games/bets/save-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ setId, contestNo: n, title }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) {
-              alert(data?.error || 'Falha ao salvar apostas.');
-            } else {
-              alert(
-                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
+      <div className='mt-4 mb-2 flex'>
+        <div className='flex gap-2'>
+          <ManageLists
+            setId={setId}
+            setItems={setItems}
+            setCheckedDraw={setCheckedDraw}
+          />
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            disabled={!setId || items.length === 0}
+            onClick={async () => {
+              setBusy(true);
+              setBusyMsg('Salvando lista de apostas…');
+              const contest = window.prompt(
+                'Número do concurso para salvar as apostas:',
               );
-            }
-            setBusy(false);
-          }}
-        >
-          Salvar apostas (por concurso)
-        </button>
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          onClick={async () => {
-            setBusy(true);
-            setBusyMsg('Carregando lista de apostas…');
-            const contest = window.prompt(
-              'Número do concurso para carregar as apostas:',
-            );
-            if (!contest) {
-              setBusy(false);
-              return;
-            }
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              setBusy(false);
-              return;
-            }
-            const mode = window.confirm(
-              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
-            )
-              ? 'replace'
-              : 'append';
-            const res = await fetch(
-              '/api/loterias/lotomania/games/bets/load-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ contestNo: n, mode, setId }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) {
-              alert(data?.error || 'Falha ao carregar apostas.');
-            } else {
-              if (!setId && data.setId) {
-                setSetId(data.setId);
+              if (!contest) {
+                setBusy(false);
+                return;
               }
-              alert(
-                `Apostas ${mode === 'replace' ? 'substituídas' : 'adicionadas'}: ${data.loaded}.`,
+              const n = Number(contest);
+              if (!Number.isInteger(n) || n <= 0) {
+                alert('Número de concurso inválido.');
+                setBusy(false);
+                return;
+              }
+              const title =
+                window.prompt(
+                  'Título (opcional) para esta lista de apostas:',
+                ) || undefined;
+              const res = await fetch(
+                '/api/loterias/lotomania/games/bets/save-by-contest',
+                {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ setId, contestNo: n, title }),
+                },
               );
-              setCheckedDraw([]);
-              const fetched = (
-                (data.items ?? []) as Array<{
-                  position: number;
-                  numbers: number[];
-                }>
-              ).map((it) => ({
-                position: it.position,
-                numbers: it.numbers ?? [],
-                matches: null as number | null,
-              }));
-              if (fetched.length > 0) setItems(fetched);
-            }
-            setBusy(false);
-          }}
-        >
-          Carregar apostas (por concurso)
-        </button>
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao salvar apostas.');
+              } else {
+                alert(
+                  `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
+                );
+              }
+              setBusy(false);
+            }}
+          >
+            Salvar apostas (por concurso)
+          </button>
+          <button
+            type='button'
+            className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+            onClick={async () => {
+              setBusy(true);
+              setBusyMsg('Carregando lista de apostas…');
+              const contest = window.prompt(
+                'Número do concurso para carregar as apostas:',
+              );
+              if (!contest) {
+                setBusy(false);
+                return;
+              }
+              const n = Number(contest);
+              if (!Number.isInteger(n) || n <= 0) {
+                alert('Número de concurso inválido.');
+                setBusy(false);
+                return;
+              }
+              const mode = window.confirm(
+                'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
+              )
+                ? 'replace'
+                : 'append';
+              const res = await fetch(
+                '/api/loterias/lotomania/games/bets/load-by-contest',
+                {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ contestNo: n, mode, setId }),
+                },
+              );
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao carregar apostas.');
+              } else {
+                if (!setId && data.setId) {
+                  setSetId(data.setId);
+                }
+                alert(
+                  `Apostas ${mode === 'replace' ? 'substituídas' : 'adicionadas'}: ${data.loaded}.`,
+                );
+                setCheckedDraw([]);
+                const fetched = (
+                  (data.items ?? []) as Array<{
+                    position: number;
+                    numbers: number[];
+                  }>
+                ).map((it) => ({
+                  position: it.position,
+                  numbers: it.numbers ?? [],
+                  matches: null as number | null,
+                }));
+                if (fetched.length > 0) setItems(fetched);
+              }
+              setBusy(false);
+            }}
+          >
+            Carregar apostas (por concurso)
+          </button>
+        </div>
         <button
           type='button'
           className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
