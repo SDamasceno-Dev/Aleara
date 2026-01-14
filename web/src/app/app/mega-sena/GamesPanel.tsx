@@ -343,12 +343,12 @@ export default function GamesPanel() {
       if (!proceed) return;
       setManualPositions(new Set());
     }
-    
+
     // Calculate total combinations
     const n = parsedNumbers.length;
     const k = Number(kInput || '0');
     const totalCombinations = binom(n, 6); // Mega-Sena: 6 numbers per game
-    
+
     // Show confirmation modal
     return new Promise<void>((resolve) => {
       dialog.open({
@@ -357,11 +357,13 @@ export default function GamesPanel() {
         description: (
           <div className='space-y-3'>
             <p className='text-sm text-zinc-700'>
-              Você está prestes a gerar <strong>{k}</strong> combinações de <strong>6</strong> números
-              a partir de <strong>{n}</strong> dezenas selecionadas.
+              Você está prestes a gerar <strong>{k}</strong> combinações de{' '}
+              <strong>6</strong> números a partir de <strong>{n}</strong>{' '}
+              dezenas selecionadas.
             </p>
             <p className='text-sm font-semibold text-zinc-900'>
-              Total de combinações possíveis: <strong>{totalCombinations.toLocaleString('pt-BR')}</strong>
+              Total de combinações possíveis:{' '}
+              <strong>{totalCombinations.toLocaleString('pt-BR')}</strong>
             </p>
             <p className='text-xs text-zinc-600'>
               Deseja continuar com a geração?

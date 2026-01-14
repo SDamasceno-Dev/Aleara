@@ -130,8 +130,8 @@ export function ImportCsvPanel() {
         Importação da base de sorteios — Lotomania
       </div>
       <p className='text-xs text-zinc-400'>
-        Envie o CSV da Lotomania com o cabeçalho fornecido. A validação completa e a
-        importação em lotes serão realizadas no servidor.
+        Envie o CSV da Lotomania com o cabeçalho fornecido. A validação completa
+        e a importação em lotes serão realizadas no servidor.
       </p>
       <div className='flex items-center gap-2 flex-wrap'>
         <input

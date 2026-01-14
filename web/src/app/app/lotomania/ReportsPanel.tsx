@@ -25,12 +25,12 @@ type AggregateRow = {
   contestNo: number;
   checkedAt: string;
   total: number;
-    c15: number;
-    c16: number;
-    c17: number;
-    c18: number;
-    c19: number;
-    c20: number;
+  c15: number;
+  c16: number;
+  c17: number;
+  c18: number;
+  c19: number;
+  c20: number;
   hitRate: number;
 };
 type AggregateData = {
@@ -232,10 +232,7 @@ export default function ReportsPanel() {
               <KpiCard label='Acertos 17' value={aggregate.kpis.c17} />
               <KpiCard label='Acertos 18' value={aggregate.kpis.c18} />
               <KpiCard label='Acertos 19' value={aggregate.kpis.c19} />
-              <KpiCard
-                label='Acertos 20'
-                value={aggregate.kpis.c20}
-              />
+              <KpiCard label='Acertos 20' value={aggregate.kpis.c20} />
             </div>
             <PieSummary
               c15={aggregate.kpis.c15}
@@ -400,12 +397,12 @@ function PieSummary({
   c20,
   total,
 }: {
-    c15: number;
-    c16: number;
-    c17: number;
-    c18: number;
-    c19: number;
-    c20: number;
+  c15: number;
+  c16: number;
+  c17: number;
+  c18: number;
+  c19: number;
+  c20: number;
   total: number;
 }) {
   const sum = c15 + c16 + c17 + c18 + c19 + c20;

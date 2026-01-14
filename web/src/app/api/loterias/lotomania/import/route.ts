@@ -618,7 +618,10 @@ export async function POST(request: Request) {
           { study_key: key, title, params: {} },
           { onConflict: 'study_key' },
         );
-      await supabase.from('lotomania_stats_items').delete().eq('study_key', key);
+      await supabase
+        .from('lotomania_stats_items')
+        .delete()
+        .eq('study_key', key);
       for (const batch of chunk(payload, 1000)) {
         await supabase
           .from('lotomania_stats_items')

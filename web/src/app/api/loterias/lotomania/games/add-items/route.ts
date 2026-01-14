@@ -43,7 +43,10 @@ export async function POST(request: Request) {
   });
   if (normItems.some((a) => a.length !== 50)) {
     return NextResponse.json(
-      { error: 'Each item must have exactly 50 numbers between 1 and 100 (00 = 100)' },
+      {
+        error:
+          'Each item must have exactly 50 numbers between 1 and 100 (00 = 100)',
+      },
       { status: 400 },
     );
   }
