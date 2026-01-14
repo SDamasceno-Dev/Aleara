@@ -730,20 +730,17 @@ export function GamesPanel() {
                                 Number.isInteger(num) && num >= 0 && num <= 100;
                               invNext[t] = !isValid;
                             }
+                            const firstInvalid = invNext.findIndex(
+                              (v, t) => v && t >= idx,
+                            );
+                            const last = Math.min(j, next.length - 1);
+                            requestAnimationFrame(() =>
+                              otpRefs.current[
+                                firstInvalid !== -1 ? firstInvalid : last
+                              ]?.focus(),
+                            );
                             return invNext;
                           });
-                          const firstInvalid = invNext.findIndex(
-                            (inv, i) => i >= idx && inv,
-                          );
-                          if (firstInvalid >= 0) {
-                            otpRefs.current[firstInvalid]?.focus();
-                          } else {
-                            const lastIdx = Math.min(
-                              idx + pairs.length - 1,
-                              next.length - 1,
-                            );
-                            otpRefs.current[lastIdx]?.focus();
-                          }
                           return next;
                         });
                       }}
