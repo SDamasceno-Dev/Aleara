@@ -46,7 +46,8 @@ export async function GET() {
     else if (m === 20) c20 += 1;
   }
   const total = items?.length ?? 0;
-  const hitRate = total > 0 ? (c0 + c15 + c16 + c17 + c18 + c19 + c20) / total : 0;
+  const hitRate =
+    total > 0 ? (c0 + c15 + c16 + c17 + c18 + c19 + c20) / total : 0;
 
   return NextResponse.json({
     ok: true,
