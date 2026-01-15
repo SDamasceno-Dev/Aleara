@@ -261,6 +261,55 @@ export function GamesPanel() {
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
   const checkedDrawSet = useMemo(() => new Set(checkedDraw), [checkedDraw]);
+  const [savedChecks, setSavedChecks] = useState<
+    Array<{
+      id: string;
+      contestNo: number;
+      drawNumbers: number[];
+      checkedAt: string;
+      setId: string | null;
+    }>
+  >([]);
+  const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
+  const [loadedContestNo, setLoadedContestNo] = useState<number | null>(null);
+  // Loader: fetch saved checks
+  const loadSavedChecks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/loterias/lotomania/games/checks/list', {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      const rows = (data.items ?? []) as Array<{
+        id: string;
+        contestNo: number;
+        drawNumbers: number[];
+        checkedAt: string;
+        setId: string | null;
+      }>;
+      setSavedChecks(rows);
+    } catch {
+      // ignore
+    }
+  }, []);
+  // Preload on mount
+  useEffect(() => {
+    loadSavedChecks();
+  }, [loadSavedChecks]);
+  // Refresh when tab regains focus or becomes visible
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        void loadSavedChecks();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [loadSavedChecks]);
   const parsedDraw = useMemo(() => {
     const nums = drawOtp
       .map((v) => v.trim())
@@ -287,6 +336,20 @@ export function GamesPanel() {
     return norm.map((s) => (s && (counts.get(s) ?? 0) > 1 ? true : false));
   }, [drawOtp]);
   const liveRef = useRef<HTMLDivElement | null>(null);
+
+  // Memoize check items for Select
+  const checkSelectItems = useMemo(
+    () => [
+      { value: '', label: 'Escolha uma conferência salva' },
+      ...(savedChecks ?? []).map((c) => ({
+        value: c.id,
+        label: `Concurso ${c.contestNo} - ${new Date(
+          c.checkedAt,
+        ).toLocaleString('pt-BR')}`,
+      })),
+    ],
+    [savedChecks],
+  );
 
   // Actions
   async function handleGenerate() {
@@ -1120,6 +1183,76 @@ export function GamesPanel() {
                 />
               ))}
             </div>
+            {/* Dropdown para carregar conferências salvas */}
+            {savedChecks.length > 0 && (
+              <div className='mb-2'>
+                <Select
+                  value={selectedCheckId ?? ''}
+                  onChange={async (value) => {
+                    if (!value) {
+                      setSelectedCheckId(null);
+                      return;
+                    }
+                    setSelectedCheckId(value);
+                    setBusy(true);
+                    setBusyMsg('Carregando conferência…');
+                    try {
+                      const res = await fetch(
+                        `/api/loterias/lotomania/games/checks/${value}`,
+                        {
+                          cache: 'no-store',
+                        },
+                      );
+                      const data = await res.json();
+                      if (!res.ok) {
+                        alert(data?.error || 'Falha ao carregar conferência.');
+                        setBusy(false);
+                        return;
+                      }
+                      const check = data.check as {
+                        id: string;
+                        contestNo: number;
+                        drawNumbers: number[];
+                        checkedAt: string;
+                        setId: string | null;
+                      };
+                      const loadedItems = (data.items ?? []) as Array<{
+                        position: number;
+                        numbers: number[];
+                        matches: number;
+                      }>;
+                      // Preencher os inputs do sorteio
+                      const drawStr = check.drawNumbers.map((n) =>
+                        n === 100 ? '00' : String(n).padStart(2, '0'),
+                      );
+                      setDrawOtp(
+                        Array.from({ length: 20 }, (_, i) => drawStr[i] || ''),
+                      );
+                      setDrawInvalid(Array.from({ length: 20 }, () => false));
+                      setCheckedDraw(check.drawNumbers);
+                      // Carregar os items com matches
+                      setItems(
+                        loadedItems.map((it) => ({
+                          position: it.position,
+                          numbers: it.numbers ?? [],
+                          matches: it.matches ?? 0,
+                        })),
+                      );
+                      // Se houver setId, carregar também
+                      if (check.setId) {
+                        setSetId(check.setId);
+                      }
+                      // Armazenar o número do concurso
+                      setLoadedContestNo(check.contestNo);
+                      setBusy(false);
+                    } catch {
+                      setBusy(false);
+                    }
+                  }}
+                  items={checkSelectItems}
+                />
+              </div>
+            )}
             <div className='grid grid-cols-2 gap-2'>
               <button
                 type='button'
@@ -1133,6 +1266,8 @@ export function GamesPanel() {
                   drawDuplicateFlags.some((b) => b)
                 }
                 onClick={async () => {
+                  setLoadedContestNo(null);
+                  setSelectedCheckId(null);
                   await handleCheck(parsedDraw);
                   setCheckedDraw(parsedDraw);
                 }}
@@ -1179,6 +1314,7 @@ export function GamesPanel() {
                     alert(
                       `Conferência salva! Concurso ${n}, ${data.total} jogos registrados.`,
                     );
+                    await loadSavedChecks();
                     setBusy(false);
                   } catch {
                     setBusy(false);
@@ -1194,6 +1330,8 @@ export function GamesPanel() {
                   setDrawOtp(Array.from({ length: 20 }, () => ''));
                   setDrawInvalid(Array.from({ length: 20 }, () => false));
                   setCheckedDraw([]);
+                  setLoadedContestNo(null);
+                  setSelectedCheckId(null);
                   setItems((prev) =>
                     prev.map((it) => ({
                       ...it,
@@ -1239,6 +1377,8 @@ export function GamesPanel() {
                     alert(data?.error || 'Falha ao remover conferências.');
                   } else {
                     alert(`Conferências removidas: ${data.deleted ?? 0}.`);
+                    await loadSavedChecks();
+                    setSelectedCheckId(null);
                   }
                   setBusy(false);
                 }}
@@ -1388,38 +1528,50 @@ export function GamesPanel() {
       </div>
       <div className='rounded-md border border-white/10'>
         {matchesSummary ? (
-          <div className='flex items-center justify-end gap-3 px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
-            <span className='text-zinc-400'>Sumário de acertos:</span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>0</span>
-              <span className='font-semibold'>{matchesSummary.c0}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>15</span>
-              <span className='font-semibold'>{matchesSummary.c15}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>16</span>
-              <span className='font-semibold'>{matchesSummary.c16}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>17</span>
-              <span className='font-semibold'>{matchesSummary.c17}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>18</span>
-              <span className='font-semibold'>{matchesSummary.c18}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>19</span>
-              <span className='font-semibold'>{matchesSummary.c19}</span>
-            </span>
-            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
-              <span className='text-zinc-400'>20</span>
-              <span className='font-semibold text-green-300'>
-                {matchesSummary.c20}
+          <div className='flex items-center justify-between px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
+            {loadedContestNo ? (
+              <span className='text-zinc-400'>
+                Concurso:{' '}
+                <span className='font-semibold text-zinc-200'>
+                  {loadedContestNo}
+                </span>
               </span>
-            </span>
+            ) : (
+              <span></span>
+            )}
+            <div className='flex items-center gap-3'>
+              <span className='text-zinc-400'>Sumário de acertos:</span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>0</span>
+                <span className='font-semibold'>{matchesSummary.c0}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>15</span>
+                <span className='font-semibold'>{matchesSummary.c15}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>16</span>
+                <span className='font-semibold'>{matchesSummary.c16}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>17</span>
+                <span className='font-semibold'>{matchesSummary.c17}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>18</span>
+                <span className='font-semibold'>{matchesSummary.c18}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>19</span>
+                <span className='font-semibold'>{matchesSummary.c19}</span>
+              </span>
+              <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+                <span className='text-zinc-400'>20</span>
+                <span className='font-semibold text-green-300'>
+                  {matchesSummary.c20}
+                </span>
+              </span>
+            </div>
           </div>
         ) : null}
       </div>
