@@ -28,7 +28,8 @@ export async function GET() {
   if (itemsErr)
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
-  let c15 = 0,
+  let c0 = 0,
+    c15 = 0,
     c16 = 0,
     c17 = 0,
     c18 = 0,
@@ -36,7 +37,8 @@ export async function GET() {
     c20 = 0;
   for (const r of items ?? []) {
     const m = (r.matches as number) ?? 0;
-    if (m === 15) c15 += 1;
+    if (m === 0) c0 += 1;
+    else if (m === 15) c15 += 1;
     else if (m === 16) c16 += 1;
     else if (m === 17) c17 += 1;
     else if (m === 18) c18 += 1;
@@ -44,14 +46,14 @@ export async function GET() {
     else if (m === 20) c20 += 1;
   }
   const total = items?.length ?? 0;
-  const hitRate = total > 0 ? (c15 + c16 + c17 + c18 + c19 + c20) / total : 0;
+  const hitRate = total > 0 ? (c0 + c15 + c16 + c17 + c18 + c19 + c20) / total : 0;
 
   return NextResponse.json({
     ok: true,
     contestNo: check.contest_no as number,
     draw: (check.draw_numbers as number[]) ?? [],
     checkedAt: check.checked_at as string,
-    kpis: { total, c15, c16, c17, c18, c19, c20, hitRate },
+    kpis: { total, c0, c15, c16, c17, c18, c19, c20, hitRate },
     items: (items ?? []).map((r) => ({
       position: r.position as number,
       numbers: (r.numbers as number[]) ?? [],

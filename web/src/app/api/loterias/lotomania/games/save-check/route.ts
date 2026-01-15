@@ -72,12 +72,12 @@ export async function POST(request: Request) {
     const nums = it.numbers ?? [];
     let m = 0;
     for (const n of nums) if (drawSet.has(n)) m += 1;
-    // Matches should be between 15 and 20 for Lotomania
+    // Always save the actual match count (0-50), even if not in prize range (15-20)
     return {
       check_id: checkId,
       position: it.position,
       numbers: nums,
-      matches: m >= 15 && m <= 20 ? m : null,
+      matches: m,
     };
   });
   for (let i = 0; i < payload.length; i += 1000) {

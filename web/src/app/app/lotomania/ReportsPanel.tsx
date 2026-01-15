@@ -10,6 +10,7 @@ type ReportData = {
   checkedAt: string;
   kpis: {
     total: number;
+    c0: number;
     c15: number;
     c16: number;
     c17: number;
@@ -25,6 +26,7 @@ type AggregateRow = {
   contestNo: number;
   checkedAt: string;
   total: number;
+  c0: number;
   c15: number;
   c16: number;
   c17: number;
@@ -38,6 +40,7 @@ type AggregateData = {
     totalConferences: number;
     totalBets: number;
     avgPerCheck: number;
+    c0: number;
     c15: number;
     c16: number;
     c17: number;
@@ -131,6 +134,7 @@ export default function ReportsPanel() {
             totalConferences: 0,
             totalBets: 0,
             avgPerCheck: 0,
+            c0: 0,
             c15: 0,
             c16: 0,
             c17: 0,
@@ -217,7 +221,7 @@ export default function ReportsPanel() {
           </div>
         ) : (
           <>
-            <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-6'>
+            <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-7'>
               <KpiCard
                 label='Conferências'
                 value={aggregate.kpis.totalConferences}
@@ -227,6 +231,7 @@ export default function ReportsPanel() {
                 label='Média/conferência'
                 value={aggregate.kpis.avgPerCheck.toFixed(1)}
               />
+              <KpiCard label='Nenhum' value={aggregate.kpis.c0} />
               <KpiCard label='Acertos 15' value={aggregate.kpis.c15} />
               <KpiCard label='Acertos 16' value={aggregate.kpis.c16} />
               <KpiCard label='Acertos 17' value={aggregate.kpis.c17} />
@@ -235,6 +240,7 @@ export default function ReportsPanel() {
               <KpiCard label='Acertos 20' value={aggregate.kpis.c20} />
             </div>
             <PieSummary
+              c0={aggregate.kpis.c0}
               c15={aggregate.kpis.c15}
               c16={aggregate.kpis.c16}
               c17={aggregate.kpis.c17}
@@ -255,6 +261,7 @@ export default function ReportsPanel() {
                         Conferido em
                       </th>
                       <th className='py-2 pr-3 font-medium w-24'>Apostas</th>
+                      <th className='py-2 pr-3 font-medium w-20'>0</th>
                       <th className='py-2 pr-3 font-medium w-20'>15</th>
                       <th className='py-2 pr-3 font-medium w-20'>16</th>
                       <th className='py-2 pr-3 font-medium w-20'>17</th>
@@ -275,6 +282,7 @@ export default function ReportsPanel() {
                           {new Date(r.checkedAt).toLocaleString()}
                         </td>
                         <td className='py-2 pr-3'>{r.total}</td>
+                        <td className='py-02 pr-3'>{r.c0}</td>
                         <td className='py-02 pr-3'>{r.c15}</td>
                         <td className='py-02 pr-3'>{r.c16}</td>
                         <td className='py-02 pr-3'>{r.c17}</td>
@@ -298,9 +306,10 @@ export default function ReportsPanel() {
         </div>
       ) : (
         <>
-          <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-6'>
+          <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-7'>
             <KpiCard label='Concurso' value={report.contestNo} />
             <KpiCard label='Apostas' value={report.kpis.total} />
+            <KpiCard label='Nenhum' value={report.kpis.c0} />
             <KpiCard label='Acertos 15' value={report.kpis.c15} />
             <KpiCard label='Acertos 16' value={report.kpis.c16} />
             <KpiCard label='Acertos 17' value={report.kpis.c17} />
@@ -389,6 +398,7 @@ async function fetchToJson(res: Response) {
 }
 
 function PieSummary({
+  c0,
   c15,
   c16,
   c17,
@@ -397,6 +407,7 @@ function PieSummary({
   c20,
   total,
 }: {
+  c0: number;
   c15: number;
   c16: number;
   c17: number;
@@ -405,7 +416,7 @@ function PieSummary({
   c20: number;
   total: number;
 }) {
-  const sum = c15 + c16 + c17 + c18 + c19 + c20;
+  const sum = c0 + c15 + c16 + c17 + c18 + c19 + c20;
   if (sum === 0 || total === 0) {
     return (
       <div className='mb-3 pot-12 text-sm text-zinc-400'>
@@ -419,18 +430,20 @@ function PieSummary({
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * r;
+  const s0 = (c0 / sum) * circumference;
   const s15 = (c15 / sum) * circumference;
   const s16 = (c16 / sum) * circumference;
   const s17 = (c17 / sum) * circumference;
   const s18 = (c18 / sum) * circumference;
   const s19 = (c19 / sum) * circumference;
   const s20 = (c20 / sum) * circumference;
-  const off15 = 0;
-  const off16 = -s15;
-  const off17 = -(s15 + s16);
-  const off18 = -(s15 + s16 + s17);
-  const off19 = -(s15 + s16 + s17 + s18);
-  const off20 = -(s15 + s16 + s17 + s18 + s19);
+  const off0 = 0;
+  const off15 = -s0;
+  const off16 = -(s0 + s15);
+  const off17 = -(s0 + s15 + s16);
+  const off18 = -(s0 + s15 + s16 + s17);
+  const off19 = -(s0 + s15 + s16 + s17 + s18);
+  const off20 = -(s0 + s15 + s16 + s17 + s18 + s19);
   const pct = (n: number) => ((n / total) * 100).toFixed(1);
   return (
     <div className='mb-4 grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -448,6 +461,16 @@ function PieSummary({
             fill='none'
             stroke='rgba(255,255,255,0.08)'
             strokeWidth={stroke}
+          />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill='none'
+            stroke='#8b5cf6'
+            strokeWidth={stroke}
+            strokeDasharray={`${s0} ${circumference - s0}`}
+            strokeDashoffset={off0}
           />
           <circle
             cx={cx}
@@ -525,6 +548,7 @@ function PieSummary({
         </svg>
       </div>
       <div className='flex flex-col justify-center gap-2 text-sm'>
+        <Legend color='#8b5cf6' label='Nenhum' value={c0} pct={pct(c0)} />
         <Legend color='#a3e635' label='Acertos 15' value={c15} pct={pct(c15)} />
         <Legend color='#f59e0b' label='Acertos 16' value={c16} pct={pct(c16)} />
         <Legend color='#f97316' label='Acertos 17' value={c17} pct={pct(c17)} />

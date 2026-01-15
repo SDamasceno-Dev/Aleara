@@ -430,7 +430,8 @@ export function GamesPanel() {
   // Summary
   const matchesSummary = useMemo(() => {
     if (checkedDraw.length !== 20) return null;
-    let c15 = 0,
+    let c0 = 0,
+      c15 = 0,
       c16 = 0,
       c17 = 0,
       c18 = 0,
@@ -438,14 +439,15 @@ export function GamesPanel() {
       c20 = 0;
     for (const it of items) {
       const m = it.matches ?? null;
-      if (m === 15) c15 += 1;
+      if (m === 0) c0 += 1;
+      else if (m === 15) c15 += 1;
       else if (m === 16) c16 += 1;
       else if (m === 17) c17 += 1;
       else if (m === 18) c18 += 1;
       else if (m === 19) c19 += 1;
       else if (m === 20) c20 += 1;
     }
-    return { c15, c16, c17, c18, c19, c20, total: items.length };
+    return { c0, c15, c16, c17, c18, c19, c20, total: items.length };
   }, [items, checkedDraw]);
 
   return (
@@ -1389,6 +1391,10 @@ export function GamesPanel() {
           <div className='flex items-center justify-end gap-3 px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
             <span className='text-zinc-400'>Sumário de acertos:</span>
             <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>0</span>
+              <span className='font-semibold'>{matchesSummary.c0}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
               <span className='text-zinc-400'>15</span>
               <span className='font-semibold'>{matchesSummary.c15}</span>
             </span>
@@ -1462,7 +1468,7 @@ export function GamesPanel() {
                       );
                     })}
                   </td>
-                  <td className='py-2 pr-3'>{it.matches ?? '—'}</td>
+                  <td className='py-2 pr-3'>{it.matches ?? 0}</td>
                 </tr>
               ))}
             </tbody>

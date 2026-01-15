@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         totalConferences: 0,
         totalBets: 0,
         avgPerCheck: 0,
+        c0: 0,
         c15: 0,
         c16: 0,
         c17: 0,
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
       contestNo: number;
       checkedAt: string;
       total: number;
+      c0: number;
       c15: number;
       c16: number;
       c17: number;
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
       contestNo: c.contest_no,
       checkedAt: c.checked_at,
       total: 0,
+      c0: 0,
       c15: 0,
       c16: 0,
       c17: 0,
@@ -89,7 +92,8 @@ export async function GET(request: Request) {
     if (!row) continue;
     row.total += 1;
     const m = r.matches ?? 0;
-    if (m === 15) row.c15 += 1;
+    if (m === 0) row.c0 += 1;
+    else if (m === 15) row.c15 += 1;
     else if (m === 16) row.c16 += 1;
     else if (m === 17) row.c17 += 1;
     else if (m === 18) row.c18 += 1;
@@ -101,7 +105,7 @@ export async function GET(request: Request) {
     const agg = checkIdToRow.get(c.id)!;
     const hitRate =
       agg.total > 0
-        ? (agg.c15 + agg.c16 + agg.c17 + agg.c18 + agg.c19 + agg.c20) /
+        ? (agg.c0 + agg.c15 + agg.c16 + agg.c17 + agg.c18 + agg.c19 + agg.c20) /
           agg.total
         : 0;
     return { ...agg, hitRate };
@@ -109,6 +113,7 @@ export async function GET(request: Request) {
 
   const totalConferences = rows.length;
   const totalBets = rows.reduce((s, r) => s + r.total, 0);
+  const c0 = rows.reduce((s, r) => s + r.c0, 0);
   const c15 = rows.reduce((s, r) => s + r.c15, 0);
   const c16 = rows.reduce((s, r) => s + r.c16, 0);
   const c17 = rows.reduce((s, r) => s + r.c17, 0);
@@ -117,7 +122,7 @@ export async function GET(request: Request) {
   const c20 = rows.reduce((s, r) => s + r.c20, 0);
   const avgPerCheck = totalConferences > 0 ? totalBets / totalConferences : 0;
   const hitRate =
-    totalBets > 0 ? (c15 + c16 + c17 + c18 + c19 + c20) / totalBets : 0;
+    totalBets > 0 ? (c0 + c15 + c16 + c17 + c18 + c19 + c20) / totalBets : 0;
 
   return NextResponse.json({
     ok: true,
@@ -125,6 +130,7 @@ export async function GET(request: Request) {
       totalConferences,
       totalBets,
       avgPerCheck,
+      c0,
       c15,
       c16,
       c17,
