@@ -24,10 +24,7 @@ export async function GET(
   if (chkErr)
     return NextResponse.json({ error: chkErr.message }, { status: 500 });
   if (!check)
-    return NextResponse.json(
-      { error: 'Check not found' },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: 'Check not found' }, { status: 404 });
 
   const { data: items, error: itemsErr } = await supabase
     .from('lotomania_check_items')
