@@ -1612,7 +1612,7 @@ export default function GamesPanel() {
                     <td className='py-2 pr-3 font-medium text-zinc-100'>
                       {parts}
                     </td>
-                    <td className='py-2 pr-3'>{it.matches ?? '—'}</td>
+                    <td className='py-2 pr-3'>{it.matches ?? 0}</td>
                   </tr>
                 );
               })}

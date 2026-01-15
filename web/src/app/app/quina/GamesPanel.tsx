@@ -1104,7 +1104,7 @@ export function GamesPanel() {
                       );
                     })}
                   </td>
-                  <td className='py-2 pr-3'>{it.matches ?? '—'}</td>
+                  <td className='py-2 pr-3'>{it.matches ?? 0}</td>
                 </tr>
               ))}
             </tbody>
