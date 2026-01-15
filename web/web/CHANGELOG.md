@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.4.0...aleara-web-v0.5.0) (2026-01-15)
+
+
+### Features
+
+* add saved checks functionality to GamesPanel ([e343e12](https://github.com/SDamasceno-Dev/Aleara/commit/e343e1248f9f07931a1540ff0bdc8ac5d67a8758))
+
 ## [0.4.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.3.0...aleara-web-v0.4.0) (2025-12-23)
 
 
