@@ -94,7 +94,9 @@ export function GamesPanel() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [busyMsg, setBusyMsg] = useState('Processando…');
-  const [manualPositions, setManualPositions] = useState<Set<number>>(new Set());
+  const [manualPositions, setManualPositions] = useState<Set<number>>(
+    new Set(),
+  );
   const [setId, setSetId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [markedIdx, setMarkedIdx] = useState<number | null>(null);
@@ -1345,7 +1347,9 @@ export function GamesPanel() {
                             );
                             const data = await res.json();
                             if (!res.ok) {
-                              alert(data?.error || 'Falha ao carregar apostas.');
+                              alert(
+                                data?.error || 'Falha ao carregar apostas.',
+                              );
                               setBusy(false);
                               return;
                             }
