@@ -53,6 +53,17 @@ export function GamesPanel() {
           : prev.slice(0, n).map(() => false),
     );
   }, [regCountInput]);
+  // Detectar dezenas repetidas para destacar visualmente
+  const regDuplicateFlags = useMemo(() => {
+    const norm = regOtp.map((v) =>
+      v && v.length === 2 ? String(Number(v)).padStart(2, '0') : '',
+    );
+    const counts = new Map<string, number>();
+    for (const s of norm) {
+      if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return norm.map((s) => s !== '' && (counts.get(s) ?? 0) > 1);
+  }, [regOtp]);
   const regParsed = useMemo(() => {
     const nums = regOtp
       .map((v) => v.trim())
@@ -493,7 +504,9 @@ export function GamesPanel() {
                   className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
                     regInvalid[idx]
                       ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
-                      : 'bg-white border-black-30 text-zinc-900'
+                      : regDuplicateFlags[idx]
+                        ? 'bg-(--alertError) border-(--alertError) text-white font-semibold'
+                        : 'bg-white border-black-30 text-zinc-900'
                   }`}
                   placeholder='00'
                 />
@@ -501,7 +514,11 @@ export function GamesPanel() {
               <button
                 type='button'
                 className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-                disabled={regParsed.length === 0 || regInvalid.some(Boolean)}
+                disabled={
+                  regParsed.length === 0 ||
+                  regInvalid.some(Boolean) ||
+                  regDuplicateFlags.some(Boolean)
+                }
                 onClick={async () => {
                   const res = await fetch(
                     '/api/loterias/quina/games/add-items',

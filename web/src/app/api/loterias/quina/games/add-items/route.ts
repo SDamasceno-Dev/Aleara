@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
+type AddItemsRequest =
+  | { setId: string; items: number[][] }
+  | { items: number[][]; setId?: undefined };
+
+function normalizeNumbers(nums: number[]): number[] {
+  return [...nums].sort((a, b) => a - b);
+}
+
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -8,112 +16,137 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: unknown;
+  let body: AddItemsRequest;
   try {
-    body = await request.json();
+    body = (await request.json()) as AddItemsRequest;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const parsed = (body ?? {}) as { setId?: unknown; items?: unknown };
-  const setId: string | null =
-    parsed.setId != null ? String(parsed.setId) : null;
-  const items: number[][] = Array.isArray(parsed.items)
-    ? (parsed.items as unknown[]).map((arr) =>
-        Array.isArray(arr) ? (arr as unknown[]).map((n) => Number(n)) : [],
-      )
-    : [];
-  if (!items.length)
-    return NextResponse.json({ error: 'No items' }, { status: 400 });
+  const items = body.items;
+  const maybeSetId: string | undefined =
+    'setId' in body ? body.setId : undefined;
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: 'Missing items' }, { status: 400 });
+  }
 
-  // Ensure all numbers valid and lengths 5..20
+  let setId = maybeSetId;
+
+  // Build normalized bets exactly as provided (length 5..15), no combination expansion
   // Preserve insertion order for source_numbers, but normalize items (games) for storage
-  const normItems = items.map((arr) => {
-    // Remove duplicates while preserving order
-    const seen = new Set<number>();
-    const unique = arr.filter((n: number) => {
-      if (!Number.isInteger(n) || n < 1 || n > 80) return false;
-      if (seen.has(n)) return false;
-      seen.add(n);
-      return true;
-    });
-    // Sort only for the items (games), not for source_numbers
-    return [...unique].sort((a, b) => a - b);
-  });
-  if (normItems.some((a) => a.length < 5 || a.length > 20)) {
+  const numbersKey = (a: number[]) => normalizeNumbers(a).join(',');
+  const localKeys = new Set<string>();
+  const betsFromPayload: number[][] = [];
+  const firstOriginalForSource: number[] = [];
+  for (const arr of items) {
+    if (!Array.isArray(arr) || arr.length < 5 || arr.length > 15) continue;
+    // For source_numbers: preserve order, remove duplicates
+    if (firstOriginalForSource.length === 0) {
+      const seen = new Set<number>();
+      for (const n of arr) {
+        if (!Number.isInteger(n) || n < 1 || n > 80) continue;
+        if (seen.has(n)) continue;
+        seen.add(n);
+        firstOriginalForSource.push(n);
+      }
+    }
+    // For items (games): normalize (sort) for storage
+    const base = normalizeNumbers(arr).filter(
+      (n) => Number.isInteger(n) && n >= 1 && n <= 80,
+    );
+    if (new Set(base).size !== base.length) continue;
+    const key = numbersKey(base);
+    if (localKeys.has(key)) continue;
+    localKeys.add(key);
+    betsFromPayload.push(base);
+  }
+  if (betsFromPayload.length === 0) {
     return NextResponse.json(
-      { error: 'Each item must have 5 to 20 numbers between 1 and 80' },
+      { error: 'Nenhuma aposta válida (5..15 dezenas únicas de 1 a 80).' },
       { status: 400 },
     );
   }
 
-  let targetSetId = setId;
-  if (!targetSetId) {
-    // create a new set - preserve insertion order for source_numbers
-    const firstOriginal = items[0] ?? [];
-    const firstSource = firstOriginal.filter(
-      (n: number) => Number.isInteger(n) && n >= 1 && n <= 80,
-    );
-    // Remove duplicates while preserving order
-    const seen = new Set<number>();
-    const first = firstSource.filter((n: number) => {
-      if (seen.has(n)) return false;
-      seen.add(n);
-      return true;
-    });
-    const { data, error } = await supabase
+  // If no set provided, create a minimal manual set using the first item's numbers in insertion order
+  if (!setId) {
+    const firstNumbers = firstOriginalForSource;
+    const { data: created, error: createErr } = await supabase
       .from('quina_user_sets')
       .insert({
         user_id: user.id,
-        source_numbers: first,
-        total_combinations: 0,
+        source_numbers: firstNumbers,
+        total_combinations: 1,
         sample_size: 0,
-        seed: null,
       })
       .select('id')
       .single();
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    targetSetId = data.id as string;
-  } else {
-    // Validate ownership
-    const { data, error } = await supabase
-      .from('quina_user_sets')
-      .select('id,user_id')
-      .eq('id', targetSetId)
-      .maybeSingle();
-    if (error || !data || (data.user_id as string) !== user.id) {
-      return NextResponse.json({ error: 'Set not found' }, { status: 404 });
+    if (createErr || !created) {
+      return NextResponse.json(
+        { error: createErr?.message || 'Cannot create set' },
+        { status: 500 },
+      );
     }
+    setId = created.id as string;
   }
 
-  // Determine next position
-  let nextPos = 0;
-  {
-    const { data } = await supabase
-      .from('quina_user_items')
-      .select('position')
-      .eq('set_id', targetSetId)
-      .order('position', { ascending: false })
-      .limit(1);
-    if (data && data.length) nextPos = (data[0].position as number) + 1;
+  // Ensure ownership via RLS and compute next positions
+  const { data: existing, error: exErr } = await supabase
+    .from('quina_user_items')
+    .select('position, numbers')
+    .eq('set_id', setId);
+  if (exErr)
+    return NextResponse.json({ error: exErr.message }, { status: 500 });
+
+  const rows: Array<{
+    set_id: string;
+    position: number;
+    numbers: number[];
+    matches: number | null;
+  }> = [];
+  const existingKeys = new Set<string>(
+    (existing ?? []).map((r) => numbersKey(r.numbers as number[])),
+  );
+  let maxPos = Math.max(
+    -1,
+    ...(existing ?? []).map((r) => r.position as number),
+  );
+  for (const nums of betsFromPayload) {
+    const key = numbersKey(nums);
+    if (existingKeys.has(key)) continue;
+    maxPos += 1;
+    rows.push({
+      set_id: setId!,
+      position: maxPos,
+      numbers: nums,
+      matches: null,
+    });
+    existingKeys.add(key);
   }
-  const payload = normItems.map((nums, i) => ({
-    set_id: targetSetId,
-    position: nextPos + i,
-    numbers: nums,
-  }));
-  for (let i = 0; i < payload.length; i += 1000) {
-    const batch = payload.slice(i, i + 1000);
-    const { error } = await supabase.from('quina_user_items').insert(batch);
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (rows.length === 0) {
+    return NextResponse.json({ ok: true, added: 0, items: [] });
   }
+
+  const { error: insErr } = await supabase
+    .from('quina_user_items')
+    .insert(rows);
+  if (insErr)
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
+
+  // Atualiza sample_size do set para refletir os novos itens
+  const newCount = (existing?.length ?? 0) + rows.length;
   await supabase
     .from('quina_user_sets')
-    .update({ sample_size: nextPos + payload.length })
-    .eq('id', targetSetId);
+    .update({ sample_size: newCount })
+    .eq('id', setId);
+
   return NextResponse.json({
-    setId: targetSetId,
-    items: payload.map((p) => ({ position: p.position, numbers: p.numbers })),
+    ok: true,
+    added: rows.length,
+    setId,
+    items: rows.map((r) => ({
+      position: r.position,
+      numbers: r.numbers,
+      matches: null,
+    })),
   });
 }
