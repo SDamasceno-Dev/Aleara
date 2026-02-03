@@ -46,10 +46,10 @@ export async function POST(request: Request) {
 
   const drawSet = new Set(draw);
 
-  // Fetch items with current matches
+  // Fetch items (matches são calculados aqui, não persistidos)
   const { data: items, error: itemsErr } = await supabase
     .from('lotofacil_user_items')
-    .select('position, numbers, matches')
+    .select('position, numbers')
     .eq('set_id', setId)
     .order('position', { ascending: true });
   if (itemsErr)
@@ -70,12 +70,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: checkErr.message }, { status: 500 });
   const checkId = checkInsert.id as string;
 
-  // Insert check items
+  // Insert check items (calcular matches aqui)
   const checkItems = (
     (items ?? []) as Array<{
       position: number;
       numbers: number[];
-      matches?: number | null;
     }>
   ).map((it) => {
     const nums = it.numbers ?? [];
