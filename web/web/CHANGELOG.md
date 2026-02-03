@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.7.0...aleara-web-v0.8.0) (2026-02-03)
+
+
+### Features
+
+* add "Limpar dezenas" button to reset draw selections in GamesPanel ([98e584c](https://github.com/SDamasceno-Dev/Aleara/commit/98e584c9d4eb4560199996e09f807ead217caff8))
+* enhance item addition logic and validation in Lotofacil and Quina API routes ([b77a3a4](https://github.com/SDamasceno-Dev/Aleara/commit/b77a3a4abbbfac908e8974f76589cacfedd433e1))
+
 ## [0.7.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.6.0...aleara-web-v0.7.0) (2026-02-03)
 
 
