@@ -8,6 +8,12 @@ function countMatches(a: number[], b: number[]): number {
   return m;
 }
 
+/**
+ * Conferir jogos contra um sorteio.
+ * IMPORTANTE: Este endpoint NÃO persiste os matches na tabela de items.
+ * Os matches são calculados e retornados apenas para exibição no frontend.
+ * Para salvar uma conferência, use o endpoint save-check.
+ */
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -46,10 +52,10 @@ export async function POST(request: Request) {
   if (setErr || !setRow)
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Fetch items in pages to compute matches and update
+  // Fetch items in pages to compute matches (sem persistir)
   let offset = 0;
   const page = 1000;
-  const updated: Array<{
+  const result: Array<{
     position: number;
     numbers: number[];
     matches: number;
@@ -67,30 +73,18 @@ export async function POST(request: Request) {
       numbers: number[];
     }>;
     if (rows.length === 0) break;
-    const updates = rows.map((r) => {
+    for (const r of rows) {
       const nums: number[] = Array.isArray(r?.numbers) ? r.numbers : [];
       const m = countMatches(draw, nums);
-      updated.push({
+      result.push({
         position: r.position,
         numbers: nums,
         matches: m,
       });
-      // include numbers to satisfy NOT NULL even if an insert is attempted by upsert
-      return {
-        set_id: setId,
-        position: r.position,
-        numbers: nums,
-        matches: m,
-      };
-    });
-    const { error: updErr } = await supabase
-      .from('megasena_user_items')
-      .upsert(updates, { onConflict: 'set_id,position' });
-    if (updErr)
-      return NextResponse.json({ error: updErr.message }, { status: 500 });
+    }
     offset += rows.length;
     if (rows.length < page) break;
   }
 
-  return NextResponse.json({ ok: true, setId, draw, items: updated });
+  return NextResponse.json({ ok: true, setId, draw, items: result });
 }

@@ -31,13 +31,23 @@ export async function GET(
   if (!setRow)
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Fetch items (sem matches - matches são calculados apenas durante conferência)
   const { data: items, error } = await supabase
     .from('lotomania_user_items')
-    .select('position, numbers, matches')
+    .select('position, numbers')
     .eq('set_id', setId)
     .order('position', { ascending: true })
     .range(from, to);
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ set: setRow, items: items ?? [] });
+
+  // Retornar items com matches: null (conferência é feita separadamente)
+  return NextResponse.json({
+    set: setRow,
+    items: (items ?? []).map((it) => ({
+      position: it.position,
+      numbers: it.numbers,
+      matches: null,
+    })),
+  });
 }

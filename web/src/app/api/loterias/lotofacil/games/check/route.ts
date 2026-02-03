@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
+/**
+ * Conferir jogos contra um sorteio.
+ * IMPORTANTE: Este endpoint NÃO persiste os matches na tabela de items.
+ * Os matches são calculados e retornados apenas para exibição no frontend.
+ * Para salvar uma conferência, use o endpoint save-check.
+ */
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -32,33 +38,20 @@ export async function POST(request: Request) {
     .order('position', { ascending: true });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  const updated = (
+
+  // Calcular matches localmente (sem persistir)
+  const result = (
     (items ?? []) as Array<{ position: number; numbers: number[] }>
   ).map((it) => {
     const nums = it.numbers ?? [];
     let m = 0;
     for (const n of nums) if (drawSet.has(n)) m += 1;
     return {
-      set_id: setId,
       position: it.position,
       numbers: nums,
       matches: m,
     };
   });
-  // Upsert back matches
-  for (let i = 0; i < updated.length; i += 1000) {
-    const batch = updated.slice(i, i + 1000);
-    const { error: upErr } = await supabase
-      .from('lotofacil_user_items')
-      .upsert(batch, { onConflict: 'set_id,position' });
-    if (upErr)
-      return NextResponse.json({ error: upErr.message }, { status: 500 });
-  }
-  return NextResponse.json({
-    items: updated.map(({ position, numbers, matches }) => ({
-      position,
-      numbers,
-      matches,
-    })),
-  });
+
+  return NextResponse.json({ items: result });
 }
