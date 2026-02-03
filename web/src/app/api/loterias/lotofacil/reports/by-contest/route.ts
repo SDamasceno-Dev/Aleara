@@ -11,7 +11,10 @@ export async function GET(request: Request) {
   const contestNo = Number(url.searchParams.get('contest') ?? 0);
 
   if (!Number.isInteger(contestNo) || contestNo <= 0) {
-    return NextResponse.json({ error: 'Invalid contest number' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid contest number' },
+      { status: 400 },
+    );
   }
 
   const { data, error } = await supabase

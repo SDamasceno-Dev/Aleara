@@ -191,11 +191,7 @@ function mapRow(
   for (let i = 1; i <= 15; i++) {
     bolas.push(parseIntSafe(get(`bola${i}`)));
   }
-  if (
-    concurso == null ||
-    !dataISO ||
-    bolas.some((b) => b == null)
-  ) {
+  if (concurso == null || !dataISO || bolas.some((b) => b == null)) {
     return {
       ok: false,
       error: `Linha ${line}: dados obrigatórios ausentes/invalidos`,
@@ -393,7 +389,9 @@ export async function POST(request: Request) {
     while (true) {
       const { data, error } = await supabase
         .from('lotofacil_draws')
-        .select('concurso, bola1, bola2, bola3, bola4, bola5, bola6, bola7, bola8, bola9, bola10, bola11, bola12, bola13, bola14, bola15')
+        .select(
+          'concurso, bola1, bola2, bola3, bola4, bola5, bola6, bola7, bola8, bola9, bola10, bola11, bola12, bola13, bola14, bola15',
+        )
         .order('concurso', { ascending: true })
         .range(fetched, fetched + pageSize - 1);
       if (error) break;
@@ -419,9 +417,21 @@ export async function POST(request: Request) {
       for (const r of rowsPage) {
         const concursoNum = r.concurso;
         const arr = [
-          r.bola1, r.bola2, r.bola3, r.bola4, r.bola5,
-          r.bola6, r.bola7, r.bola8, r.bola9, r.bola10,
-          r.bola11, r.bola12, r.bola13, r.bola14, r.bola15,
+          r.bola1,
+          r.bola2,
+          r.bola3,
+          r.bola4,
+          r.bola5,
+          r.bola6,
+          r.bola7,
+          r.bola8,
+          r.bola9,
+          r.bola10,
+          r.bola11,
+          r.bola12,
+          r.bola13,
+          r.bola14,
+          r.bola15,
         ]
           .map((n) => Number(n))
           .sort((a, b) => a - b);
@@ -511,7 +521,10 @@ export async function POST(request: Request) {
           { study_key: key, title, params: {} },
           { onConflict: 'study_key' },
         );
-      await supabase.from('lotofacil_stats_items').delete().eq('study_key', key);
+      await supabase
+        .from('lotofacil_stats_items')
+        .delete()
+        .eq('study_key', key);
       for (const batch of chunk(payload, 1000)) {
         await supabase
           .from('lotofacil_stats_items')

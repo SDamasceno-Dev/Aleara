@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
   const src: number[] = Array.isArray(parsed.numbers)
     ? (parsed.numbers as unknown[]).map((x) => Number(x))
-    : (setData.source_numbers as number[]) ?? [];
+    : ((setData.source_numbers as number[]) ?? []);
   const k: number = Number(parsed.k ?? 0);
   const seedInput = parsed.seed != null ? Number(parsed.seed) : null;
   const setSeed = Number.isFinite(seedInput as number)
