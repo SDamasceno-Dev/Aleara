@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.8.0...aleara-web-v0.9.0) (2026-02-03)
+
+
+### Features
+
+* update API routes and GamesPanel components to handle matches more effectively ([9b6610f](https://github.com/SDamasceno-Dev/Aleara/commit/9b6610f11f4c33d0883fc22bf28e86574525b1da))
+
 ## [0.8.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.7.0...aleara-web-v0.8.0) (2026-02-03)
 
 
