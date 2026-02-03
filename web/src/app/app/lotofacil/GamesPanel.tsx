@@ -1044,6 +1044,17 @@ export function GamesPanel() {
               </button>
               <button
                 type='button'
+                className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+                onClick={() => {
+                  setDrawOtp(Array.from({ length: 15 }, () => ''));
+                  setDrawInvalid(Array.from({ length: 15 }, () => false));
+                  setCheckedDraw([]);
+                }}
+              >
+                Limpar dezenas
+              </button>
+              <button
+                type='button'
                 className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-white-10 text-red-300 ml-auto'
                 onClick={async () => {
                   if (
