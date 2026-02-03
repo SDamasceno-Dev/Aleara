@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.6.0...aleara-web-v0.7.0) (2026-02-03)
+
+
+### Features
+
+* clear registration fields after successful entry in GamesPanel ([a3a041e](https://github.com/SDamasceno-Dev/Aleara/commit/a3a041eb25c96b2911f502d25506bcbde07fb091))
+
 ## [0.6.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.5.0...aleara-web-v0.6.0) (2026-02-03)
 
 
