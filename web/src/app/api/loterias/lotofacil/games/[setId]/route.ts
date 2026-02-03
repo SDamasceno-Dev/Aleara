@@ -34,18 +34,23 @@ export async function GET(
   );
   const offset = Math.max(0, Number(url.searchParams.get('offset') ?? 0));
 
-  // Fetch items
+  // Fetch items (sem matches - matches são calculados apenas durante conferência)
   const { data: items, error: itemsErr } = await supabase
     .from('lotofacil_user_items')
-    .select('position, numbers, matches')
+    .select('position, numbers')
     .eq('set_id', setId)
     .order('position', { ascending: true })
     .range(offset, offset + size - 1);
   if (itemsErr)
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
+  // Retornar items com matches: null (conferência é feita separadamente)
   return NextResponse.json({
     set: setData,
-    items: items ?? [],
+    items: (items ?? []).map((it) => ({
+      position: it.position,
+      numbers: it.numbers,
+      matches: null,
+    })),
   });
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@/components/select/Select';
 import { useDialog } from '@/components/dialog';
 import { Button } from '@/components/button';
+import { LoadingOverlay } from '@/components/overlay/LoadingOverlay';
 
 type GeneratedItem = {
   position: number;
@@ -91,8 +92,9 @@ export function GamesPanel() {
   const [kInput, setKInput] = useState('05');
   const [seedInput, setSeedInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [, setBusy] = useState(false);
-  const [, setBusyMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState('Processando…');
+  const [manualPositions, setManualPositions] = useState<Set<number>>(new Set());
   const [setId, setSetId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [markedIdx, setMarkedIdx] = useState<number | null>(null);
@@ -195,6 +197,21 @@ export function GamesPanel() {
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkedDraw, setCheckedDraw] = useState<number[]>([]);
   const checkedDrawSet = useMemo(() => new Set(checkedDraw), [checkedDraw]);
+  // Modal de listas salvas
+  const [listsOpen, setListsOpen] = useState(false);
+  const [listsLoading, setListsLoading] = useState(false);
+  const [betLists, setBetLists] = useState<
+    Array<{
+      id: string;
+      contestNo: number | null;
+      title: string | null;
+      count: number;
+      createdAt: string;
+    }>
+  >([]);
+  const [selectedListIds, setSelectedListIds] = useState<Set<string>>(
+    new Set(),
+  );
   const liveRef = useRef<HTMLDivElement | null>(null);
 
   // Actions
@@ -357,95 +374,12 @@ export function GamesPanel() {
 
   return (
     <section className='rounded-lg border border-border/60 bg-card/90 p-4'>
+      <LoadingOverlay
+        show={busy}
+        message={busyMsg}
+        subtitle='Isso pode levar alguns instantes.'
+      />
       <div className='mb-3 text-sm text-zinc-200'>Jogos — Lotofácil</div>
-      {/* Ações de listas */}
-      <div className='mb-3 flex items-center gap-2'>
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          disabled={!setId || items.length === 0}
-          onClick={async () => {
-            const contest = window.prompt(
-              'Número do concurso para salvar as apostas:',
-            );
-            if (!contest) return;
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              return;
-            }
-            const title = window.prompt('Título (opcional):') || undefined;
-            const res = await fetch(
-              '/api/loterias/lotofacil/games/bets/save-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ setId, contestNo: n, title }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) alert(data?.error || 'Falha ao salvar apostas.');
-            else
-              alert(
-                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
-              );
-          }}
-        >
-          Salvar apostas (por concurso)
-        </button>
-        <button
-          type='button'
-          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-          onClick={async () => {
-            const contest = window.prompt(
-              'Número do concurso para carregar as apostas:',
-            );
-            if (!contest) return;
-            const n = Number(contest);
-            if (!Number.isInteger(n) || n <= 0) {
-              alert('Número de concurso inválido.');
-              return;
-            }
-            const mode = window.confirm(
-              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
-            )
-              ? 'replace'
-              : 'append';
-            const res = await fetch(
-              '/api/loterias/lotofacil/games/bets/load-by-contest',
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ contestNo: n, mode, setId }),
-              },
-            );
-            const data = await res.json();
-            if (!res.ok) {
-              alert(data?.error || 'Falha ao carregar apostas.');
-              return;
-            }
-            if (!setId && data.setId) setSetId(data.setId);
-            const fetched = (
-              (data.items ?? []) as Array<{
-                position: number;
-                numbers: number[];
-              }>
-            ).map((it) => ({
-              position: it.position,
-              numbers: it.numbers ?? [],
-              matches: null as number | null,
-            }));
-            if (fetched.length > 0) setItems(fetched);
-          }}
-        >
-          Carregar apostas (por concurso)
-        </button>
-        <ManageLists
-          setId={setId}
-          setItems={setItems}
-          setCheckedDraw={setCheckedDraw}
-        />
-      </div>
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         <div className='space-y-3'>
@@ -656,18 +590,19 @@ export function GamesPanel() {
                       setCurrentSource(set.source_numbers ?? []);
                       setTitleInput(set.title ?? '');
                       setMarkedIdx(set.marked_idx ?? null);
+                      // Forçar matches: null ao carregar (conferência é feita separadamente)
                       const fetchedItems = (
                         (data.items ?? []) as Array<{
                           position: number;
                           numbers: number[];
-                          matches?: number | null;
                         }>
                       ).map((it) => ({
                         position: it.position,
                         numbers: it.numbers ?? [],
-                        matches: it.matches ?? null,
+                        matches: null as number | null,
                       }));
                       setItems(fetchedItems);
+                      setCheckedDraw([]);
                     } catch {}
                   }}
                 />
@@ -1097,8 +1032,181 @@ export function GamesPanel() {
         </div>
       </div>
 
-      {/* Resultados */}
-      <div className='mt-3 rounded-md border border-white/10'>
+      {/* Ações da lista e Resultados */}
+      <div className='mt-4 mb-2 flex items-center gap-2'>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            setListsOpen(true);
+            setListsLoading(true);
+            try {
+              const res = await fetch(
+                '/api/loterias/lotofacil/games/bets/lists',
+                { cache: 'no-store' },
+              );
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data?.error || 'Falha ao listar apostas salvas.');
+                setBetLists([]);
+              } else {
+                setBetLists(data.items ?? []);
+              }
+            } finally {
+              setListsLoading(false);
+              setSelectedListIds(new Set());
+            }
+          }}
+        >
+          Gerenciar listas
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          disabled={!setId || items.length === 0}
+          onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Salvando lista de apostas…');
+            const contest = window.prompt(
+              'Número do concurso para salvar as apostas:',
+            );
+            if (!contest) {
+              setBusy(false);
+              return;
+            }
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              setBusy(false);
+              return;
+            }
+            const title =
+              window.prompt('Título (opcional) para esta lista de apostas:') ||
+              undefined;
+            const res = await fetch(
+              '/api/loterias/lotofacil/games/bets/save-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ setId, contestNo: n, title }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao salvar apostas.');
+            } else {
+              alert(
+                `Apostas salvas para o concurso ${n}. Total: ${data.total}.`,
+              );
+            }
+            setBusy(false);
+          }}
+        >
+          Salvar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
+          onClick={async () => {
+            setBusy(true);
+            setBusyMsg('Carregando lista de apostas…');
+            const contest = window.prompt(
+              'Número do concurso para carregar as apostas:',
+            );
+            if (!contest) {
+              setBusy(false);
+              return;
+            }
+            const n = Number(contest);
+            if (!Number.isInteger(n) || n <= 0) {
+              alert('Número de concurso inválido.');
+              setBusy(false);
+              return;
+            }
+            const mode = window.confirm(
+              'Clique OK para substituir os jogos atuais. Cancelar para adicionar (append).',
+            )
+              ? 'replace'
+              : 'append';
+            const res = await fetch(
+              '/api/loterias/lotofacil/games/bets/load-by-contest',
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ contestNo: n, mode, setId }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data?.error || 'Falha ao carregar apostas.');
+            } else {
+              if (!setId && data.setId) {
+                setSetId(data.setId);
+              }
+              alert(
+                `Apostas ${mode === 'replace' ? 'substituídas' : 'adicionadas'}: ${data.loaded}.`,
+              );
+              setCheckedDraw([]);
+              setManualPositions(new Set());
+              const fetched = (
+                (data.items ?? []) as Array<{
+                  position: number;
+                  numbers: number[];
+                }>
+              ).map((it) => ({
+                position: it.position,
+                numbers: it.numbers ?? [],
+                matches: null as number | null,
+              }));
+              if (fetched.length > 0) setItems(fetched);
+            }
+            setBusy(false);
+          }}
+        >
+          Carregar apostas (por concurso)
+        </button>
+        <button
+          type='button'
+          className='ml-auto rounded-md border border-red-20 px-3 py-1 text-sm text-red-300 hover:bg-red-600 hover:text-white'
+          onClick={() => {
+            setItems([]);
+            setSetId(null);
+            setCheckedDraw([]);
+            setManualPositions(new Set());
+          }}
+          disabled={items.length === 0 && !setId}
+        >
+          Limpar jogos gerados
+        </button>
+      </div>
+      <div className='rounded-md border border-white/10'>
+        {matchesSummary ? (
+          <div className='flex items-center justify-end gap-3 px-3 py-2 text-sm text-zinc-300 border-b border-white/10'>
+            <span className='text-zinc-400'>Sumário de acertos:</span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>11</span>
+              <span className='font-semibold'>{matchesSummary.c11}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>12</span>
+              <span className='font-semibold'>{matchesSummary.c12}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>13</span>
+              <span className='font-semibold'>{matchesSummary.c13}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>14</span>
+              <span className='font-semibold'>{matchesSummary.c14}</span>
+            </span>
+            <span className='inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-0.5'>
+              <span className='text-zinc-400'>15</span>
+              <span className='font-semibold text-green-300'>
+                {matchesSummary.c15}
+              </span>
+            </span>
+          </div>
+        ) : null}
         <div className='overflow-x-auto'>
           <table className='min-w-full text-sm'>
             <thead className='text-zinc-400'>
@@ -1116,7 +1224,11 @@ export function GamesPanel() {
                   className='border-t border-white/10'
                 >
                   <td className='py-2 pl-3 pr-3'>{idx + 1}</td>
-                  <td className='py-2 pr-3'>( {it.position} )</td>
+                  <td className='py-2 pr-3'>
+                    {manualPositions.has(it.position)
+                      ? '-'
+                      : `( ${it.position} )`}
+                  </td>
                   <td className='py-2 pr-3 font-medium text-zinc-100'>
                     {it.numbers.map((n, i) => {
                       const s = String(n).padStart(2, '0');
@@ -1149,67 +1261,27 @@ export function GamesPanel() {
           </table>
         </div>
       </div>
-    </section>
-  );
-}
 
-function ManageLists({
-  setId,
-  setItems,
-  setCheckedDraw,
-}: {
-  setId: string | null;
-  setItems: React.Dispatch<React.SetStateAction<GeneratedItem[]>>;
-  setCheckedDraw: React.Dispatch<React.SetStateAction<number[]>>;
-}) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [betLists, setBetLists] = useState<
-    Array<{
-      id: string;
-      contestNo: number | null;
-      title: string | null;
-      count: number;
-      createdAt: string;
-    }>
-  >([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  return (
-    <>
-      <button
-        type='button'
-        className='ml-auto rounded-md border border-white-10 px-3 py-1 text-sm hover:bg-white-10'
-        onClick={async () => {
-          setOpen(true);
-          setLoading(true);
-          try {
-            const res = await fetch('/api/loterias/lotofacil/games/bets/lists');
-            const data = await res.json();
-            if (!res.ok) alert(data?.error || 'Falha ao listar.');
-            else setBetLists(data.items ?? []);
-          } finally {
-            setLoading(false);
-            setSelected(new Set());
-          }
-        }}
-      >
-        Gerenciar listas
-      </button>
-      {open ? (
+      {/* Modal de listas salvas */}
+      {listsOpen ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
           <button
             aria-label='Fechar'
-            onClick={() => setOpen(false)}
+            onClick={() => setListsOpen(false)}
             className='absolute inset-0 bg-black/60 backdrop-blur-sm'
           />
-          <div className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'>
+          <div
+            role='dialog'
+            aria-modal='true'
+            className='relative z-10 max-w-[80vw] w-[82vw] max-h-[82vh] bg-white text-zinc-900 rounded-md shadow-xl overflow-hidden flex flex-col border border-black/10'
+          >
             <div className='px-5 py-3 border-b border-black/10 bg-white'>
               <h2 className='text-sm font-semibold tracking-wider'>
                 Listas salvas — Lotofácil
               </h2>
             </div>
             <div className='px-5 py-4 flex-1 min-h-0 overflow-hidden'>
-              {loading ? (
+              {listsLoading ? (
                 <div className='text-sm text-zinc-500'>Carregando…</div>
               ) : betLists.length === 0 ? (
                 <div className='text-sm text-zinc-500'>
@@ -1224,11 +1296,11 @@ function ManageLists({
                           <input
                             type='checkbox'
                             checked={
-                              selected.size > 0 &&
-                              selected.size === betLists.length
+                              selectedListIds.size > 0 &&
+                              selectedListIds.size === betLists.length
                             }
                             onChange={(e) =>
-                              setSelected(
+                              setSelectedListIds(
                                 e.target.checked
                                   ? new Set(betLists.map((b) => b.id))
                                   : new Set(),
@@ -1257,6 +1329,8 @@ function ManageLists({
                             )
                               ? 'replace'
                               : 'append';
+                            setBusy(true);
+                            setBusyMsg('Carregando apostas…');
                             const res = await fetch(
                               '/api/loterias/lotofacil/games/bets/load-by-contest',
                               {
@@ -1271,10 +1345,12 @@ function ManageLists({
                             );
                             const data = await res.json();
                             if (!res.ok) {
-                              alert(
-                                data?.error || 'Falha ao carregar apostas.',
-                              );
+                              alert(data?.error || 'Falha ao carregar apostas.');
+                              setBusy(false);
                               return;
+                            }
+                            if (!setId && data.setId) {
+                              setSetId(data.setId);
                             }
                             const fetched = (
                               (data.items ?? []) as Array<{
@@ -1288,16 +1364,18 @@ function ManageLists({
                             }));
                             setItems(fetched);
                             setCheckedDraw([]);
-                            setOpen(false);
+                            setManualPositions(new Set());
+                            setListsOpen(false);
+                            setBusy(false);
                           }}
                         >
                           <td className='py-2 pl-2'>
                             <input
                               type='checkbox'
-                              checked={selected.has(b.id)}
+                              checked={selectedListIds.has(b.id)}
                               onChange={(e) => {
                                 e.stopPropagation();
-                                setSelected((prev) => {
+                                setSelectedListIds((prev) => {
                                   const next = new Set(prev);
                                   if (e.target.checked) next.add(b.id);
                                   else next.delete(b.id);
@@ -1321,33 +1399,38 @@ function ManageLists({
             </div>
             <div className='px-5 py-3 border-t border-black/10 bg-white flex items-center justify-between'>
               <div className='text-xs text-zinc-600'>
-                Selecionados: {selected.size}
+                Selecionados: {selectedListIds.size}
               </div>
               <div className='flex items-center gap-2'>
                 <button
                   type='button'
                   className='rounded-md border border-red-20 px-3 py-1 text-sm hover:bg-black/5 text-red-600'
-                  disabled={selected.size === 0}
+                  disabled={selectedListIds.size === 0}
                   onClick={async () => {
-                    if (selected.size === 0) return;
+                    if (selectedListIds.size === 0) return;
                     if (!window.confirm('Excluir listas selecionadas?')) return;
+                    setBusy(true);
+                    setBusyMsg('Excluindo listas…');
                     const res = await fetch(
                       '/api/loterias/lotofacil/games/bets/lists/delete',
                       {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({ listIds: Array.from(selected) }),
+                        body: JSON.stringify({
+                          listIds: Array.from(selectedListIds),
+                        }),
                       },
                     );
                     const data = await res.json();
                     if (!res.ok) {
                       alert(data?.error || 'Falha ao excluir.');
-                      return;
+                    } else {
+                      setBetLists((prev) =>
+                        prev.filter((b) => !selectedListIds.has(b.id)),
+                      );
+                      setSelectedListIds(new Set());
                     }
-                    setBetLists((prev) =>
-                      prev.filter((b) => !selected.has(b.id)),
-                    );
-                    setSelected(new Set());
+                    setBusy(false);
                   }}
                 >
                   Excluir selecionados
@@ -1355,7 +1438,7 @@ function ManageLists({
                 <button
                   type='button'
                   className='rounded-md border border-black/10 px-3 py-1 text-sm hover:bg-black/5'
-                  onClick={() => setOpen(false)}
+                  onClick={() => setListsOpen(false)}
                 >
                   Fechar
                 </button>
@@ -1364,6 +1447,6 @@ function ManageLists({
           </div>
         </div>
       ) : null}
-    </>
+    </section>
   );
 }

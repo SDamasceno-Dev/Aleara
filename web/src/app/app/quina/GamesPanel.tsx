@@ -653,18 +653,19 @@ export function GamesPanel() {
                       setCurrentSource(set.source_numbers ?? []);
                       setTitleInput(set.title ?? '');
                       setMarkedIdx(set.marked_idx ?? null);
+                      // Forçar matches: null ao carregar (conferência é feita separadamente)
                       const fetchedItems = (
                         (data.items ?? []) as Array<{
                           position: number;
                           numbers: number[];
-                          matches?: number | null;
                         }>
                       ).map((it) => ({
                         position: it.position,
                         numbers: it.numbers ?? [],
-                        matches: it.matches ?? null,
+                        matches: null as number | null,
                       }));
                       setItems(fetchedItems);
+                      setCheckedDraw([]);
                     } catch {}
                   }}
                 />
