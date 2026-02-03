@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.5.0...aleara-web-v0.6.0) (2026-02-03)
+
+
+### Features
+
+* implement Lotofacil page with dynamic tab management ([93e86f7](https://github.com/SDamasceno-Dev/Aleara/commit/93e86f78b763f2a6314ef036585eb7a32b0ce06d))
+
+
+### Bug Fixes
+
+* correct wording in GamesPanel instructions for clarity ([cef9a21](https://github.com/SDamasceno-Dev/Aleara/commit/cef9a21131a20ae732f0f06673a25817a967f175))
+
 ## [0.5.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.4.0...aleara-web-v0.5.0) (2026-01-15)
 
 
