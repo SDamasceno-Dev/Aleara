@@ -93,9 +93,21 @@ export default function ReportsPanel() {
         bola15: number;
       };
       const drawNumbers = [
-        draw.bola1, draw.bola2, draw.bola3, draw.bola4, draw.bola5,
-        draw.bola6, draw.bola7, draw.bola8, draw.bola9, draw.bola10,
-        draw.bola11, draw.bola12, draw.bola13, draw.bola14, draw.bola15,
+        draw.bola1,
+        draw.bola2,
+        draw.bola3,
+        draw.bola4,
+        draw.bola5,
+        draw.bola6,
+        draw.bola7,
+        draw.bola8,
+        draw.bola9,
+        draw.bola10,
+        draw.bola11,
+        draw.bola12,
+        draw.bola13,
+        draw.bola14,
+        draw.bola15,
       ];
       setReport({
         contestNo: draw.concurso,
@@ -151,9 +163,21 @@ export default function ReportsPanel() {
         bola15: number;
       };
       const drawNumbers = [
-        draw.bola1, draw.bola2, draw.bola3, draw.bola4, draw.bola5,
-        draw.bola6, draw.bola7, draw.bola8, draw.bola9, draw.bola10,
-        draw.bola11, draw.bola12, draw.bola13, draw.bola14, draw.bola15,
+        draw.bola1,
+        draw.bola2,
+        draw.bola3,
+        draw.bola4,
+        draw.bola5,
+        draw.bola6,
+        draw.bola7,
+        draw.bola8,
+        draw.bola9,
+        draw.bola10,
+        draw.bola11,
+        draw.bola12,
+        draw.bola13,
+        draw.bola14,
+        draw.bola15,
       ];
       setReport({
         contestNo: draw.concurso,

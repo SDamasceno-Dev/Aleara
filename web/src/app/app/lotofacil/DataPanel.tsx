@@ -134,9 +134,21 @@ export async function DataPanel() {
             <tbody className='text-zinc-300/90'>
               {rows.map((r) => {
                 const dezenas = [
-                  r.bola1, r.bola2, r.bola3, r.bola4, r.bola5,
-                  r.bola6, r.bola7, r.bola8, r.bola9, r.bola10,
-                  r.bola11, r.bola12, r.bola13, r.bola14, r.bola15,
+                  r.bola1,
+                  r.bola2,
+                  r.bola3,
+                  r.bola4,
+                  r.bola5,
+                  r.bola6,
+                  r.bola7,
+                  r.bola8,
+                  r.bola9,
+                  r.bola10,
+                  r.bola11,
+                  r.bola12,
+                  r.bola13,
+                  r.bola14,
+                  r.bola15,
                 ]
                   .map((n) => String(n).padStart(2, '0'))
                   .join(' • ');

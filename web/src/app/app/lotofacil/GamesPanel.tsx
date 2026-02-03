@@ -262,7 +262,8 @@ export function GamesPanel() {
           !!currentSource &&
           (currentSource.length !== parsedNumbers.length ||
             currentSource.some((v, i) => v !== parsedNumbers[i]));
-        if (changed) endpoint = '/api/loterias/lotofacil/games/generate/replace';
+        if (changed)
+          endpoint = '/api/loterias/lotofacil/games/generate/replace';
       }
       const payload:
         | { setId: string; numbers: number[]; k: number; seed?: number }
@@ -765,8 +766,8 @@ export function GamesPanel() {
                 </label>
               </div>
               <div className='text-xs text-zinc-500'>
-                Informe {countInput || '15'} dezenas abaixo (1 a 25). Cada "caixinha"
-                aceita 2 algarismos e avança automaticamente.
+                Informe {countInput || '15'} dezenas abaixo (1 a 25). Cada
+                "caixinha" aceita 2 algarismos e avança automaticamente.
               </div>
             </div>
 

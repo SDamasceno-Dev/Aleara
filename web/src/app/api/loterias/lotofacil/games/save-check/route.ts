@@ -25,7 +25,12 @@ export async function POST(request: Request) {
     : [];
   const contest = Number(parsed.contest ?? 0);
   // Lotofácil: 15 números sorteados
-  if (!setId || draw.length !== 15 || !Number.isInteger(contest) || contest <= 0)
+  if (
+    !setId ||
+    draw.length !== 15 ||
+    !Number.isInteger(contest) ||
+    contest <= 0
+  )
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
 
   // Verify set ownership
@@ -86,7 +91,9 @@ export async function POST(request: Request) {
 
   for (let i = 0; i < checkItems.length; i += 1000) {
     const batch = checkItems.slice(i, i + 1000);
-    const { error } = await supabase.from('lotofacil_check_items').insert(batch);
+    const { error } = await supabase
+      .from('lotofacil_check_items')
+      .insert(batch);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -18,10 +18,7 @@ export async function POST(request: Request) {
   const setId = parsed.setId ? String(parsed.setId) : null;
 
   // Delete all checks for user (optionally filtered by setId)
-  let query = supabase
-    .from('lotofacil_checks')
-    .delete()
-    .eq('user_id', user.id);
+  let query = supabase.from('lotofacil_checks').delete().eq('user_id', user.id);
   if (setId) {
     query = query.eq('set_id', setId);
   }

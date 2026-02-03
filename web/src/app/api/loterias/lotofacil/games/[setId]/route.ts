@@ -28,7 +28,10 @@ export async function GET(
 
   // Parse query params for pagination
   const url = new URL(request.url);
-  const size = Math.min(5000, Math.max(1, Number(url.searchParams.get('size') ?? 1000)));
+  const size = Math.min(
+    5000,
+    Math.max(1, Number(url.searchParams.get('size') ?? 1000)),
+  );
   const offset = Math.max(0, Number(url.searchParams.get('offset') ?? 0));
 
   // Fetch items

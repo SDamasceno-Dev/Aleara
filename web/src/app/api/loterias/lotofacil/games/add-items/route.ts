@@ -36,7 +36,10 @@ export async function POST(request: Request) {
 
   if (validItems.length === 0) {
     return NextResponse.json(
-      { error: 'No valid items provided (each must have 15-20 unique numbers 1-25)' },
+      {
+        error:
+          'No valid items provided (each must have 15-20 unique numbers 1-25)',
+      },
       { status: 400 },
     );
   }
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
     .eq('set_id', setId)
     .order('position', { ascending: false })
     .limit(1);
-  let nextPosition =
+  const nextPosition =
     existingItems && existingItems.length > 0
       ? (existingItems[0].position as number) + 1
       : 0;
