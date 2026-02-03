@@ -767,7 +767,7 @@ export function GamesPanel() {
               </div>
               <div className='text-xs text-zinc-500'>
                 Informe {countInput || '15'} dezenas abaixo (1 a 25). Cada
-                "caixinha" aceita 2 algarismos e avança automaticamente.
+                caixinha aceita 2 algarismos e avança automaticamente.
               </div>
             </div>
 
