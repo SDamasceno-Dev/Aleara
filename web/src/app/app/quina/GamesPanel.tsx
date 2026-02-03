@@ -522,6 +522,9 @@ export function GamesPanel() {
                   }
                   if (!setId && data.setId) setSetId(data.setId);
                   setItems((prev) => [...prev, ...(data.items ?? [])]);
+                  // Limpar campos após registro bem-sucedido
+                  setRegOtp((prev) => prev.map(() => ''));
+                  setRegInvalid((prev) => prev.map(() => false));
                 }}
               >
                 Registrar
