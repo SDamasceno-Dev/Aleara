@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.10.0...aleara-web-v0.11.0) (2026-03-21)
+
+
+### Features
+
+* enhance Mega-Sena reports with additional prize-tier metrics ([d635c72](https://github.com/SDamasceno-Dev/Aleara/commit/d635c72dc8ee75570cdcb9f398e55022a555c85a))
+* **ReportsPanel:** add percentage calculations for prize tiers in reports ([8a855c0](https://github.com/SDamasceno-Dev/Aleara/commit/8a855c05941ebd684b0572e7ad326f24fc7974fd))
+
+
+### Bug Fixes
+
+* **PdfDoc:** improve text formatting for pie chart title in reports ([aa6a3fb](https://github.com/SDamasceno-Dev/Aleara/commit/aa6a3fb2606e1bba858661c93709e16bc3cde208))
+* **ReportsPanel:** adjust alignment of percentage labels for prize tiers ([1ebe25d](https://github.com/SDamasceno-Dev/Aleara/commit/1ebe25dd0923f0670bcf8ade776acd65fe8907d0))
+
 ## [0.10.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.9.0...aleara-web-v0.10.0) (2026-03-21)
 
 
