@@ -267,7 +267,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 1</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c1}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -283,7 +283,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 2</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c2}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -299,7 +299,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 3</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c3}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -315,7 +315,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 4</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c4}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -331,7 +331,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 5</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c5}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -347,7 +347,7 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 6</div>
                 <div className='text-lg font-semibold text-green-300'>
                   {aggregate.kpis.c6}
-                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                     (
                     {aggregate.kpis.totalBets > 0
                       ? (
@@ -446,7 +446,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 1</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c1}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c1 / report.kpis.total) * 100).toFixed(1)
@@ -459,7 +459,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 2</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c2}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c2 / report.kpis.total) * 100).toFixed(1)
@@ -472,7 +472,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 3</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c3}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c3 / report.kpis.total) * 100).toFixed(1)
@@ -485,7 +485,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 4</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c4}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c4 / report.kpis.total) * 100).toFixed(1)
@@ -498,7 +498,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 5</div>
               <div className='text-lg font-semibold text-amber-300'>
                 {report.kpis.c5}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c5 / report.kpis.total) * 100).toFixed(1)
@@ -511,7 +511,7 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 6</div>
               <div className='text-lg font-semibold text-green-300'>
                 {report.kpis.c6}
-                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                <span className='ml-0.5 text-[0.6em] font-normal leading-none text-zinc-400 relative -top-[1px]'>
                   (
                   {report.kpis.total > 0
                     ? ((report.kpis.c6 / report.kpis.total) * 100).toFixed(1)
