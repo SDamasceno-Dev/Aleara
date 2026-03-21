@@ -16,6 +16,9 @@ export type ContestRow = {
   contestNo: number;
   checkedAt: string;
   total: number;
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
@@ -205,6 +208,9 @@ export function buildAggregateDoc(
     totalConferences: number;
     totalBets: number;
     avgPerCheck: number;
+    c1: number;
+    c2: number;
+    c3: number;
     c4: number;
     c5: number;
     c6: number;
@@ -213,16 +219,20 @@ export function buildAggregateDoc(
   rows: ContestRow[],
   opts?: { logoSrc?: string },
 ): React.ReactElement<DocumentProps> {
-  const sumHits = kpis.c4 + kpis.c5 + kpis.c6;
+  const sumHits = kpis.c1 + kpis.c2 + kpis.c3 + kpis.c4 + kpis.c5 + kpis.c6;
   const size = 120;
   const stroke = 16;
   const cx = size / 2;
   const cy = size / 2;
   // Segments computed to cover exactly 100% (avoid gaps from floating rounding)
-  const r4 = sumHits ? kpis.c4 / sumHits : 0;
-  const r5 = sumHits ? kpis.c5 / sumHits : 0;
-  // Compute last by remainder to avoid rounding gaps
-  // (no explicit variable needed; handled via ratios array below)
+  const ratios = [
+    { ratio: sumHits ? kpis.c1 / sumHits : 0, color: '#71717a' }, // 1
+    { ratio: sumHits ? kpis.c2 / sumHits : 0, color: '#a1a1aa' }, // 2
+    { ratio: sumHits ? kpis.c3 / sumHits : 0, color: '#d4d4d8' }, // 3
+    { ratio: sumHits ? kpis.c4 / sumHits : 0, color: '#eab308' }, // 4
+    { ratio: sumHits ? kpis.c5 / sumHits : 0, color: '#f97316' }, // 5
+    { ratio: sumHits ? kpis.c6 / sumHits : 0, color: COLORS.green }, // 6
+  ];
   // Helpers to draw filled donut segments (avoid seam artefacts from stroke dashes)
   const rOuter = size / 2 - 2;
   const rInner = rOuter - stroke;
@@ -285,6 +295,18 @@ export function buildAggregateDoc(
             <Text style={styles.value}>{kpis.avgPerCheck.toFixed(1)}</Text>
           </View>
           <View style={styles.card}>
+            <Text style={styles.label}>Acertos 1</Text>
+            <Text style={styles.value}>{kpis.c1}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Acertos 2</Text>
+            <Text style={styles.value}>{kpis.c2}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Acertos 3</Text>
+            <Text style={styles.value}>{kpis.c3}</Text>
+          </View>
+          <View style={styles.card}>
             <Text style={styles.label}>Acertos 4</Text>
             <Text style={styles.value}>{kpis.c4}</Text>
           </View>
@@ -297,7 +319,7 @@ export function buildAggregateDoc(
             <Text style={styles.value}>{kpis.c6}</Text>
           </View>
         </View>
-        {/* Header: spacers antes e depois do grupo 4/5/6 para centralizá-lo entre Apostas e Taxa */}
+        {/* Header: agrupa acertos 1..6 */}
         <View style={styles.tableHeader}>
           <View style={{ width: 70 }}>
             <Text style={styles.th}>Concurso</Text>
@@ -309,13 +331,22 @@ export function buildAggregateDoc(
             <Text style={[styles.th, styles.tdRight]}>Apostas</Text>
           </View>
           <View style={{ flexGrow: 1 }} />
-          <View style={{ width: 30 }}>
+          <View style={{ width: 24 }}>
+            <Text style={[styles.th, styles.tdRight]}>1</Text>
+          </View>
+          <View style={{ width: 24 }}>
+            <Text style={[styles.th, styles.tdRight]}>2</Text>
+          </View>
+          <View style={{ width: 24 }}>
+            <Text style={[styles.th, styles.tdRight]}>3</Text>
+          </View>
+          <View style={{ width: 24 }}>
             <Text style={[styles.th, styles.tdRight]}>4</Text>
           </View>
-          <View style={{ width: 30 }}>
+          <View style={{ width: 24 }}>
             <Text style={[styles.th, styles.tdRight]}>5</Text>
           </View>
-          <View style={{ width: 30 }}>
+          <View style={{ width: 24 }}>
             <Text style={[styles.th, styles.tdRight]}>6</Text>
           </View>
           <View style={{ flexGrow: 1 }} />
@@ -340,13 +371,22 @@ export function buildAggregateDoc(
               <Text style={[styles.td, styles.tdRight]}>{r.total}</Text>
             </View>
             <View style={{ flexGrow: 1 }} />
-            <View style={{ width: 30 }}>
+            <View style={{ width: 24 }}>
+              <Text style={[styles.td, styles.tdRight]}>{r.c1}</Text>
+            </View>
+            <View style={{ width: 24 }}>
+              <Text style={[styles.td, styles.tdRight]}>{r.c2}</Text>
+            </View>
+            <View style={{ width: 24 }}>
+              <Text style={[styles.td, styles.tdRight]}>{r.c3}</Text>
+            </View>
+            <View style={{ width: 24 }}>
               <Text style={[styles.td, styles.tdRight]}>{r.c4}</Text>
             </View>
-            <View style={{ width: 30 }}>
+            <View style={{ width: 24 }}>
               <Text style={[styles.td, styles.tdRight]}>{r.c5}</Text>
             </View>
-            <View style={{ width: 30 }}>
+            <View style={{ width: 24 }}>
               <Text
                 style={[styles.td, styles.tdRight, { color: COLORS.green }]}
               >
@@ -361,18 +401,13 @@ export function buildAggregateDoc(
             </View>
           </View>
         ))}
-        {/* Pizza 4/5/6 abaixo da tabela */}
+        {/* Pizza 1..6 abaixo da tabela */}
         <View style={styles.pieWrap}>
-          <Text style={styles.pieTitle}>Distribuição de acertos (4/5/6)</Text>
+          <Text style={styles.pieTitle}>Distribuição de acertos (1/2/3/4/5/6)</Text>
           <Svg width={size} height={size}>
             {(() => {
               let start = -90; // start at 12 o'clock
-              const segs: Array<{ ratio: number; color: string }> = [
-                { ratio: r4, color: '#eab308' }, // 4
-                { ratio: r5, color: '#f97316' }, // 5
-                { ratio: Math.max(0, 1 - (r4 + r5)), color: COLORS.green }, // 6 remainder
-              ];
-              return segs
+              return ratios
                 .filter((s) => s.ratio > 0)
                 .map((s, i) => {
                   const sweep = s.ratio * 360;
@@ -391,6 +426,36 @@ export function buildAggregateDoc(
             })()}
           </Svg>
           <View style={styles.legend}>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: '#71717a' }]} />
+              <Text style={styles.muted}>
+                Acertos 1: {kpis.c1} (
+                {kpis.totalBets
+                  ? ((kpis.c1 / kpis.totalBets) * 100).toFixed(1)
+                  : '0.0'}
+                %)
+              </Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: '#a1a1aa' }]} />
+              <Text style={styles.muted}>
+                Acertos 2: {kpis.c2} (
+                {kpis.totalBets
+                  ? ((kpis.c2 / kpis.totalBets) * 100).toFixed(1)
+                  : '0.0'}
+                %)
+              </Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: '#d4d4d8' }]} />
+              <Text style={styles.muted}>
+                Acertos 3: {kpis.c3} (
+                {kpis.totalBets
+                  ? ((kpis.c3 / kpis.totalBets) * 100).toFixed(1)
+                  : '0.0'}
+                %)
+              </Text>
+            </View>
             <View style={styles.legendRow}>
               <View style={[styles.swatch, { backgroundColor: '#eab308' }]} />
               <Text style={styles.muted}>
@@ -443,7 +508,16 @@ export function buildAggregateDoc(
 export function buildContestDoc(
   contestNo: number,
   draw: number[],
-  kpis: { total: number; c4: number; c5: number; c6: number; hitRate: number },
+  kpis: {
+    total: number;
+    c1: number;
+    c2: number;
+    c3: number;
+    c4: number;
+    c5: number;
+    c6: number;
+    hitRate: number;
+  },
   rows: { position: number; numbers: number[]; matches: number }[],
   opts?: { logoSrc?: string },
 ): React.ReactElement<DocumentProps> {
@@ -473,6 +547,18 @@ export function buildContestDoc(
           <View style={styles.card}>
             <Text style={styles.label}>Apostas</Text>
             <Text style={styles.value}>{kpis.total}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Acertos 1</Text>
+            <Text style={styles.value}>{kpis.c1}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Acertos 2</Text>
+            <Text style={styles.value}>{kpis.c2}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Acertos 3</Text>
+            <Text style={styles.value}>{kpis.c3}</Text>
           </View>
           <View style={styles.card}>
             <Text style={styles.label}>Acertos 4</Text>

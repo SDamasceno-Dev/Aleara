@@ -39,6 +39,9 @@ export async function GET(request: Request) {
       totalConferences: 0,
       totalBets: 0,
       avgPerCheck: 0,
+      c1: 0,
+      c2: 0,
+      c3: 0,
       c4: 0,
       c5: 0,
       c6: 0,
@@ -51,6 +54,9 @@ export async function GET(request: Request) {
           contestNo: c.contest_no,
           checkedAt: c.checked_at,
           total: 0,
+          c1: 0,
+          c2: 0,
+          c3: 0,
           c4: 0,
           c5: 0,
           c6: 0,
@@ -69,22 +75,30 @@ export async function GET(request: Request) {
         if (!row) continue;
         row.total += 1;
         const m = r.matches ?? 0;
-        if (m === 4) row.c4 += 1;
+        if (m === 1) row.c1 += 1;
+        else if (m === 2) row.c2 += 1;
+        else if (m === 3) row.c3 += 1;
+        else if (m === 4) row.c4 += 1;
         else if (m === 5) row.c5 += 1;
         else if (m === 6) row.c6 += 1;
       }
       rows = checkRows.map((c) => {
         const r = map.get(c.id)!;
+        // Preserve hitRate as prize-tier rate (4, 5, 6)
         r.hitRate = r.total > 0 ? (r.c4 + r.c5 + r.c6) / r.total : 0;
         return r;
       });
       kpis.totalConferences = rows.length;
       kpis.totalBets = rows.reduce((s, r) => s + r.total, 0);
+      kpis.c1 = rows.reduce((s, r) => s + r.c1, 0);
+      kpis.c2 = rows.reduce((s, r) => s + r.c2, 0);
+      kpis.c3 = rows.reduce((s, r) => s + r.c3, 0);
       kpis.c4 = rows.reduce((s, r) => s + r.c4, 0);
       kpis.c5 = rows.reduce((s, r) => s + r.c5, 0);
       kpis.c6 = rows.reduce((s, r) => s + r.c6, 0);
       kpis.avgPerCheck =
         kpis.totalConferences > 0 ? kpis.totalBets / kpis.totalConferences : 0;
+      // Preserve hitRate as prize-tier rate (4, 5, 6)
       kpis.hitRate =
         kpis.totalBets > 0 ? (kpis.c4 + kpis.c5 + kpis.c6) / kpis.totalBets : 0;
     }
@@ -109,16 +123,23 @@ export async function GET(request: Request) {
       .select('position, numbers, matches')
       .eq('check_id', check.id as string)
       .order('position', { ascending: true });
-    let c4 = 0,
+    let c1 = 0,
+      c2 = 0,
+      c3 = 0,
+      c4 = 0,
       c5 = 0,
       c6 = 0;
     for (const r of items ?? []) {
       const m = (r.matches as number) ?? 0;
-      if (m === 4) c4 += 1;
+      if (m === 1) c1 += 1;
+      else if (m === 2) c2 += 1;
+      else if (m === 3) c3 += 1;
+      else if (m === 4) c4 += 1;
       else if (m === 5) c5 += 1;
       else if (m === 6) c6 += 1;
     }
     const total = items?.length ?? 0;
+    // Preserve hitRate as prize-tier rate (4, 5, 6)
     const hitRate = total > 0 ? (c4 + c5 + c6) / total : 0;
     const rows = (items ?? []).map((r) => ({
       position: r.position as number,
@@ -129,7 +150,7 @@ export async function GET(request: Request) {
     doc = buildContestDoc(
       contestNo,
       (check.draw_numbers as number[]) ?? [],
-      { total, c4, c5, c6, hitRate },
+      { total, c1, c2, c3, c4, c5, c6, hitRate },
       rows,
       { logoSrc },
     );

@@ -31,6 +31,9 @@ export async function GET(request: Request) {
         totalConferences: 0,
         totalBets: 0,
         avgPerCheck: 0,
+        c1: 0,
+        c2: 0,
+        c3: 0,
         c4: 0,
         c5: 0,
         c6: 0,
@@ -46,6 +49,9 @@ export async function GET(request: Request) {
       contestNo: number;
       checkedAt: string;
       total: number;
+      c1: number;
+      c2: number;
+      c3: number;
       c4: number;
       c5: number;
       c6: number;
@@ -58,6 +64,9 @@ export async function GET(request: Request) {
       contestNo: c.contest_no,
       checkedAt: c.checked_at,
       total: 0,
+      c1: 0,
+      c2: 0,
+      c3: 0,
       c4: 0,
       c5: 0,
       c6: 0,
@@ -82,7 +91,10 @@ export async function GET(request: Request) {
     if (!row) continue;
     row.total += 1;
     const m = r.matches ?? 0;
-    if (m === 4) row.c4 += 1;
+    if (m === 1) row.c1 += 1;
+    else if (m === 2) row.c2 += 1;
+    else if (m === 3) row.c3 += 1;
+    else if (m === 4) row.c4 += 1;
     else if (m === 5) row.c5 += 1;
     else if (m === 6) row.c6 += 1;
   }
@@ -95,6 +107,9 @@ export async function GET(request: Request) {
       contestNo: agg.contestNo,
       checkedAt: agg.checkedAt,
       total: agg.total,
+      c1: agg.c1,
+      c2: agg.c2,
+      c3: agg.c3,
       c4: agg.c4,
       c5: agg.c5,
       c6: agg.c6,
@@ -105,15 +120,30 @@ export async function GET(request: Request) {
   // 4) Global KPIs
   const totalConferences = rows.length;
   const totalBets = rows.reduce((s, r) => s + r.total, 0);
+  const c1 = rows.reduce((s, r) => s + r.c1, 0);
+  const c2 = rows.reduce((s, r) => s + r.c2, 0);
+  const c3 = rows.reduce((s, r) => s + r.c3, 0);
   const c4 = rows.reduce((s, r) => s + r.c4, 0);
   const c5 = rows.reduce((s, r) => s + r.c5, 0);
   const c6 = rows.reduce((s, r) => s + r.c6, 0);
   const avgPerCheck = totalConferences > 0 ? totalBets / totalConferences : 0;
+  // Preserve hitRate as prize-tier rate (4, 5, 6)
   const hitRate = totalBets > 0 ? (c4 + c5 + c6) / totalBets : 0;
 
   return NextResponse.json({
     ok: true,
-    kpis: { totalConferences, totalBets, avgPerCheck, c4, c5, c6, hitRate },
+    kpis: {
+      totalConferences,
+      totalBets,
+      avgPerCheck,
+      c1,
+      c2,
+      c3,
+      c4,
+      c5,
+      c6,
+      hitRate,
+    },
     rows,
   });
 }

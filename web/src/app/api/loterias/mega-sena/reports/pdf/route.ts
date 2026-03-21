@@ -13,6 +13,9 @@ type ContestRow = {
   contestNo: number;
   checkedAt: string;
   total: number;
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
@@ -23,6 +26,9 @@ type AggregateKpis = {
   totalConferences: number;
   totalBets: number;
   avgPerCheck: number;
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
@@ -31,6 +37,9 @@ type AggregateKpis = {
 
 type ContestKpis = {
   total: number;
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
@@ -53,6 +62,9 @@ function renderHtmlAggregate(
         <td>${r.contestNo}</td>
         <td>${new Date(r.checkedAt).toLocaleString('pt-BR')}</td>
         <td>${r.total}</td>
+        <td>${r.c1}</td>
+        <td>${r.c2}</td>
+        <td>${r.c3}</td>
         <td>${r.c4}</td>
         <td>${r.c5}</td>
         <td>${r.c6}</td>
@@ -68,7 +80,7 @@ function renderHtmlAggregate(
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 24px; color: #111827; }
       .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px; }
       .brand { font-weight: 700; letter-spacing: 2px; }
-      .kpis { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; margin: 12px 0 16px; }
+      .kpis { display: grid; grid-template-columns: repeat(9, minmax(0,1fr)); gap: 8px; margin: 12px 0 16px; }
       .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
       .label { font-size: 11px; color: #6b7280; }
       .value { font-size: 18px; font-weight: 700; color: #111827; }
@@ -91,6 +103,9 @@ function renderHtmlAggregate(
       <div class="card"><div class="label">Conferências</div><div class="value">${kpis.totalConferences}</div></div>
       <div class="card"><div class="label">Apostas</div><div class="value">${kpis.totalBets}</div></div>
       <div class="card"><div class="label">Média/conferência</div><div class="value">${kpis.avgPerCheck.toFixed(1)}</div></div>
+      <div class="card"><div class="label">Acertos 1</div><div class="value">${kpis.c1}</div></div>
+      <div class="card"><div class="label">Acertos 2</div><div class="value">${kpis.c2}</div></div>
+      <div class="card"><div class="label">Acertos 3</div><div class="value">${kpis.c3}</div></div>
       <div class="card"><div class="label">Acertos 4</div><div class="value">${kpis.c4}</div></div>
       <div class="card"><div class="label">Acertos 5</div><div class="value">${kpis.c5}</div></div>
       <div class="card"><div class="label">Acertos 6</div><div class="value green">${kpis.c6}</div></div>
@@ -98,7 +113,7 @@ function renderHtmlAggregate(
     <table>
       <thead>
         <tr>
-          <th>Concurso</th><th>Conferido em</th><th>Apostas</th><th>4</th><th>5</th><th>6</th><th>Taxa</th>
+          <th>Concurso</th><th>Conferido em</th><th>Apostas</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>Taxa</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
@@ -134,7 +149,7 @@ function renderHtmlContest(
       .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px; }
       .brand { font-weight: 700; letter-spacing: 2px; }
       .muted { color: #6b7280; font-size: 12px; }
-      .kpis { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; margin: 12px 0 16px; }
+      .kpis { display: grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap: 8px; margin: 12px 0 16px; }
       .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
       .label { font-size: 11px; color: #6b7280; }
       .value { font-size: 18px; font-weight: 700; color: #111827; }
@@ -155,6 +170,9 @@ function renderHtmlContest(
     <div class="muted" style="margin: 4px 0 12px;">Concurso: <strong>${contestNo}</strong> • Sorteio: <strong>${formatNumbers(draw)}</strong></div>
     <div class="kpis">
       <div class="card"><div class="label">Apostas</div><div class="value">${kpis.total}</div></div>
+      <div class="card"><div class="label">Acertos 1</div><div class="value">${kpis.c1}</div></div>
+      <div class="card"><div class="label">Acertos 2</div><div class="value">${kpis.c2}</div></div>
+      <div class="card"><div class="label">Acertos 3</div><div class="value">${kpis.c3}</div></div>
       <div class="card"><div class="label">Acertos 4</div><div class="value">${kpis.c4}</div></div>
       <div class="card"><div class="label">Acertos 5</div><div class="value">${kpis.c5}</div></div>
       <div class="card"><div class="label">Acertos 6</div><div class="value green">${kpis.c6}</div></div>
@@ -204,6 +222,9 @@ export async function GET(request: Request) {
       totalConferences: 0,
       totalBets: 0,
       avgPerCheck: 0,
+      c1: 0,
+      c2: 0,
+      c3: 0,
       c4: 0,
       c5: 0,
       c6: 0,
@@ -216,6 +237,9 @@ export async function GET(request: Request) {
           contestNo: c.contest_no,
           checkedAt: c.checked_at,
           total: 0,
+          c1: 0,
+          c2: 0,
+          c3: 0,
           c4: 0,
           c5: 0,
           c6: 0,
@@ -234,22 +258,30 @@ export async function GET(request: Request) {
         if (!row) continue;
         row.total += 1;
         const m = r.matches ?? 0;
-        if (m === 4) row.c4 += 1;
+        if (m === 1) row.c1 += 1;
+        else if (m === 2) row.c2 += 1;
+        else if (m === 3) row.c3 += 1;
+        else if (m === 4) row.c4 += 1;
         else if (m === 5) row.c5 += 1;
         else if (m === 6) row.c6 += 1;
       }
       rows = checkRows.map((c) => {
         const r = map.get(c.id)!;
+        // Preserve hitRate as prize-tier rate (4, 5, 6)
         r.hitRate = r.total > 0 ? (r.c4 + r.c5 + r.c6) / r.total : 0;
         return r;
       });
       kpis.totalConferences = rows.length;
       kpis.totalBets = rows.reduce((s, r) => s + r.total, 0);
+      kpis.c1 = rows.reduce((s, r) => s + r.c1, 0);
+      kpis.c2 = rows.reduce((s, r) => s + r.c2, 0);
+      kpis.c3 = rows.reduce((s, r) => s + r.c3, 0);
       kpis.c4 = rows.reduce((s, r) => s + r.c4, 0);
       kpis.c5 = rows.reduce((s, r) => s + r.c5, 0);
       kpis.c6 = rows.reduce((s, r) => s + r.c6, 0);
       kpis.avgPerCheck =
         kpis.totalConferences > 0 ? kpis.totalBets / kpis.totalConferences : 0;
+      // Preserve hitRate as prize-tier rate (4, 5, 6)
       kpis.hitRate =
         kpis.totalBets > 0 ? (kpis.c4 + kpis.c5 + kpis.c6) / kpis.totalBets : 0;
     }
@@ -274,22 +306,29 @@ export async function GET(request: Request) {
       .select('position, numbers, matches')
       .eq('check_id', check.id as string)
       .order('position', { ascending: true });
-    let c4 = 0,
+    let c1 = 0,
+      c2 = 0,
+      c3 = 0,
+      c4 = 0,
       c5 = 0,
       c6 = 0;
     for (const r of items ?? []) {
       const m = (r.matches as number) ?? 0;
-      if (m === 4) c4 += 1;
+      if (m === 1) c1 += 1;
+      else if (m === 2) c2 += 1;
+      else if (m === 3) c3 += 1;
+      else if (m === 4) c4 += 1;
       else if (m === 5) c5 += 1;
       else if (m === 6) c6 += 1;
     }
     const total = items?.length ?? 0;
+    // Preserve hitRate as prize-tier rate (4, 5, 6)
     const hitRate = total > 0 ? (c4 + c5 + c6) / total : 0;
     html = renderHtmlContest(
       'Relatório por concurso — Mega‑Sena',
       contestNo,
       (check.draw_numbers as number[]) ?? [],
-      { total, c4, c5, c6, hitRate },
+      { total, c1, c2, c3, c4, c5, c6, hitRate },
       (items ?? []).map((r) => ({
         position: r.position as number,
         numbers: (r.numbers as number[]) ?? [],

@@ -28,16 +28,23 @@ export async function GET() {
   if (itemsErr)
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
 
-  let c4 = 0,
+  let c1 = 0,
+    c2 = 0,
+    c3 = 0,
+    c4 = 0,
     c5 = 0,
     c6 = 0;
   for (const r of items ?? []) {
     const m = (r.matches as number) ?? 0;
-    if (m === 4) c4 += 1;
+    if (m === 1) c1 += 1;
+    else if (m === 2) c2 += 1;
+    else if (m === 3) c3 += 1;
+    else if (m === 4) c4 += 1;
     else if (m === 5) c5 += 1;
     else if (m === 6) c6 += 1;
   }
   const total = items?.length ?? 0;
+  // Preserve hitRate as prize-tier rate (4, 5, 6)
   const hitRate = total > 0 ? (c4 + c5 + c6) / total : 0;
 
   return NextResponse.json({
@@ -45,7 +52,7 @@ export async function GET() {
     contestNo: check.contest_no as number,
     draw: (check.draw_numbers as number[]) ?? [],
     checkedAt: check.checked_at as string,
-    kpis: { total, c4, c5, c6, hitRate },
+    kpis: { total, c1, c2, c3, c4, c5, c6, hitRate },
     items: (items ?? []).map((r) => ({
       position: r.position as number,
       numbers: (r.numbers as number[]) ?? [],

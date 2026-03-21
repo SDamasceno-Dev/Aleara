@@ -8,7 +8,16 @@ type ReportData = {
   contestNo: number;
   draw: number[];
   checkedAt: string;
-  kpis: { total: number; c4: number; c5: number; c6: number; hitRate: number };
+  kpis: {
+    total: number;
+    c1: number;
+    c2: number;
+    c3: number;
+    c4: number;
+    c5: number;
+    c6: number;
+    hitRate: number;
+  };
   items: ReportItem[];
 };
 
@@ -16,6 +25,9 @@ type AggregateRow = {
   contestNo: number;
   checkedAt: string;
   total: number;
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
@@ -26,6 +38,9 @@ type AggregateData = {
     totalConferences: number;
     totalBets: number;
     avgPerCheck: number;
+    c1: number;
+    c2: number;
+    c3: number;
     c4: number;
     c5: number;
     c6: number;
@@ -118,6 +133,9 @@ export default function ReportsPanel() {
             totalConferences: 0,
             totalBets: 0,
             avgPerCheck: 0,
+            c1: 0,
+            c2: 0,
+            c3: 0,
             c4: 0,
             c5: 0,
             c6: 0,
@@ -224,7 +242,7 @@ export default function ReportsPanel() {
         ) : (
           <>
             {/* KPIs agregados */}
-            <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-6'>
+            <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-9'>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Conferências</div>
                 <div className='text-lg font-semibold text-zinc-100'>
@@ -243,6 +261,24 @@ export default function ReportsPanel() {
                 </div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.avgPerCheck.toFixed(1)}
+                </div>
+              </div>
+              <div className='rounded-md border border-white/10 p-3'>
+                <div className='text-[11px] text-zinc-400'>Acertos 1</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.c1}
+                </div>
+              </div>
+              <div className='rounded-md border border-white/10 p-3'>
+                <div className='text-[11px] text-zinc-400'>Acertos 2</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.c2}
+                </div>
+              </div>
+              <div className='rounded-md border border-white/10 p-3'>
+                <div className='text-[11px] text-zinc-400'>Acertos 3</div>
+                <div className='text-lg font-semibold text-zinc-100'>
+                  {aggregate.kpis.c3}
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
@@ -265,8 +301,11 @@ export default function ReportsPanel() {
               </div>
             </div>
 
-            {/* Pizza 4/5/6 */}
-            <PieSummary
+            {/* Barras 1..6 com destaque visual em 4..6 */}
+            <HitsBarChart
+              c1={aggregate.kpis.c1}
+              c2={aggregate.kpis.c2}
+              c3={aggregate.kpis.c3}
               c4={aggregate.kpis.c4}
               c5={aggregate.kpis.c5}
               c6={aggregate.kpis.c6}
@@ -286,6 +325,9 @@ export default function ReportsPanel() {
                         Conferido em
                       </th>
                       <th className='py-2 pr-3 font-medium w-24'>Apostas</th>
+                      <th className='py-2 pr-3 font-medium w-20'>1</th>
+                      <th className='py-2 pr-3 font-medium w-20'>2</th>
+                      <th className='py-2 pr-3 font-medium w-20'>3</th>
                       <th className='py-2 pr-3 font-medium w-20'>4</th>
                       <th className='py-2 pr-3 font-medium w-20'>5</th>
                       <th className='py-2 pr-3 font-medium w-20'>6</th>
@@ -303,8 +345,11 @@ export default function ReportsPanel() {
                           {new Date(r.checkedAt).toLocaleString()}
                         </td>
                         <td className='py-2 pr-3'>{r.total}</td>
+                        <td className='py-2 pr-3'>{r.c1}</td>
+                        <td className='py-2 pr-3'>{r.c2}</td>
+                        <td className='py-2 pr-3'>{r.c3}</td>
                         <td className='py-2 pr-3'>{r.c4}</td>
-                        <td className='py-2 pr-3'>{r.c5}</td>
+                        <td className='py-2 pr-3 text-amber-300'>{r.c5}</td>
                         <td className='py-2 pr-3 text-green-300'>{r.c6}</td>
                         <td className='py-2 pr-3'>
                           {(r.hitRate * 100).toFixed(1)}%
@@ -324,7 +369,7 @@ export default function ReportsPanel() {
       ) : (
         <>
           {/* KPIs */}
-          <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-5'>
+          <div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-8'>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Concurso</div>
               <div className='text-lg font-semibold text-zinc-100'>
@@ -338,6 +383,24 @@ export default function ReportsPanel() {
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
+              <div className='text-[11px] text-zinc-400'>Acertos 1</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.c1}
+              </div>
+            </div>
+            <div className='rounded-md border border-white/10 p-3'>
+              <div className='text-[11px] text-zinc-400'>Acertos 2</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.c2}
+              </div>
+            </div>
+            <div className='rounded-md border border-white/10 p-3'>
+              <div className='text-[11px] text-zinc-400'>Acertos 3</div>
+              <div className='text-lg font-semibold text-zinc-100'>
+                {report.kpis.c3}
+              </div>
+            </div>
+            <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 4</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c4}
@@ -345,7 +408,7 @@ export default function ReportsPanel() {
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 5</div>
-              <div className='text-lg font-semibold text-zinc-100'>
+              <div className='text-lg font-semibold text-amber-300'>
                 {report.kpis.c5}
               </div>
             </div>
@@ -413,134 +476,74 @@ export default function ReportsPanel() {
   );
 }
 
-function PieSummary({
+function HitsBarChart({
+  c1,
+  c2,
+  c3,
   c4,
   c5,
   c6,
   total,
 }: {
+  c1: number;
+  c2: number;
+  c3: number;
   c4: number;
   c5: number;
   c6: number;
   total: number;
 }) {
-  const sum = c4 + c5 + c6;
-  if (sum === 0 || total === 0) {
+  const rows = [
+    { label: 'Acertos 1', value: c1, color: 'bg-zinc-500' },
+    { label: 'Acertos 2', value: c2, color: 'bg-zinc-400' },
+    { label: 'Acertos 3', value: c3, color: 'bg-zinc-300' },
+    { label: 'Acertos 4', value: c4, color: 'bg-yellow-500' },
+    { label: 'Acertos 5', value: c5, color: 'bg-orange-500' },
+    { label: 'Acertos 6', value: c6, color: 'bg-green-500' },
+  ];
+  const max = Math.max(...rows.map((r) => r.value), 0);
+  if (max === 0 || total === 0) {
     return (
       <div className='mb-3 text-sm text-zinc-400'>
-        Sem dados suficientes para gráfico de pizza.
+        Sem dados suficientes para gráfico de acertos.
       </div>
     );
   }
-  const size = 180;
-  const stroke = 20;
-  const r = (size - stroke) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  const s4 = (c4 / sum) * circumference;
-  const s5 = (c5 / sum) * circumference;
-  const s6 = (c6 / sum) * circumference;
-  const off4 = 0;
-  const off5 = -s4;
-  const off6 = -(s4 + s5);
   const pct = (n: number) => ((n / total) * 100).toFixed(1);
 
   return (
-    <div className='mb-4 grid grid-cols-1 gap-4 md:grid-cols-2'>
-      <div className='flex items-center justify-center'>
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          className='-rotate-90'
-        >
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill='none'
-            stroke='rgba(255,255,255,0.08)'
-            strokeWidth={stroke}
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill='none'
-            stroke='#eab308' /* amber-500 */
-            strokeWidth={stroke}
-            strokeDasharray={`${s4} ${circumference - s4}`}
-            strokeDashoffset={off4}
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill='none'
-            stroke='#f97316' /* orange-500 */
-            strokeWidth={stroke}
-            strokeDasharray={`${s5} ${circumference - s5}`}
-            strokeDashoffset={off5}
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill='none'
-            stroke='#22c55e' /* green-500 */
-            strokeWidth={stroke}
-            strokeDasharray={`${s6} ${circumference - s6}`}
-            strokeDashoffset={off6}
-          />
-          {/* centro */}
-          <g
-            className='rotate-90'
-            transform={`translate(${cx},${cy}) rotate(90)`}
-          >
-            <text
-              x='0'
-              y='5'
-              textAnchor='middle'
-              className='fill-white text-sm'
-            >
-              {sum} hits
-            </text>
-          </g>
-        </svg>
+    <div className='mb-4 rounded-md border border-white/10 p-3'>
+      <div className='mb-2 text-xs text-zinc-400'>
+        Acertos por jogos conferidos (faixas 1 a 6)
       </div>
-      <div className='flex flex-col justify-center gap-2 text-sm'>
-        <div className='inline-flex items-center gap-2'>
-          <span
-            className='inline-block h-3 w-3 rounded-sm'
-            style={{ backgroundColor: '#eab308' }}
-          />
-          <span className='text-zinc-300'>Acertos 4</span>
-          <span className='ml-auto font-semibold text-zinc-100'>{c4}</span>
-          <span className='text-zinc-400'>({pct(c4)}%)</span>
-        </div>
-        <div className='inline-flex items-center gap-2'>
-          <span
-            className='inline-block h-3 w-3 rounded-sm'
-            style={{ backgroundColor: '#f97316' }}
-          />
-          <span className='text-zinc-300'>Acertos 5</span>
-          <span className='ml-auto font-semibold text-zinc-100'>{c5}</span>
-          <span className='text-zinc-400'>({pct(c5)}%)</span>
-        </div>
-        <div className='inline-flex items-center gap-2'>
-          <span
-            className='inline-block h-3 w-3 rounded-sm'
-            style={{ backgroundColor: '#22c55e' }}
-          />
-          <span className='text-zinc-300'>Acertos 6</span>
-          <span className='ml-auto font-semibold text-green-300'>{c6}</span>
-          <span className='text-zinc-400'>({pct(c6)}%)</span>
-        </div>
-        <div className='mt-2 text-xs text-zinc-400'>
-          Base: {total} apostas conferidas
-        </div>
+      <div className='space-y-2'>
+        {rows.map((row) => {
+          const widthPct = (row.value / max) * 100;
+          const textClass =
+            row.label === 'Acertos 6'
+              ? 'text-green-300'
+              : row.label === 'Acertos 5'
+                ? 'text-amber-300'
+                : row.label === 'Acertos 4'
+                  ? 'text-yellow-300'
+                  : 'text-zinc-200';
+          return (
+            <div key={row.label} className='grid grid-cols-[90px_1fr_120px] gap-2'>
+              <div className={`text-xs ${textClass}`}>{row.label}</div>
+              <div className='h-4 rounded bg-white/10 overflow-hidden'>
+                <div
+                  className={`h-full ${row.color}`}
+                  style={{ width: `${Math.max(widthPct, row.value > 0 ? 2 : 0)}%` }}
+                />
+              </div>
+              <div className={`text-right text-xs ${textClass}`}>
+                {row.value} ({pct(row.value)}%)
+              </div>
+            </div>
+          );
+        })}
       </div>
+      <div className='mt-3 text-xs text-zinc-400'>Base: {total} apostas conferidas</div>
     </div>
   );
 }
