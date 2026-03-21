@@ -187,6 +187,16 @@ export function GamesPanel() {
     );
     return nums;
   }, [otpValues]);
+  const duplicateFlags = useMemo(() => {
+    const norm = otpValues.map((v) =>
+      v && v.length === 2 ? String(Number(v)).padStart(2, '0') : '',
+    );
+    const counts = new Map<string, number>();
+    for (const s of norm) {
+      if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return norm.map((s) => s !== '' && (counts.get(s) ?? 0) > 1);
+  }, [otpValues]);
 
   // Conferir — Lotofácil: 15 números sorteados
   const [drawOtp, setDrawOtp] = useState<string[]>(
@@ -770,6 +780,8 @@ export function GamesPanel() {
                     className={`h-9 w-9 rounded-md border text-center text-sm font-medium ${
                       otpInvalid[idx]
                         ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
+                        : duplicateFlags[idx]
+                          ? 'bg-(--alertError) border-(--alertError) text-white font-semibold'
                         : 'bg-white border-black-30 text-zinc-900'
                     }`}
                     placeholder='00'
@@ -810,7 +822,8 @@ export function GamesPanel() {
                   parsedNumbers.length < otpValues.length ||
                   parsedNumbers.length !== otpValues.length ||
                   otpValues.some((v) => v.length !== 2) ||
-                  otpInvalid.some((b) => b)
+                  otpInvalid.some((b) => b) ||
+                  duplicateFlags.some((b) => b)
                 }
                 onClick={handleGenerate}
               >
