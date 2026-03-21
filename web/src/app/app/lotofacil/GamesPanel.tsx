@@ -782,7 +782,7 @@ export function GamesPanel() {
                         ? 'bg-white border-(--alertError) text-(--alertError) font-bold'
                         : duplicateFlags[idx]
                           ? 'bg-(--alertError) border-(--alertError) text-white font-semibold'
-                        : 'bg-white border-black-30 text-zinc-900'
+                          : 'bg-white border-black-30 text-zinc-900'
                     }`}
                     placeholder='00'
                   />
