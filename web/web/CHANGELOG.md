@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.9.0...aleara-web-v0.10.0) (2026-03-21)
+
+
+### Features
+
+* **GamesPanel:** add duplicate number detection and update validation logic ([2c051a5](https://github.com/SDamasceno-Dev/Aleara/commit/2c051a5199e7bca05a732ca4a1b91aae95d5a07c))
+
+
+### Bug Fixes
+
+* **GamesPanel:** correct indentation in conditional class assignment ([6399716](https://github.com/SDamasceno-Dev/Aleara/commit/63997162efd610f81d2ee54a12e4b7dd8cca0fe5))
+
 ## [0.9.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.8.0...aleara-web-v0.9.0) (2026-02-03)
 
 
