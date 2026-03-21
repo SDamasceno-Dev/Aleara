@@ -403,7 +403,9 @@ export function buildAggregateDoc(
         ))}
         {/* Pizza 1..6 abaixo da tabela */}
         <View style={styles.pieWrap}>
-          <Text style={styles.pieTitle}>Distribuição de acertos (1/2/3/4/5/6)</Text>
+          <Text style={styles.pieTitle}>
+            Distribuição de acertos (1/2/3/4/5/6)
+          </Text>
           <Svg width={size} height={size}>
             {(() => {
               let start = -90; // start at 12 o'clock
