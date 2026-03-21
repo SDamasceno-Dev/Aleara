@@ -267,36 +267,96 @@ export default function ReportsPanel() {
                 <div className='text-[11px] text-zinc-400'>Acertos 1</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c1}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c1 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 2</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c2}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c2 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 3</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c3}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c3 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 4</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c4}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c4 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 5</div>
                 <div className='text-lg font-semibold text-zinc-100'>
                   {aggregate.kpis.c5}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c5 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
               <div className='rounded-md border border-white/10 p-3'>
                 <div className='text-[11px] text-zinc-400'>Acertos 6</div>
                 <div className='text-lg font-semibold text-green-300'>
                   {aggregate.kpis.c6}
+                  <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                    (
+                    {aggregate.kpis.totalBets > 0
+                      ? (
+                          (aggregate.kpis.c6 / aggregate.kpis.totalBets) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %)
+                  </span>
                 </div>
               </div>
             </div>
@@ -386,36 +446,78 @@ export default function ReportsPanel() {
               <div className='text-[11px] text-zinc-400'>Acertos 1</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c1}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c1 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 2</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c2}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c2 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 3</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c3}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c3 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 4</div>
               <div className='text-lg font-semibold text-zinc-100'>
                 {report.kpis.c4}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c4 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 5</div>
               <div className='text-lg font-semibold text-amber-300'>
                 {report.kpis.c5}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c5 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
             <div className='rounded-md border border-white/10 p-3'>
               <div className='text-[11px] text-zinc-400'>Acertos 6</div>
               <div className='text-lg font-semibold text-green-300'>
                 {report.kpis.c6}
+                <span className='ml-0.5 align-bottom text-[0.6em] font-normal leading-none text-zinc-400'>
+                  (
+                  {report.kpis.total > 0
+                    ? ((report.kpis.c6 / report.kpis.total) * 100).toFixed(1)
+                    : '0.0'}
+                  %)
+                </span>
               </div>
             </div>
           </div>
@@ -528,12 +630,17 @@ function HitsBarChart({
                   ? 'text-yellow-300'
                   : 'text-zinc-200';
           return (
-            <div key={row.label} className='grid grid-cols-[90px_1fr_120px] gap-2'>
+            <div
+              key={row.label}
+              className='grid grid-cols-[90px_1fr_120px] gap-2'
+            >
               <div className={`text-xs ${textClass}`}>{row.label}</div>
               <div className='h-4 rounded bg-white/10 overflow-hidden'>
                 <div
                   className={`h-full ${row.color}`}
-                  style={{ width: `${Math.max(widthPct, row.value > 0 ? 2 : 0)}%` }}
+                  style={{
+                    width: `${Math.max(widthPct, row.value > 0 ? 2 : 0)}%`,
+                  }}
                 />
               </div>
               <div className={`text-right text-xs ${textClass}`}>
@@ -543,7 +650,9 @@ function HitsBarChart({
           );
         })}
       </div>
-      <div className='mt-3 text-xs text-zinc-400'>Base: {total} apostas conferidas</div>
+      <div className='mt-3 text-xs text-zinc-400'>
+        Base: {total} apostas conferidas
+      </div>
     </div>
   );
 }
