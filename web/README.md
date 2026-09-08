@@ -1,3 +1,11 @@
+# ALEARA Web
+
+A documentação técnica e operacional do projeto começa em [docs/README.md](../docs/README.md). Consulte o baseline, as decisões e as regras para agentes antes de iniciar uma tarefa.
+
+O conteúdo abaixo é o guia original do template Next.js, preservado para revisão posterior; não descreve integralmente o setup atual do ALEARA.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
