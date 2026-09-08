@@ -13,10 +13,10 @@ Versões resolvidas no [lockfile](../web/package-lock.json), não apenas interva
 | Dados e autenticação | Supabase JS 2.89.0, Supabase SSR 0.5.2; SQL/PostgreSQL em `web/supabase/migrations` |
 | PDF | React PDF 4.3.1; Puppeteer Core 24.34.0 e Sparticuz Chromium 141.0.0 |
 | Componentes isolados | Storybook 10.1.10; addons declarados não comprovam testes ativos |
-| Instalação | npm, lockfile versionado e `npm ci` no CI; sem `packageManager` ou `engines` no manifesto |
-| Runtime | Node 20 explícito no CI e Node 20.x confirmado na configuração Vercel durante o diagnóstico de 08/09/2026; esta entrega documental não repetiu essa verificação. Node local e runtime efetivo da Vercel não foram medidos nesta tarefa |
+| Instalação | npm, lockfile versionado e `npm ci` no CI; manifesto e lockfile declaram `engines.node` como `24.x`; sem `packageManager` |
+| Runtime | Node 24 no CI e Node 24.20.0 validado localmente em `development`. A produção permanece em Node 20.x conforme a última evidência, até promoção e validação específicas |
 
-`@types/node` na linha 20 representa tipagem, não seleção de runtime. Node 24 permanece uma próxima frente, sem alteração nesta base.
+`@types/node` permanece na linha 20 porque representa tipagem, não seleção do runtime, e a validação não demonstrou incompatibilidade que justificasse sua atualização.
 
 ## Mapa do sistema
 
@@ -31,15 +31,17 @@ Versões resolvidas no [lockfile](../web/package-lock.json), não apenas interva
 
 Mega-Sena, Quina, Lotomania e Lotofácil possuem endpoints de domínio. A existência de páginas para outras modalidades não comprova equivalência funcional. Sorteios, conjuntos de jogos, itens, listas de apostas e conferências aparecem nas rotas e migrations. Regras de domínio estão distribuídas entre handlers, telas e SQL; não há aqui uma nova arquitetura aprovada.
 
-O [PDF de relatórios da Mega-Sena](../web/src/app/api/loterias/mega-sena/reports/pdf/route.ts) usa Puppeteer/Chromium e busca um executável local como alternativa. React PDF também consta no projeto; manter ambos não constitui decisão de arquitetura futura. Compatibilidade, limites efetivos e funcionamento em Node 24 ainda precisam de validação.
+O [PDF de relatórios da Mega-Sena](../web/src/app/api/loterias/mega-sena/reports/pdf/route.ts) usa Puppeteer/Chromium e busca um executável local como alternativa. React PDF também consta no projeto; manter ambos não constitui decisão de arquitetura futura. As duas rotas PDF compilaram no build local sob Node 24.20.0; execução real, limites efetivos e funcionamento em Preview ainda precisam de validação.
 
 ## Ambiente e qualidade
 
 [env.ts](../web/src/env.ts), [env-client.ts](../web/src/env-client.ts) e [check-env.mjs](../web/scripts/check-env.mjs) são referências para os nomes e verificações de variáveis. A chave de service role é administrativa e deve permanecer no servidor; valores de credenciais não devem entrar em documentação ou logs. `SITE_URL`/`NEXT_PUBLIC_SITE_URL` define a URL do ambiente, e o reenvio de convite exige sua configuração em produção. A orientação antiga de copiar variáveis da Vercel exige revisão antes de uso, conforme [pendências documentais](pendencias.md#documentação-existente-a-revisar).
 
-O [CI](../.github/workflows/ci.yml) executa, em PRs para `development` e `main` e por disparo manual, jobs separados de build, ESLint sem warnings e TypeScript, todos sob Node 20. Usa variáveis substitutas para build, o que não valida integração real com Supabase. O [Release Please](../.github/workflows/release-please.yml) reage a pushes na `main`.
+O [CI](../.github/workflows/ci.yml) executa, em PRs para `development` e `main` e por disparo manual, jobs separados de build, ESLint sem warnings e TypeScript, todos sob Node 24. Usa variáveis substitutas para build, o que não valida integração real com Supabase. O [Release Please](../.github/workflows/release-please.yml) reage a pushes na `main`.
 
-Não foi encontrada suíte automatizada dedicada ao domínio na inspeção; o manifesto não oferece script `test`. Stories e addons não equivalem a cobertura de domínio ou E2E. Não foram executados build, lint ou testes funcionais nesta entrega exclusivamente documental. Os resultados históricos de segurança são registrados separadamente e não representam uma nova execução.
+A validação local da migração em 08/09/2026 usou Node 24.20.0 e concluiu `npm ci`, TypeScript, ESLint sobre o conteúdo versionado e build de produção com Webpack. O build padrão com Turbopack não pôde ser concluído neste ambiente porque a execução bloqueou a criação de processo com porta local; CI e Preview ainda devem confirmar esse caminho. Nenhum teste real de PDF ou integração externa foi executado.
+
+Não foi encontrada suíte automatizada dedicada ao domínio na inspeção; o manifesto não oferece script `test`. Stories e addons não equivalem a cobertura de domínio ou E2E. Nesta migração não foram executados testes funcionais ou de integração externa. Os resultados históricos de segurança são registrados separadamente e não representam uma nova execução.
 
 ## Referências existentes preservadas
 

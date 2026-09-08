@@ -24,7 +24,7 @@ Fluxo usual: Proposto → Aprovado → Implementado → Validado. Adiado não si
 | DEC-04 | Economizar contexto, não validação; Codex verifica aspectos técnicos, Sandro verifica fluxos e aparência, mentor orienta e revisa | Aprovado e vigente; [regras](agentes.md) |
 | DEC-05 | Git mecânico e previsível em blocos completos; operações ambíguas ou destrutivas exigem análise prévia | Aprovado; sem `cd` e `echo` nos blocos para o terminal já aberto na raiz, com `--no-pager` quando aplicável |
 | DEC-06 | Manter fonte de verdade enxuta e versionada em `docs/`, distinguindo evidência, decisões e hipóteses | Aprovado; estrutura inicial Implementada nesta entrega, aguardando revisão editorial |
-| DEC-07 | Node 20 → 24 é a próxima frente operacional após segurança e documentação | Aprovado como prioridade de investigação/preparação; migração não implementada nem validada, escopo técnico a aprovar |
+| DEC-07 | Adotar Node 24 no manifesto e no CI, sem modernizar dependências ou alterar `@types/node` sem necessidade demonstrada | Implementado e validado localmente em `development` com Node 24.20.0; Preview e promoção para produção permanecem pendentes |
 | DEC-08 | Preservar `archive/zdd-worktree-2026-09-08` até revisão dos commits exclusivos | Preservação Implementada; destinação final Adiada até comparar o trabalho exclusivo |
 
 ## Release de segurança 0.11.1
