@@ -17,15 +17,6 @@ export default function DefinirSenhaPage() {
     let cancelled = false;
     async function run() {
       try {
-        // Debug: log initial URL context
-        try {
-          console.log(
-            '[definir-senha] mount href=',
-            typeof window !== 'undefined'
-              ? window.location.href
-              : '(no-window)',
-          );
-        } catch {}
         // Accept both hash and query-style callbacks
         const hasWindow = typeof window !== 'undefined';
         const hash = hasWindow ? window.location.hash : '';
