@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.11.0...aleara-web-v0.11.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **security:** harden auth flows and patch Next.js ([b371318](https://github.com/SDamasceno-Dev/Aleara/commit/b371318db4b328be0932efc1bf59bdb22b014c1f))
+
 ## [0.11.0](https://github.com/SDamasceno-Dev/Aleara/compare/aleara-web-v0.10.0...aleara-web-v0.11.0) (2026-03-21)
 
 
