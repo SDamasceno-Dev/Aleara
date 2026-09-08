@@ -1,8 +1,29 @@
 import { NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { env } from '@/env';
 
 export async function POST(request: Request) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
+  if (adminError) {
+    return NextResponse.json(
+      { error: 'Unable to verify authorization' },
+      { status: 500 },
+    );
+  }
+  if (!isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const { origin } = new URL(request.url);
   const baseUrl = env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || origin;
   if (
@@ -37,11 +58,16 @@ export async function POST(request: Request) {
       redirectTo: `${baseUrl}/auth/definir-senha?email=${encodeURIComponent(email)}`,
     });
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Unable to send invitation' },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ ok: true });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to send invitation' },
+      { status: 500 },
+    );
   }
 }
