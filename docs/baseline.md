@@ -14,7 +14,7 @@ Versões resolvidas no [lockfile](../web/package-lock.json), não apenas interva
 | PDF | React PDF 4.3.1; Puppeteer Core 24.34.0 e Sparticuz Chromium 141.0.0 |
 | Componentes isolados | Storybook 10.1.10; addons declarados não comprovam testes ativos |
 | Instalação | npm, lockfile versionado e `npm ci` no CI; manifesto e lockfile declaram `engines.node` como `24.x`; sem `packageManager` |
-| Runtime | Node 24 no CI e Node 24.20.0 validado localmente em `development`. A produção permanece em Node 20.x conforme a última evidência, até promoção e validação específicas |
+| Runtime | Node 24 validado localmente (24.20.0), em Preview e em produção (`b12c5ea`); CI alinhado em Node 24. Vercel Project Setting atualizado para 24.x, com override/alerta anterior eliminado; `development` sincronizada em `497550e`. Evidências e limites no [fechamento da migração](decisoes.md#migração-node-20--24) |
 
 `@types/node` permanece na linha 20 porque representa tipagem, não seleção do runtime, e a validação não demonstrou incompatibilidade que justificasse sua atualização.
 
@@ -31,7 +31,7 @@ Versões resolvidas no [lockfile](../web/package-lock.json), não apenas interva
 
 Mega-Sena, Quina, Lotomania e Lotofácil possuem endpoints de domínio. A existência de páginas para outras modalidades não comprova equivalência funcional. Sorteios, conjuntos de jogos, itens, listas de apostas e conferências aparecem nas rotas e migrations. Regras de domínio estão distribuídas entre handlers, telas e SQL; não há aqui uma nova arquitetura aprovada.
 
-O [PDF de relatórios da Mega-Sena](../web/src/app/api/loterias/mega-sena/reports/pdf/route.ts) usa Puppeteer/Chromium e busca um executável local como alternativa. React PDF também consta no projeto; manter ambos não constitui decisão de arquitetura futura. As duas rotas PDF compilaram no build local sob Node 24.20.0; execução real, limites efetivos e funcionamento em Preview ainda precisam de validação.
+O [PDF de relatórios da Mega-Sena](../web/src/app/api/loterias/mega-sena/reports/pdf/route.ts) usa Puppeteer/Chromium e busca um executável local como alternativa. React PDF também consta no projeto; manter ambos não constitui decisão de arquitetura futura. As duas rotas PDF compilaram no build local sob Node 24.20.0. Durante a validação, Sandro relatou falha na exportação PDF da Mega-Sena tanto no ambiente anterior Node 20 quanto no Node 24: comportamento pré-existente, não regressão da migração. A causa e os limites efetivos ainda precisam de investigação em [PEN-08](pendencias.md), separadamente.
 
 ## Ambiente e qualidade
 
@@ -39,9 +39,9 @@ O [PDF de relatórios da Mega-Sena](../web/src/app/api/loterias/mega-sena/report
 
 O [CI](../.github/workflows/ci.yml) executa, em PRs para `development` e `main` e por disparo manual, jobs separados de build, ESLint sem warnings e TypeScript, todos sob Node 24. Usa variáveis substitutas para build, o que não valida integração real com Supabase. O [Release Please](../.github/workflows/release-please.yml) reage a pushes na `main`.
 
-A validação local da migração em 08/09/2026 usou Node 24.20.0 e concluiu `npm ci`, TypeScript, ESLint sobre o conteúdo versionado e build de produção com Webpack. O build padrão com Turbopack não pôde ser concluído neste ambiente porque a execução bloqueou a criação de processo com porta local; CI e Preview ainda devem confirmar esse caminho. Nenhum teste real de PDF ou integração externa foi executado.
+A validação local da migração em 08/09/2026 usou Node 24.20.0 e concluiu `npm ci`, TypeScript, ESLint sobre o conteúdo versionado e build de produção com Webpack. O build padrão com Turbopack não pôde ser concluído naquele ambiente porque a execução bloqueou a criação de processo com porta local; esse limite da validação local permanece registrado. Posteriormente, Sandro confirmou validação em Preview e smoke test aprovado em produção (`b12c5ea`), com CI alinhado em Node 24 e Vercel Project Setting em 24.x, sem o override/alerta anterior. O teste real de exportação PDF da Mega-Sena falhou nos dois runtimes, conforme registrado acima; o aceite da migração não equivale à validação funcional do PDF.
 
-Não foi encontrada suíte automatizada dedicada ao domínio na inspeção; o manifesto não oferece script `test`. Stories e addons não equivalem a cobertura de domínio ou E2E. Nesta migração não foram executados testes funcionais ou de integração externa. Os resultados históricos de segurança são registrados separadamente e não representam uma nova execução.
+Não foi encontrada suíte automatizada dedicada ao domínio na inspeção; o manifesto não oferece script `test`. Stories e addons não equivalem a cobertura de domínio ou E2E. Os relatos de validação em Preview e produção não comprovam cobertura funcional ou de integração externa integral. Os resultados históricos de segurança são registrados separadamente e não representam uma nova execução.
 
 ## Referências existentes preservadas
 

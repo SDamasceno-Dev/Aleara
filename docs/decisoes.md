@@ -24,7 +24,7 @@ Fluxo usual: Proposto → Aprovado → Implementado → Validado. Adiado não si
 | DEC-04 | Economizar contexto, não validação; Codex verifica aspectos técnicos, Sandro verifica fluxos e aparência, mentor orienta e revisa | Aprovado e vigente; [regras](agentes.md) |
 | DEC-05 | Git mecânico e previsível em blocos completos; operações ambíguas ou destrutivas exigem análise prévia | Aprovado; sem `cd` e `echo` nos blocos para o terminal já aberto na raiz, com `--no-pager` quando aplicável |
 | DEC-06 | Manter fonte de verdade enxuta e versionada em `docs/`, distinguindo evidência, decisões e hipóteses | Aprovado; estrutura inicial Implementada nesta entrega, aguardando revisão editorial |
-| DEC-07 | Adotar Node 24 no manifesto e no CI, sem modernizar dependências ou alterar `@types/node` sem necessidade demonstrada | Implementado e validado localmente em `development` com Node 24.20.0; Preview e promoção para produção permanecem pendentes |
+| DEC-07 | Adotar Node 24 no manifesto e no CI, sem modernizar dependências ou alterar `@types/node` sem necessidade demonstrada | Validado localmente com Node 24.20.0, em Preview e em produção (`b12c5ea`); CI e Vercel alinhados em Node 24; PEN-01 concluído, conforme [fechamento](#migração-node-20--24) |
 | DEC-08 | Preservar `archive/zdd-worktree-2026-09-08` até revisão dos commits exclusivos | Preservação Implementada; destinação final Adiada até comparar o trabalho exclusivo |
 
 ## Release de segurança 0.11.1
@@ -43,3 +43,11 @@ Rastreabilidade Git: patch original em `development` **310a0c8**, patch incorpor
 Evidência histórica: o mentor registrou validação técnica pelo Codex; Sandro confirmou navegação funcional no Preview e, após o deploy da release, versão exibida no aplicativo, acesso administrativo e carregamento de uma loteria. O ciclo foi encerrado como sem regressão funcional aparente. Nesta tarefa, versões, alterações e referências Git foram inspecionadas localmente; testes técnicos e verificações HTTP não foram repetidos, e não se afirma que cada caso negativo tenha sido exercitado em produção.
 
 O aceite não comprova ausência de exploração anterior, cobertura integral de autenticação, RLS efetiva, rate limiting ou segurança futura de dependências. Esses assuntos permanecem separados no [registro de pendências](pendencias.md); não reclassificar os quatro itens corrigidos como abertos com base em relatórios anteriores ao patch.
+
+## Migração Node 20 → 24
+
+**DEC-07 / PEN-01: Validado e concluído**, localmente, em Preview e em produção, conforme fechamento confirmado por Sandro em 08/09/2026. A decisão de adoção do Node 24 permanece vigente, sem reabertura arquitetural.
+
+Evidência de validação: o registro local documenta Node 24.20.0, instalação por lockfile, TypeScript, ESLint sobre o conteúdo versionado e build de produção com Webpack. Sandro confirmou Preview validado, smoke test aprovado em produção no commit **b12c5ea**, CI alinhado em Node 24 e Vercel Project Setting atualizado para **24.x**, eliminando o override/alerta anterior. O Git local confirma `development` sincronizada em **497550e**, contendo `b12c5ea`. Este fechamento documental registra as validações relatadas; não é uma nova execução de testes ou inspeção da Vercel.
+
+Durante a validação, a exportação PDF da Mega-Sena foi testada e falhou tanto no ambiente anterior **Node 20** quanto no **Node 24**, conforme relato de Sandro. Essa comparação sustenta a classificação de comportamento pré-existente, **não regressão da migração**; não identifica a causa técnica. A falha permanece separada em [PEN-08](pendencias.md), sem correção nesta entrega e sem impedir o encerramento de PEN-01.
